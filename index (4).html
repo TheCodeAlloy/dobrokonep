@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Registrace dobrovolníka</title>
+<style>
+  :root {
+    --primary: #1f5c45;
+    --primary-hover: #174836;
+    --accent: #e8f3ee;
+    --text: #1d2420;
+    --muted: #5d6862;
+    --border: #d5ddd8;
+    --bg: #f5f7f6;
+    --card: #ffffff;
+    --error: #b42318;
+    --error-bg: #fdecea;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; }
+  header { margin-bottom: 20px; }
+  .eyebrow { margin: 0; color: var(--primary); font-weight: 600; font-size: 14px; letter-spacing: .02em; }
+  h1 { margin: 4px 0 8px; font-size: 26px; line-height: 1.25; }
+  .lead { margin: 0; color: var(--muted); }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px; margin-bottom: 16px;
+  }
+  h2 { margin: 0 0 14px; font-size: 18px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .full { grid-column: 1 / -1; }
+  @media (max-width: 560px) { .grid { grid-template-columns: 1fr; } h1 { font-size: 22px; } }
+  label.f { display: block; font-weight: 600; font-size: 14px; margin-bottom: 5px; }
+  .req { color: var(--error); }
+  input[type=text], input[type=email], input[type=tel], input[type=date], select, textarea {
+    width: 100%; padding: 11px 12px; font: inherit; color: inherit;
+    border: 1px solid var(--border); border-radius: 8px; background: #fff;
+  }
+  textarea { min-height: 96px; resize: vertical; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary); outline-offset: 1px; border-color: var(--primary); }
+  .invalid { border-color: var(--error) !important; background: var(--error-bg) !important; }
+  .group-invalid { outline: 2px solid var(--error); outline-offset: 4px; border-radius: 8px; }
+  .hint { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { position: relative; cursor: pointer; }
+  .chip input { position: absolute; opacity: 0; pointer-events: none; }
+  .chip span {
+    display: inline-block; padding: 8px 13px; border: 1px solid var(--border); border-radius: 999px;
+    font-size: 14px; background: #fff; transition: background .15s, border-color .15s;
+  }
+  .chip input:checked + span { background: var(--accent); border-color: var(--primary); color: var(--primary); font-weight: 600; }
+  .chip input:checked + span::before { content: "✓ "; }
+  .chip input:focus-visible + span { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .radios { display: flex; flex-wrap: wrap; gap: 8px; }
+  .consent { display: flex; gap: 10px; align-items: flex-start; }
+  .consent input { width: 20px; height: 20px; margin-top: 2px; flex: none; }
+  .consent a { color: var(--primary); }
+  .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .alert { background: var(--error-bg); color: var(--error); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; }
+  button {
+    width: 100%; padding: 14px; font: inherit; font-weight: 700; font-size: 17px;
+    color: #fff; background: var(--primary); border: 0; border-radius: 10px; cursor: pointer;
+  }
+  button:hover { background: var(--primary-hover); }
+  button:disabled { opacity: .6; cursor: wait; }
+  .done { text-align: center; padding: 36px 20px; }
+  .done .ok { width: 56px; height: 56px; border-radius: 50%; background: var(--accent); color: var(--primary);
+    font-size: 30px; line-height: 56px; margin: 0 auto 12px; }
+  .done .id { display: inline-block; margin-top: 8px; padding: 6px 12px; background: var(--accent);
+    border-radius: 8px; font-weight: 700; color: var(--primary); }
+  .nacitam { text-align: center; color: var(--muted); padding: 60px 0; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header id="hlavicka">
+    <p class="eyebrow" id="nazevOrg"></p>
+    <h1>Registrace zájemce o dobrovolnictví</h1>
+    <p class="lead">Vyplnění zabere asi 3 minuty. Po odeslání vám přijde potvrzení e-mailem a náš koordinátor se vám ozve.</p>
+  </header>
+
+  <div class="nacitam" id="nacitam">Načítám formulář…</div>
+  <form id="f" novalidate hidden>
+    <section class="card">
+      <h2>Osobní údaje</h2>
+      <div class="grid">
+        <div><label class="f" for="jmeno">Jméno <span class="req">*</span></label>
+          <input type="text" id="jmeno" name="jmeno" required maxlength="100" autocomplete="given-name"></div>
+        <div><label class="f" for="prijmeni">Příjmení <span class="req">*</span></label>
+          <input type="text" id="prijmeni" name="prijmeni" required maxlength="100" autocomplete="family-name"></div>
+        <div><label class="f" for="datumNarozeni">Datum narození <span class="req">*</span></label>
+          <input type="date" id="datumNarozeni" name="datumNarozeni" required min="1900-01-01" autocomplete="bday"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Kontakt a adresa</h2>
+      <div class="grid">
+        <div><label class="f" for="email">E-mail <span class="req">*</span></label>
+          <input type="email" id="email" name="email" required maxlength="200" autocomplete="email" inputmode="email"></div>
+        <div><label class="f" for="telefon">Telefon</label>
+          <input type="tel" id="telefon" name="telefon" maxlength="40" autocomplete="tel" placeholder="+420 …" pattern="[+0-9 ()\-\/]{6,}"></div>
+        <div class="full"><label class="f" for="ulice">Ulice a číslo popisné</label>
+          <input type="text" id="ulice" name="ulice" maxlength="200" autocomplete="street-address"></div>
+        <div><label class="f" for="obec">Obec</label>
+          <input type="text" id="obec" name="obec" maxlength="100" autocomplete="address-level2"></div>
+        <div><label class="f" for="psc">PSČ</label>
+          <input type="text" id="psc" name="psc" maxlength="6" inputmode="numeric" autocomplete="postal-code" placeholder="530 02" pattern="\d{3}\s?\d{2}"></div>
+        <div class="full"><span class="f" style="display:block;font-weight:600;font-size:14px;margin-bottom:5px">Jak vás máme nejlépe kontaktovat?</span>
+          <div class="radios" id="kontakty"></div></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>O co máte zájem</h2>
+      <span class="f" style="display:block;font-weight:600;font-size:14px;margin-bottom:8px">Oblasti zájmu <span class="req">*</span></span>
+      <div class="chips" id="oblasti"></div>
+      <p class="hint">Můžete vybrat více možností.</p>
+      <div id="oblastJineWrap" hidden style="margin-top:12px">
+        <label class="f" for="oblastJine">Upřesněte „Jiné“ <span class="req">*</span></label>
+        <input type="text" id="oblastJine" name="oblastJine" maxlength="200">
+      </div>
+
+      <div style="margin-top:20px">
+        <span class="f" style="display:block;font-weight:600;font-size:14px;margin-bottom:8px">Kde byste chtěl/a pomáhat?</span>
+        <div class="chips" id="mista"></div>
+        <div style="margin-top:10px">
+          <input type="text" id="mistoJine" name="mistoJine" maxlength="200" placeholder="Jiné místo (nepovinné)" aria-label="Jiné místo">
+        </div>
+      </div>
+
+      <div style="margin-top:20px">
+        <span class="f" style="display:block;font-weight:600;font-size:14px;margin-bottom:8px">Kdy máte čas?</span>
+        <div class="chips" id="dostupnost"></div>
+      </div>
+
+      <div style="margin-top:20px">
+        <label class="f" for="zkusenosti">Zkušenosti a dovednosti</label>
+        <textarea id="zkusenosti" name="zkusenosti" maxlength="2000" placeholder="Co umíte, co vás baví, s čím máte zkušenost…"></textarea>
+      </div>
+
+      <div style="margin-top:14px">
+        <label class="f" for="zdroj">Jak jste se o nás dozvěděl/a?</label>
+        <select id="zdroj" name="zdroj"><option value="">— vyberte —</option></select>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="consent">
+        <input type="checkbox" id="gdpr" name="gdpr" required>
+        <label for="gdpr">Souhlasím se zpracováním svých osobních údajů za účelem evidence zájemců o dobrovolnickou činnost a kontaktování v této věci. <span class="req">*</span>
+          <span id="gdprOdkaz"></span></label>
+      </div>
+    </section>
+
+    <div class="hp" aria-hidden="true">
+      <label for="web_hp">Nevyplňujte</label>
+      <input type="text" id="web_hp" name="web_hp" tabindex="-1" autocomplete="off">
+    </div>
+
+    <div id="chyba" class="alert" role="alert" hidden></div>
+    <button type="submit" id="odeslat">Odeslat registraci</button>
+    <p class="hint" style="text-align:center">Pole označená <span class="req">*</span> jsou povinná.</p>
+  </form>
+
+  <section id="hotovo" class="card done" hidden>
+    <div class="ok" aria-hidden="true">✓</div>
+    <h2 style="margin-bottom:8px">Registrace odeslána</h2>
+    <p id="hotovoText" style="margin:0"></p>
+    <div class="id" id="hotovoId"></div>
+  </section>
+</main>
+
+<script src="config.js"></script>
+<script>
+  let CFG = null;
+  let casStart = Date.now();
+
+  function spust() {
+
+  function vytvorVolby(kontejnerId, nazev, polozky, typ) {
+    const c = document.getElementById(kontejnerId);
+    polozky.forEach(function (v) {
+      const l = document.createElement('label');
+      l.className = 'chip';
+      const i = document.createElement('input');
+      i.type = typ || 'checkbox'; i.name = nazev; i.value = v;
+      const s = document.createElement('span');
+      s.textContent = v;
+      l.appendChild(i); l.appendChild(s);
+      c.appendChild(l);
+    });
+  }
+
+  vytvorVolby('oblasti', 'oblasti', CFG.oblasti.concat(['Jiné']));
+  vytvorVolby('mista', 'mista', CFG.mista);
+  vytvorVolby('dostupnost', 'dostupnost', CFG.dostupnost);
+  vytvorVolby('kontakty', 'kontakt', CFG.kontakty, 'radio');
+
+  const zdroj = document.getElementById('zdroj');
+  CFG.zdroje.forEach(function (z) {
+    const o = document.createElement('option'); o.value = z; o.textContent = z; zdroj.appendChild(o);
+  });
+
+  if (CFG.odkazGdpr) {
+    const a = document.createElement('a');
+    a.href = CFG.odkazGdpr; a.target = '_blank'; a.rel = 'noopener';
+    a.textContent = 'Informace o zpracování osobních údajů';
+    document.getElementById('gdprOdkaz').appendChild(a);
+  }
+
+  document.getElementById('datumNarozeni').max = new Date().toISOString().slice(0, 10);
+  }
+
+  const jineWrap = document.getElementById('oblastJineWrap');
+  const jineInput = document.getElementById('oblastJine');
+  document.getElementById('oblasti').addEventListener('change', function () {
+    const zap = !!document.querySelector('input[name=oblasti][value="Jiné"]:checked');
+    jineWrap.hidden = !zap;
+    jineInput.required = zap;
+  });
+
+  function zaskrtnute(nazev) {
+    return Array.prototype.map.call(document.querySelectorAll('input[name="' + nazev + '"]:checked'), function (i) { return i.value; });
+  }
+
+  function vek(iso) {
+    const p = iso.split('-').map(Number), d = new Date();
+    let v = d.getFullYear() - p[0];
+    if (d.getMonth() + 1 < p[1] || (d.getMonth() + 1 === p[1] && d.getDate() < p[2])) v--;
+    return v;
+  }
+
+  const form = document.getElementById('f');
+  const chyba = document.getElementById('chyba');
+  const tlacitko = document.getElementById('odeslat');
+
+  function ukazChybu(text, prvek) {
+    chyba.textContent = text; chyba.hidden = false;
+    if (prvek && prvek.focus) prvek.focus();
+    chyba.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  form.addEventListener('input', function (e) { e.target.classList && e.target.classList.remove('invalid'); });
+  form.addEventListener('change', function () { document.getElementById('oblasti').classList.remove('group-invalid'); });
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    chyba.hidden = true;
+
+    let prvni = null;
+    form.querySelectorAll('input[type=text], input[type=email], input[type=tel], input[type=date]').forEach(function (i) {
+      i.value = i.value.trim();
+      const spatne = !i.checkValidity();
+      i.classList.toggle('invalid', spatne);
+      if (spatne && !prvni) prvni = i;
+    });
+    if (prvni) return ukazChybu('Zkontrolujte prosím zvýrazněná pole.', prvni);
+
+    if (CFG.minVek && vek(document.getElementById('datumNarozeni').value) < CFG.minVek) {
+      return ukazChybu('Pro registraci je potřeba mít alespoň ' + CFG.minVek + ' let. Pokud jste mladší, ozvěte se nám prosím e-mailem.',
+        document.getElementById('datumNarozeni'));
+    }
+    if (!zaskrtnute('oblasti').length) {
+      document.getElementById('oblasti').classList.add('group-invalid');
+      return ukazChybu('Vyberte prosím alespoň jednu oblast zájmu.');
+    }
+    if (!document.getElementById('gdpr').checked) {
+      return ukazChybu('Pro odeslání je potřeba souhlas se zpracováním osobních údajů.', document.getElementById('gdpr'));
+    }
+
+    const data = {
+      casStart: casStart,
+      web_hp: document.getElementById('web_hp').value,
+      jmeno: form.elements.jmeno.value, prijmeni: form.elements.prijmeni.value,
+      datumNarozeni: form.elements.datumNarozeni.value,
+      email: form.elements.email.value, telefon: form.elements.telefon.value,
+      ulice: form.elements.ulice.value, obec: form.elements.obec.value, psc: form.elements.psc.value,
+      kontakt: (document.querySelector('input[name=kontakt]:checked') || {}).value || '',
+      oblasti: zaskrtnute('oblasti'), oblastJine: jineInput.value,
+      mista: zaskrtnute('mista'), mistoJine: form.elements.mistoJine.value,
+      dostupnost: zaskrtnute('dostupnost'),
+      zkusenosti: form.elements.zkusenosti.value, zdroj: form.elements.zdroj.value,
+      gdpr: document.getElementById('gdpr').checked
+    };
+    data.dobaVyplneni = Date.now() - casStart;
+    delete data.casStart;
+
+    tlacitko.disabled = true;
+    tlacitko.textContent = 'Odesílám…';
+
+    volejApi('odeslatRegistraci', [data])
+      .then(function (r) {
+        form.hidden = true;
+        document.getElementById('hlavicka').hidden = true;
+        document.getElementById('hotovoText').textContent = r.text || 'Děkujeme, registrace byla odeslána.';
+        const idEl = document.getElementById('hotovoId');
+        if (r.id) idEl.textContent = 'Vaše registrační číslo: ' + r.id; else idEl.hidden = true;
+        document.getElementById('hotovo').hidden = false;
+        window.scrollTo(0, 0);
+      })
+      .catch(function (err) {
+        tlacitko.disabled = false;
+        tlacitko.textContent = 'Odeslat registraci';
+        ukazChybu(err.message || 'Odeslání se nepodařilo. Zkuste to prosím znovu.');
+      });
+  });
+
+  volejApi('konfigurace', [])
+    .then(function (cfg) {
+      CFG = cfg;
+      document.getElementById('nazevOrg').textContent = cfg.nazev;
+      document.title = 'Registrace dobrovolníka – ' + cfg.nazev;
+      spust();
+      document.getElementById('nacitam').hidden = true;
+      form.hidden = false;
+      casStart = Date.now();
+    })
+    .catch(function (err) {
+      document.getElementById('nacitam').textContent = 'Formulář se nepodařilo načíst. ' + err.message;
+    });
+</script>
+</body>
+</html>
