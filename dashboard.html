@@ -526,10 +526,28 @@ function vDetail() {
     '<section class="card"><h2>Systémové údaje</h2><dl class="kv" id="sys">' + sysHtml(z) + '</dl>' +
     (z['Upozornění'] && edit ? '<div class="btns" style="margin-top:12px"><button class="btn ghost" id="smazUpoz">Odstranit upozornění</button></div>' : '') +
     '</section>' +
+    (muze('Hlavní admin') ? '<section class="card"><h2>Smazání záznamu</h2>' +
+      '<p class="muted small" style="margin-top:0">Trvale odstraní osobní údaje z tabulky a událost z kalendáře. Odpracované hodiny zůstanou zachované jen pod kódem (ID), bez jména. Použijte pro testovací data nebo při žádosti o výmaz osobních údajů.</p>' +
+      '<div class="btns"><button class="btn ghost danger" id="smazat">Smazat záznam</button></div></section>' : '') +
     '</div></div>';
 
   $('#zpet').onclick = () => jdi(stav.zpet || 'seznam');
   obsah.onclick = null; obsah.onkeydown = null;
+  const sm = $('#smazat');
+  if (sm) sm.onclick = async () => {
+    const o = await dialog({
+      text: 'Opravdu trvale smazat záznam ' + z.ID + ' (' + jmeno(z) + ')? Tuto akci nelze vrátit.',
+      potvrdit: 'Smazat', zaskrtnout: 'Smazat i dokumenty a složku na Disku (přesunou se do koše)', vychoziZaskrtnuto: true
+    });
+    if (!o.ok) return;
+    sm.disabled = true; sm.textContent = 'Mažu…';
+    try {
+      const r = await api('smazZaznam', z.ID, o.check);
+      D.dobrovolnici = D.dobrovolnici.filter(x => x.ID !== z.ID);
+      jdi(stav.zpet === 'prehled' ? 'prehled' : 'seznam');
+      toast('Záznam ' + z.ID + ' smazán' + (r.souhrn && r.souhrn.length ? ' (' + r.souhrn.join(', ') + ')' : '') + '.');
+    } catch (e) { toast(e.message, 'err'); sm.disabled = false; sm.textContent = 'Smazat záznam'; }
+  };
   if (!edit) return;
 
   $$('[data-pole]').forEach(el => el.addEventListener('change', () => ulozit(el.dataset.pole, el.value)));
