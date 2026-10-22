@@ -252,7 +252,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-22f</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-22g</p>
   </div>
 </div>
 <div class="app" id="app" hidden>
@@ -375,15 +375,30 @@ function odkazDrive(v, typ) {
 }
 
 // ---------- Navigace ----------
-async function nacti() { D = await api('nactiData'); zastarale = false; }
+// ---------- Rychlost: mezipaměť a obnova na pozadí ----------
+// Obrazovky se kreslí hned z dat, která už prohlížeč má; čerstvá data se
+// dotáhnou na pozadí a obrazovka se tiše aktualizuje.
+const CACHE = new Map();
+let posledniNacteni = 0, obnovaBezi = false;
+async function nacti() { D = await api('nactiData'); zastarale = false; posledniNacteni = Date.now(); }
+const nicSeNeedituje = () => $('#modal').hidden && $('#dlg').hidden &&
+  !(document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName));
+async function obnovNaPozadi() {
+  if (obnovaBezi) return;
+  obnovaBezi = true;
+  const pred = JSON.stringify([D.dobrovolnici, D.hodiny, D.prirazeni]);
+  try {
+    await nacti();
+    const zmena = pred !== JSON.stringify([D.dobrovolnici, D.hodiny, D.prirazeni]);
+    if (zmena && (stav.view === 'prehled' || stav.view === 'seznam') && nicSeNeedituje()) render();
+  } catch (e) { /* zkusí se příště */ }
+  obnovaBezi = false;
+}
 async function jdi(view, extra) {
-  if (zastarale && view !== 'admin') {
-    obsah.innerHTML = '<div class="loading">Načítám data…</div>';
-    try { await nacti(); } catch (e) { toast(e.message, 'err'); }
-  }
   stav = Object.assign({ view: view }, extra || {});
   render();
   window.scrollTo(0, 0);
+  if (zastarale || Date.now() - posledniNacteni > 60000) obnovNaPozadi();
 }
 function render() {
   $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.view === stav.view || (stav.view === 'detail' && b.dataset.view === 'seznam') || (stav.view === 'vykaz' && b.dataset.view === 'hodiny')));
@@ -603,6 +618,7 @@ function vDetail() {
 
   $('#zpet').onclick = () => jdi(stav.zpet || 'seznam');
   obsah.onclick = null; obsah.onkeydown = null;
+  souhrnOrg = '';
   kresliPrirazeni(z);
   kresliSouhrnHodin(z);
   kresliPortal(z);
@@ -852,7 +868,7 @@ function formZapis(z, poUlozeni) {
     htmlCas('z', z) +
     '<div class="fld full" id="zCinWrap"></div>' +
     '<div class="fld full"><label><span>Poznámka</span></label><input type="text" id="zPozn" maxlength="1000" value="' + esc(z.poznamka || '') + '"></div>' +
-    '</div><p class="mchyba" id="zChyba" hidden></p>' +
+    '</div><p class="mchyba" id="zChyba"' + (z.chyba ? '' : ' hidden') + '>' + esc(z.chyba || '') + '</p>' +
     '<div class="dlg-btns"><button class="btn ghost" id="zZpet">Zrušit</button><button class="btn" id="zUlozit">Uložit</button></div>');
   let orgPuv = z.orgId || '';
   const obnovOrg = () => {
@@ -884,34 +900,36 @@ function formZapis(z, poUlozeni) {
     const chyba = !data.dobrovolnik ? 'Vyberte dobrovolníka.' : !data.orgId ? 'Dobrovolník není k tomuto datu přiřazený k žádné organizaci.' :
       !data.datum ? 'Zadejte datum.' : !data.minut ? 'Zadejte odpracovaný čas.' : !data.cinnost ? 'Vyberte činnost.' : '';
     if (chyba) { ch.textContent = chyba; ch.hidden = false; return; }
-    const b = $('#zUlozit', el); b.disabled = true; b.textContent = 'Ukládám…';
+    // okno se zavře hned, ukládá se na pozadí; při chybě se otevře znovu s vyplněnými údaji
+    zavriModal(); toast('Ukládám…');
     try {
       await api('ulozHodiny', data);
-      zavriModal(); poZmeneHodin();
+      poZmeneHodin();
       toast((z.id ? 'Zápis upraven: ' : 'Zapsáno: ') + fmtMin(data.minut));
       if (poUlozeni) poUlozeni();
-    } catch (e) { ch.textContent = e.message; ch.hidden = false; b.disabled = false; b.textContent = 'Uložit'; }
+    } catch (e) { if (e.message) formZapis(Object.assign({}, data, { chyba: e.message }), poUlozeni); }
   };
 }
 
 // ---------- Formulář: akce / směna (více dobrovolníků) ----------
-function formAkce(poUlozeni) {
+function formAkce(poUlozeni, pv) {
+  pv = pv || {};
   const orgs = (D.organizaceVse || []).filter(o => o.aktivni && (D.prirazeni || []).some(p => p.orgId === o.id));
   if (!orgs.length) { toast('Nejdřív přiřaďte dobrovolníky k organizacím.', 'err'); return; }
   const el = otevriModal(
     '<h2>Zapsat akci / směnu</h2><p class="muted small" style="margin-top:-8px">Stejné datum, čas a činnost pro více dobrovolníků najednou.</p>' +
     '<div class="fields">' +
-    '<div class="fld"><label><span>Organizace</span></label><select id="aOrg">' + orgs.map(o => '<option value="' + esc(o.id) + '">' + esc(o.nazev) + '</option>').join('') + '</select></div>' +
-    '<div class="fld"><label><span>Datum</span></label><input type="date" id="aDatum" max="' + dnesISO() + '" value="' + dnesISO() + '"></div>' +
-    htmlCas('a', {}) +
+    '<div class="fld"><label><span>Organizace</span></label><select id="aOrg">' + orgs.map(o => '<option value="' + esc(o.id) + '"' + (o.id === pv.orgId ? ' selected' : '') + '>' + esc(o.nazev) + '</option>').join('') + '</select></div>' +
+    '<div class="fld"><label><span>Datum</span></label><input type="date" id="aDatum" max="' + dnesISO() + '" value="' + esc(pv.datum || dnesISO()) + '"></div>' +
+    htmlCas('a', pv) +
     '<div class="fld full" id="aCinWrap"></div>' +
-    '<div class="fld full"><label><span>Poznámka</span></label><input type="text" id="aPozn" maxlength="1000"></div>' +
+    '<div class="fld full"><label><span>Poznámka</span></label><input type="text" id="aPozn" maxlength="1000" value="' + esc(pv.poznamka || '') + '"></div>' +
     '<div class="fld full"><label><span>Přítomní dobrovolníci</span><em class="ind" id="aPocet"></em></label>' +
     '<div class="row2"><input type="search" id="aHledat" placeholder="Hledat jméno…"><button class="btn ghost" type="button" id="aVse">Vybrat vše</button></div>' +
     '<div class="checklist" id="aSeznam"></div></div>' +
-    '</div><p class="mchyba" id="aChyba" hidden></p>' +
+    '</div><p class="mchyba" id="aChyba"' + (pv.chyba ? '' : ' hidden') + '>' + esc(pv.chyba || '') + '</p>' +
     '<div class="dlg-btns"><button class="btn ghost" id="aZpet">Zrušit</button><button class="btn" id="aUlozit">Uložit akci</button></div>', true);
-  const vybrani = new Set();
+  const vybrani = new Set(pv.dobrovolnici || []);
   const obnov = () => {
     const org = $('#aOrg', el).value, datum = $('#aDatum', el).value || dnesISO();
     const lide = dobrovolniciOrg(org, datum);
@@ -921,7 +939,7 @@ function formAkce(poUlozeni) {
       '<label><input type="checkbox" value="' + esc(z.ID) + '"' + (vybrani.has(z.ID) ? ' checked' : '') + '> ' + esc(popisDobr(z)) + '</label>').join('')
       : '<p class="muted small">K této organizaci není k tomuto datu nikdo přiřazený.</p>';
     $('#aPocet', el).textContent = 'vybráno ' + vybrani.size;
-    $('#aCinWrap', el).innerHTML = htmlCinnost('a', orgPodleId(org).nazev, cinnost(el, 'a'));
+    $('#aCinWrap', el).innerHTML = htmlCinnost('a', orgPodleId(org).nazev, cinnost(el, 'a') || pv.cinnost || '');
     napojCinnost(el, 'a');
   };
   $('#aSeznam', el).addEventListener('change', e => {
@@ -943,13 +961,13 @@ function formAkce(poUlozeni) {
     const chyba = !data.datum ? 'Zadejte datum.' : !data.minut ? 'Zadejte odpracovaný čas.' : !data.cinnost ? 'Vyberte činnost.' :
       !data.dobrovolnici.length ? 'Zaškrtněte přítomné dobrovolníky.' : '';
     if (chyba) { ch.textContent = chyba; ch.hidden = false; return; }
-    const b = $('#aUlozit', el); b.disabled = true; b.textContent = 'Ukládám…';
+    zavriModal(); toast('Ukládám akci…');
     try {
       const r = await api('ulozAkci', data);
-      zavriModal(); poZmeneHodin();
+      poZmeneHodin();
       toast('Akce zapsána: ' + r.pocet + ' × ' + fmtMin(data.minut));
       if (poUlozeni) poUlozeni();
-    } catch (e) { ch.textContent = e.message; ch.hidden = false; b.disabled = false; b.textContent = 'Uložit akci'; }
+    } catch (e) { if (e.message) formAkce(poUlozeni, Object.assign({}, data, { chyba: e.message })); }
   };
 }
 
@@ -972,6 +990,7 @@ async function vHodiny() {
     '</div><div id="hUzav"></div><div id="hHromadne"></div><div class="scroll" id="hTab"><div class="loading">Načítám…</div></div>';
   const zmena = () => {
     f.mesic = $('#hMesic').value; f.org = $('#hOrg').value; f.dobrovolnik = $('#hDobr').value; f.stav = $('#hStav').value;
+    H.vyber.clear();
     nactiTabHodin();
   };
   ['#hMesic', '#hOrg', '#hDobr', '#hStav'].forEach(s => $(s).addEventListener('change', zmena));
@@ -990,16 +1009,22 @@ function obdobi(mesic) {
   return { od: mesic + '-01', do: mesic + '-' + String(posl).padStart(2, '0') };
 }
 
+function argHodin(f) { const o = obdobi(f.mesic); return { od: o.od, do: o.do, org: f.org, dobrovolnik: f.dobrovolnik, stav: f.stav }; }
 async function nactiTabHodin() {
-  const f = H.filtr, tab = $('#hTab');
+  const tab = $('#hTab');
   if (!tab) return;
-  tab.innerHTML = '<div class="loading">Načítám…</div>';
-  H.vyber.clear();
+  const arg = argHodin(H.filtr), klic = 'h:' + JSON.stringify(arg);
+  const c = CACHE.get(klic);
+  if (c) { H.data = c; kresliTabHodin(); } else tab.innerHTML = '<div class="loading">Načítám…</div>';
   try {
-    const o = obdobi(f.mesic);
-    H.data = await api('nactiHodiny', { od: o.od, do: o.do, org: f.org, dobrovolnik: f.dobrovolnik, stav: f.stav });
-  } catch (e) { tab.innerHTML = '<div class="card">' + esc(e.message) + '</div>'; return; }
-  kresliTabHodin();
+    const d = await api('nactiHodiny', arg);
+    CACHE.set(klic, d);
+    if (stav.view !== 'hodiny' || klic !== 'h:' + JSON.stringify(argHodin(H.filtr))) return;
+    if (!c || JSON.stringify(c) !== JSON.stringify(d)) { H.data = d; kresliTabHodin(); }
+  } catch (e) {
+    if (!c && $('#hTab')) $('#hTab').innerHTML = '<div class="card">' + esc(e.message) + '</div>';
+    else if (e.message) toast(e.message, 'err');
+  }
 }
 
 function kresliTabHodin() {
@@ -1012,7 +1037,7 @@ function kresliTabHodin() {
   if (!z.length) { $('#hTab').innerHTML = '<div class="card muted">Žádné zápisy pro zvolený filtr.</div>'; $('#hHromadne').innerHTML = ''; return; }
   $('#hTab').innerHTML = '<table class="list hodiny"><thead><tr>' + (edit ? '<th><input type="checkbox" id="hVse" aria-label="Vybrat vše"></th>' : '') +
     '<th>Datum</th><th>Dobrovolník</th><th class="hm">Organizace</th><th>Čas</th><th class="hm">Činnost</th><th>Stav</th>' + (edit ? '<th></th>' : '') + '</tr></thead><tbody>' +
-    z.map(x => '<tr data-h="' + esc(x.id) + '">' + (edit ? '<td><input type="checkbox" class="hSel" value="' + esc(x.id) + '"></td>' : '') +
+    z.map(x => '<tr data-h="' + esc(x.id) + '">' + (edit ? '<td><input type="checkbox" class="hSel" value="' + esc(x.id) + '"' + (H.vyber.has(x.id) ? ' checked' : '') + '></td>' : '') +
       '<td>' + esc(fmtD(x.datum)) + '</td>' +
       '<td><strong>' + esc(x.jmeno) + '</strong><div class="id">' + esc(x.dobrovolnik) + '</div></td>' +
       '<td class="hm">' + esc(x.org) + '</td>' +
@@ -1023,6 +1048,7 @@ function kresliTabHodin() {
       (edit ? '<td class="akce">' + (x.stav === 'Ke schválení' ? '<button class="ikon ok" data-a="schvalit" title="Schválit">✓</button><button class="ikon ne" data-a="zamitnout" title="Zamítnout">✕</button>' : '') +
         '<button class="ikon" data-a="upravit" title="Upravit">✎</button></td>' : '') + '</tr>').join('') +
     '</tbody></table>';
+  Array.from(H.vyber).forEach(id => { if (!z.some(x => x.id === id)) H.vyber.delete(id); });
   kresliHromadne();
   if (!edit) return;
   $('#hTab').onclick = async e => {
@@ -1051,18 +1077,29 @@ function kresliHromadne() {
     if (b.dataset.b === 'smazat') {
       const o = await dialog({ text: 'Opravdu smazat ' + ids.length + ' ' + sklon(ids.length, 'zápis', 'zápisy', 'zápisů') + ' hodin?', potvrdit: 'Smazat' });
       if (!o.ok) return;
-      try { const r = await api('smazHodiny', ids); poZmeneHodin(); toast('Smazáno: ' + r.pocet); nactiTabHodin(); } catch (err) { toast(err.message, 'err'); }
+      const zaloha = H.data.zaznamy.slice();
+      H.data.zaznamy = H.data.zaznamy.filter(x => ids.indexOf(x.id) < 0);
+      H.vyber.clear(); kresliTabHodin(); toast('Mažu ' + ids.length + '…');
+      try { const r = await api('smazHodiny', ids); poZmeneHodin(); toast('Smazáno: ' + r.pocet); nactiTabHodin(); }
+      catch (err) { H.data.zaznamy = zaloha; kresliTabHodin(); toast(err.message, 'err'); }
     } else await zmenStav(ids, b.dataset.b);
   };
 }
 
 async function zmenStav(ids, stavH) {
+  // změna se ukáže hned, uložení proběhne na pozadí
+  const puvodni = H.data.zaznamy.map(x => x.stav);
+  H.data.zaznamy.forEach(x => { if (ids.indexOf(x.id) >= 0) x.stav = stavH; });
+  H.vyber.clear(); kresliTabHodin();
+  toast((stavH === 'Schváleno' ? 'Schváleno: ' : 'Zamítnuto: ') + ids.length);
   try {
-    const r = await api('zmenStavHodin', ids, stavH);
+    await api('zmenStavHodin', ids, stavH);
     poZmeneHodin();
-    toast((stavH === 'Schváleno' ? 'Schváleno: ' : 'Zamítnuto: ') + r.pocet);
     nactiTabHodin();
-  } catch (e) { toast(e.message, 'err'); }
+  } catch (e) {
+    H.data.zaznamy.forEach((x, i) => { x.stav = puvodni[i]; });
+    kresliTabHodin(); toast('Neuloženo: ' + e.message, 'err');
+  }
 }
 
 // ---------- Měsíční výkaz (tabulka dobrovolníci × dny) ----------
@@ -1204,7 +1241,7 @@ function kresliPrirazeni(z) {
       (edit ? '<span class="btns">' + '<button class="btn ghost small-btn" data-upravit="' + esc(p.id) + '">Data</button>' +
         (aktivni(p) ? '<button class="btn ghost small-btn" data-ukoncit="' + esc(p.id) + '">Ukončit</button>' : '<button class="btn ghost small-btn" data-obnovit="' + esc(p.id) + '">Obnovit</button>') + '</span>' : '') +
       '</li>').join('') + '</ul>' : '<p class="muted">Zatím není přiřazen k žádné organizaci.</p>') +
-    (edit ? (volne.length ? '<div class="row2 pridat-org"><select id="noveOrg">' + volne.map(o => '<option value="' + esc(o.id) + '">' + esc(o.nazev) + '</option>').join('') + '</select>' +
+    (edit ? (volne.length ? '<div class="row2 pridat-org"><select id="noveOrg"><option value="">— Vyberte organizaci —</option>' + volne.map(o => '<option value="' + esc(o.id) + '">' + esc(o.nazev) + '</option>').join('') + '</select>' +
       '<input type="date" id="noveOd" title="Od kdy (nevyplněno = od začátku)"><button class="btn" id="pridatOrg">Přiřadit</button></div>' +
       '<p class="muted small" style="margin:6px 0 0">Datum „od“ můžete nechat prázdné nebo zadat i zpětně.</p>'
       : ((D.organizaceVse || []).length ? '' : '<p class="muted small">Organizace přidáte v Administraci → Organizace.</p>')) : '');
@@ -1212,6 +1249,7 @@ function kresliPrirazeni(z) {
   const po = r => { D.prirazeni = r.prirazeni; z['Organizace'] = orgDobrovolnika(z.ID, dnes).map(o => o.nazev).join(', '); kresliPrirazeni(z); };
   const b = $('#pridatOrg');
   if (b) b.onclick = async () => {
+    if (!$('#noveOrg').value) { toast('Vyberte organizaci.', 'err'); $('#noveOrg').focus(); return; }
     b.disabled = true;
     try { po(await api('pridejPrirazeni', z.ID, $('#noveOrg').value, $('#noveOd').value, '')); toast('Přiřazeno'); }
     catch (e) { toast(e.message, 'err'); b.disabled = false; }
@@ -1240,28 +1278,55 @@ function kresliPrirazeni(z) {
     } catch (err) { toast(err.message, 'err'); }
   };
 }
-async function kresliSouhrnHodin(z) {
+let souhrnOrg = '';
+async function kresliSouhrnHodin(z, jenPrekreslit) {
   const el = $('#hodSouhrn');
   if (!el) return;
-  let data;
-  try { data = await api('nactiHodiny', { dobrovolnik: z.ID }); } catch (e) { el.innerHTML = '<p class="muted small">' + esc(e.message) + '</p>'; return; }
-  if (!$('#hodSouhrn') || stav.id !== z.ID) return;
-  const zz = data.zaznamy, sch = zz.filter(x => x.stav === 'Schváleno');
+  const klic = 'hd:' + z.ID;
+  const c = CACHE.get(klic);
+  if (c) vykresliSouhrn(z, c);
+  if (jenPrekreslit && c) return;
+  try {
+    const d = await api('nactiHodiny', { dobrovolnik: z.ID });
+    CACHE.set(klic, d);
+    if (!$('#hodSouhrn') || stav.id !== z.ID) return;
+    if (!c || JSON.stringify(c) !== JSON.stringify(d)) vykresliSouhrn(z, d);
+  } catch (e) { if (!c && $('#hodSouhrn')) $('#hodSouhrn').innerHTML = '<p class="muted small">' + esc(e.message) + '</p>'; }
+}
+function vykresliSouhrn(z, data) {
+  const el = $('#hodSouhrn');
+  const vse = data.zaznamy;
+  // organizace z přiřazení i z dosavadních zápisů
+  const zPrir = (D.prirazeni || []).filter(p => p.dobrovolnik === z.ID).map(p => orgPodleId(p.orgId).nazev);
+  const orgs = zPrir.concat(vse.map(x => x.org)).filter((x, i, a) => x && a.indexOf(x) === i);
+  if (souhrnOrg && orgs.indexOf(souhrnOrg) < 0) souhrnOrg = '';
+  const zz = souhrnOrg ? vse.filter(x => x.org === souhrnOrg) : vse;
+  const sch = zz.filter(x => x.stav === 'Schváleno');
   const rok = dnesISO().slice(0, 4), mes = tentoMesic();
   const suma = a => a.reduce((s, x) => s + x.minut, 0);
   const ke = zz.filter(x => x.stav === 'Ke schválení');
-  el.innerHTML = '<div class="stats"><div><strong>' + fmtMin(suma(sch)) + '</strong><span>celkem</span></div>' +
+  el.innerHTML =
+    (orgs.length > 1 ? '<div class="chips" id="souhrnOrg" style="margin-top:12px">' +
+      ['', ...orgs].map(o => '<label class="chip"><input type="radio" name="sOrg" value="' + esc(o) + '"' + (o === souhrnOrg ? ' checked' : '') + '><span>' + esc(o || 'Všechny organizace') + '</span></label>').join('') + '</div>' : '') +
+    '<div class="stats"><div><strong>' + fmtMin(suma(sch)) + '</strong><span>celkem</span></div>' +
     '<div><strong>' + fmtMin(suma(sch.filter(x => x.datum.slice(0, 4) === rok))) + '</strong><span>letos</span></div>' +
     '<div><strong>' + fmtMin(suma(sch.filter(x => x.datum.slice(0, 7) === mes))) + '</strong><span>tento měsíc</span></div></div>' +
+    (!souhrnOrg && orgs.length > 1 ? '<table class="phtable small" style="margin:-2px 0 10px;width:100%">' + orgs.map(o =>
+      '<tr><td>' + esc(o) + '</td><td style="text-align:right"><strong>' + fmtMin(suma(sch.filter(x => x.org === o))) + '</strong></td></tr>').join('') + '</table>' : '') +
     (ke.length ? '<p class="warn small">Ke schválení: ' + ke.length + ' (' + fmtMin(suma(ke)) + ')</p>' : '') +
     (zz.length ? '<ul class="doclist">' + zz.slice(0, 5).map(x => '<li><span>' + esc(fmtD(x.datum)) + ' · ' + esc(x.cinnost) + '<br><span class="muted small">' + esc(x.org) + '</span></span><span>' + esc(fmtMin(x.minut)) + ' ' + badgeH(x.stav) + '</span></li>').join('') + '</ul>'
       : '<p class="muted small">Zatím žádné hodiny.</p>') +
     '<div class="btns">' + (muze('Koordinátor') ? '<button class="btn" id="dZapsat">Zapsat hodiny</button>' : '') +
-    (zz.length ? '<button class="btn ghost" id="dVse">Všechny hodiny →</button>' : '') + '</div>';
+    (vse.length ? '<button class="btn ghost" id="dVse">Všechny hodiny →</button>' : '') + '</div>';
+  const so = $('#souhrnOrg');
+  if (so) so.onchange = e => { souhrnOrg = e.target.value; vykresliSouhrn(z, data); };
   const zap = $('#dZapsat');
-  if (zap) zap.onclick = () => formZapis({ dobrovolnik: z.ID }, () => kresliSouhrnHodin(z));
-  const vse = $('#dVse');
-  if (vse) vse.onclick = () => { H.filtr = { mesic: '', org: '', dobrovolnik: z.ID, stav: '' }; jdi('hodiny'); };
+  if (zap) zap.onclick = () => formZapis({ dobrovolnik: z.ID, orgId: souhrnOrg ? ((D.organizaceVse || []).find(o => o.nazev === souhrnOrg) || {}).id : '' }, () => kresliSouhrnHodin(z));
+  const vs = $('#dVse');
+  if (vs) vs.onclick = () => {
+    const org = souhrnOrg ? ((D.organizaceVse || []).find(o => o.nazev === souhrnOrg) || {}).id || '' : '';
+    H.filtr = { mesic: '', org: org, dobrovolnik: z.ID, stav: '' }; jdi('hodiny');
+  };
 }
 
 // ---------- Administrace ----------
@@ -1291,8 +1356,17 @@ async function vAdmin() {
     obsah.innerHTML = '<h1>Administrace</h1><div class="card">S rolí „Jen čtení“ do administrace nemáte přístup.</div>';
     return;
   }
-  obsah.innerHTML = '<h1>Administrace</h1><div class="loading">Načítám…</div>';
-  try { ADM = await api('nactiAdministraci'); } catch (e) { obsah.innerHTML = '<h1>Administrace</h1><div class="card">' + esc(e.message) + '</div>'; return; }
+  if (!ADM) {
+    obsah.innerHTML = '<h1>Administrace</h1><div class="loading">Načítám…</div>';
+    try { ADM = await api('nactiAdministraci'); } catch (e) { obsah.innerHTML = '<h1>Administrace</h1><div class="card">' + esc(e.message) + '</div>'; return; }
+  } else {
+    // zobrazí se hned z paměti, čerstvá data se načtou na pozadí
+    const pred = JSON.stringify(ADM);
+    api('nactiAdministraci').then(d => {
+      ADM = d;
+      if (stav.view === 'admin' && pred !== JSON.stringify(d) && nicSeNeedituje()) admZalozka();
+    }).catch(() => {});
+  }
   const zalozky = [];
   if (ADM.listy.NASTAVENI) zalozky.push(['NASTAVENI', 'Nastavení']);
   if (ADM.listy.ADMINI) zalozky.push(['ADMINI', 'Administrátoři']);
@@ -1509,6 +1583,9 @@ async function spust() {
     return;
   }
   ADMIN = D.admin;
+  // přednačtení hodin za tento měsíc, aby se stránka Hodiny otevřela hned
+  const predArg = argHodin({ mesic: tentoMesic(), org: '', dobrovolnik: '', stav: '' });
+  api('nactiHodiny', predArg).then(d => CACHE.set('h:' + JSON.stringify(predArg), d)).catch(() => {});
   $('#meText').textContent = ADMIN.email + ' · ' + ADMIN.role;
   $('#navAdmin').hidden = !muze('Koordinátor');
   if (BOOT.startId && najdi(BOOT.startId)) { const id = BOOT.startId; BOOT.startId = ''; jdi('detail', { id: id, zpet: 'prehled' }); }
