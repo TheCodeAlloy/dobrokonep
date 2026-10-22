@@ -292,7 +292,7 @@ function fmtTermin(s) {
 function badge(s) {
   return '<span class="badge" style="background:' + esc((D.barvy && D.barvy[s]) || '#eceeed') + '">' + esc(s || '—') + '</span>';
 }
-const jmeno = z => (z['Jméno'] || '') + ' ' + (z['Příjmení'] || '');
+const jmeno = z => [z['Titul'], z['Jméno'], z['Příjmení']].filter(Boolean).join(' ');
 const najdi = id => D.dobrovolnici.find(z => z.ID === id);
 function nahrad(z) {
   const i = D.dobrovolnici.findIndex(x => x.ID === z.ID);
@@ -508,18 +508,21 @@ function vDetail() {
     '</div><div>' +
 
     '<section class="card"><h2>Osobní údaje</h2><div class="fields">' +
+    pole(z, 'Titul', 'text') + pole(z, 'Datum narození', 'date') +
     pole(z, 'Jméno', 'text') + pole(z, 'Příjmení', 'text') +
-    pole(z, 'Datum narození', 'date') + pole(z, 'Preferovaný kontakt', 'select', { volby: D.kontakty }) +
     pole(z, 'E-mail', 'email') + pole(z, 'Telefon', 'tel') +
-    pole(z, 'Ulice a č.p.', 'text', { full: true }) +
-    pole(z, 'Obec', 'text') + pole(z, 'PSČ', 'text') +
+    pole(z, 'Ulice a č.p.', 'text', { full: true, label: 'Trvalé bydliště – ulice a č.p.' }) +
+    pole(z, 'Obec', 'text', { label: 'Město / obec' }) + pole(z, 'PSČ', 'text') +
+    pole(z, 'Preferovaný kontakt', 'select', { volby: D.kontakty }) +
+    pole(z, 'Vzdělání', 'select', { volby: D.vzdelani || [], label: 'Nejvyšší dokončené vzdělání' }) +
+    pole(z, 'Zaměstnání / studium', 'text', { full: true, label: 'Současné zaměstnání nebo studium' }) +
     '</div></section>' +
 
     '<section class="card"><h2>Zájem o dobrovolnictví</h2><div class="fields">' +
     oblastiHtml +
     pole(z, 'Oblast – jiné', 'text', { full: true }) +
     pole(z, 'Preferované místo', 'text') + pole(z, 'Dostupnost', 'text') +
-    pole(z, 'Zkušenosti a dovednosti', 'textarea', { full: true, rows: 3 }) +
+    pole(z, 'Zkušenosti a dovednosti', 'textarea', { full: true, rows: 3, label: 'Zájmy, dovednosti, zkušenosti' }) +
     pole(z, 'Jak se o nás dozvěděl/a', 'select', { volby: D.zdroje }) +
     '</div></section>' +
 
@@ -716,7 +719,7 @@ function admNastaveni() {
   const L = ADM.listy.NASTAVENI;
   return '<div class="card">' + L.radky.map(row => {
     const k = row.v[0], v = row.v[1], popis = row.v[2];
-    const typ = k === 'text_po_odeslani' ? 'textarea' : (/^(minimalni_vek|delka_schuzky_min)$/.test(k) ? 'number' : 'text');
+    const typ = /^(text_po_odeslani|uvodni_text_formulare)$/.test(k) ? 'textarea' : (/^(minimalni_vek|delka_schuzky_min)$/.test(k) ? 'number' : 'text');
     const url = /^slozka_/.test(k) ? odkazDrive(v, 'folder') : (/^sablona_/.test(k) ? odkazDrive(v, 'doc') : (/^https?:\/\//.test(v) ? v : ''));
     return '<div class="setrow"><div class="lbl">' + esc(popis || k) + '<br><code>' + esc(k) + '</code></div><div>' +
       admVstup('NASTAVENI', row.r, 1, k, typ, v, typ === 'textarea' ? ' style="min-height:80px"' : '') +
