@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Dashboard – Dobrokonep</title>
+<title>Dashboard – Dobrovolnické centrum</title>
 <style>
   :root {
     --primary: #1f5c45; --primary-hover: #174836; --accent: #e8f3ee;
@@ -157,6 +157,52 @@
   .nebo { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; margin: 16px 0 2px; }
   .nebo::before, .nebo::after { content: ""; flex: 1; height: 1px; background: var(--border); }
   .linkbtn { background: none; border: 0; color: var(--primary); cursor: pointer; padding: 0; font-size: 13px; text-decoration: underline; margin-top: 12px; }
+  .modal { position: fixed; inset: 0; background: rgba(15,25,20,.45); display: flex; align-items: flex-start; justify-content: center; z-index: 55; padding: 40px 16px; overflow-y: auto; }
+  .modal-box { background: #fff; border-radius: 14px; padding: 22px; max-width: 560px; width: 100%; }
+  .modal-box.wide { max-width: 720px; }
+  .modal-box h2 { font-size: 19px; margin-bottom: 16px; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 8px; }
+  .seg label { cursor: pointer; }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg span { display: inline-block; padding: 7px 14px; font-size: 13px; }
+  .seg input:checked + span { background: var(--accent); color: var(--primary); font-weight: 600; }
+  .row2 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .row2 input, .row2 select { width: auto; flex: 1 1 120px; padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+  .checklist { max-height: 260px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; margin-top: 8px; }
+  .checklist label { display: flex; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid #eef1ef; font-size: 14px; cursor: pointer; }
+  .checklist label:last-child { border-bottom: 0; }
+  .fld .checklist label { justify-content: flex-start; font-weight: 400; color: var(--text); margin: 0; font-size: 14px; }
+  .fld .checklist input { width: 18px; height: 18px; flex: none; margin: 0; accent-color: var(--primary); }
+  .fld .seg label { display: inline-block; margin: 0; }
+  .mchyba { color: var(--error); background: var(--error-bg); padding: 10px 12px; border-radius: 8px; margin: 12px 0 0; font-size: 14px; }
+  .hhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+  .hhead .sub { margin-bottom: 14px; }
+  .bulk { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: var(--accent); border-radius: 10px; padding: 8px 12px; margin-bottom: 10px; }
+  .bulk span { font-weight: 600; margin-right: 6px; }
+  table.hodiny td.akce { white-space: nowrap; text-align: right; }
+  .ikon { border: 1px solid var(--border); background: #fff; border-radius: 6px; width: 30px; height: 30px; cursor: pointer; margin-left: 4px; font-size: 14px; }
+  .ikon.ok { color: var(--ok); } .ikon.ne { color: var(--error); }
+  .ikon:hover { border-color: var(--primary); }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0 10px; }
+  .stats div { background: var(--accent); border-radius: 10px; padding: 10px; text-align: center; }
+  .stats strong { display: block; font-size: 16px; color: var(--primary); }
+  .stats span { font-size: 12px; color: var(--muted); }
+  .small-btn { padding: 5px 10px; font-size: 13px; }
+  .pridat-org { margin-top: 10px; }
+  .vykaz-wrap { overflow-x: auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; }
+  table.vykaz { border-collapse: collapse; font-size: 13px; }
+  table.vykaz th, table.vykaz td { border-bottom: 1px solid #eef1ef; padding: 4px; text-align: center; }
+  table.vykaz th { font-weight: 600; color: var(--muted); background: #fafbfa; position: sticky; top: 0; }
+  table.vykaz th small { font-weight: 400; }
+  table.vykaz .jm { position: sticky; left: 0; background: #fff; text-align: left; min-width: 150px; padding: 6px 10px; z-index: 1; box-shadow: 1px 0 0 var(--border); }
+  table.vykaz th.jm { background: #fafbfa; z-index: 2; }
+  table.vykaz .vk { background: #f4f6f5; }
+  table.vykaz .sum { white-space: nowrap; padding: 4px 10px; font-weight: 600; }
+  .bunka { width: 42px; padding: 5px 2px; text-align: center; border: 1px solid var(--border); border-radius: 6px; font: inherit; }
+  .bunka:focus { outline: 2px solid var(--primary); border-color: var(--primary); }
+  .bunka.bad { border-color: var(--error); background: var(--error-bg); }
+  .bunka::placeholder { color: #9aa59f; }
+  .nelze { color: #c3cbc7; }
   .loading { padding: 60px 0; text-align: center; color: var(--muted); }
   [hidden] { display: none !important; }
 
@@ -173,6 +219,8 @@
     .setrow { grid-template-columns: 1fr; gap: 6px; }
     table.list .hm { display: none; }
     .kv { grid-template-columns: 120px 1fr; }
+    .stats strong { font-size: 14px; }
+    .modal { padding: 12px 8px; }
   }
 </style>
 </head>
@@ -204,7 +252,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-22d</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-22e</p>
   </div>
 </div>
 <div class="app" id="app" hidden>
@@ -213,7 +261,7 @@
     <nav class="nav" id="nav">
       <button data-view="prehled">Přehled</button>
       <button data-view="seznam">Dobrovolníci</button>
-      <button data-view="hodiny">Hodiny <span class="soon">brzy</span></button>
+      <button data-view="hodiny">Hodiny</button>
       <button data-view="admin" id="navAdmin">Administrace</button>
       <button id="odhlasit" type="button">Odhlásit</button>
     </nav>
@@ -222,6 +270,7 @@
   <main><div class="wrap" id="obsah"><div class="loading">Načítám data…</div></div></main>
 </div>
 <div id="toasty" aria-live="polite"></div>
+<div class="modal" id="modal" hidden><div class="modal-box" id="modalBox" role="dialog" aria-modal="true"></div></div>
 <div class="dlg" id="dlg" hidden>
   <div class="dlg-box" role="dialog" aria-modal="true">
     <p id="dlgText"></p>
@@ -337,8 +386,8 @@ async function jdi(view, extra) {
   window.scrollTo(0, 0);
 }
 function render() {
-  $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.view === stav.view || (stav.view === 'detail' && b.dataset.view === 'seznam')));
-  ({ prehled: vPrehled, seznam: vSeznam, detail: vDetail, hodiny: vHodiny, admin: vAdmin }[stav.view] || vPrehled)();
+  $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.view === stav.view || (stav.view === 'detail' && b.dataset.view === 'seznam') || (stav.view === 'vykaz' && b.dataset.view === 'hodiny')));
+  ({ prehled: vPrehled, seznam: vSeznam, detail: vDetail, hodiny: vHodiny, vykaz: vVykaz, admin: vAdmin }[stav.view] || vPrehled)();
 }
 $('#nav').addEventListener('click', e => {
   const b = e.target.closest('button[data-view]');
@@ -381,17 +430,20 @@ function vPrehled() {
         ? '<ul>' + t.pol.slice(0, 4).map(z => '<li data-id="' + esc(z.ID) + '"><span class="nm">' + esc(jmeno(z)) + '</span><span class="mt">' + (t.html ? t.meta(z) : esc(t.meta(z))) + '</span></li>').join('') + '</ul>'
         : '<p class="empty">Nikdo v tomto stavu.</p>') +
       '<footer>Zobrazit vše →</footer></article>').join('') +
-    '<article class="tile soon"><header><h3><span class="dot" style="background:#cfd8d3"></span>Dobrovolnické hodiny</h3></header>' +
-    '<p class="empty">Online zápis hodin připravujeme. Data už se budou ukládat do listu Hodiny.</p></article>' +
+    '<article class="tile" data-hodiny="1" tabindex="0"><header><h3><span class="dot" style="background:#fff3cd"></span>Hodiny ke schválení</h3>' +
+    '<span class="count">' + ((D.hodiny && D.hodiny.keSchvaleni) || 0) + '</span></header>' +
+    '<p class="empty">Tento měsíc schváleno: <strong>' + fmtMin((D.hodiny && D.hodiny.minutMesic) || 0) + '</strong></p>' +
+    '<footer>Otevřít hodiny →</footer></article>' +
     '</div>';
 
   obsah.onclick = e => {
     const li = e.target.closest('li[data-id]');
     if (li) { jdi('detail', { id: li.dataset.id, zpet: 'prehled' }); return; }
+    if (e.target.closest('[data-hodiny]')) { H.filtr = { mesic: '', org: '', dobrovolnik: '', stav: (D.hodiny && D.hodiny.keSchvaleni) ? 'Ke schválení' : '' }; if (!H.filtr.stav) H.filtr.mesic = tentoMesic(); jdi('hodiny'); return; }
     const t = e.target.closest('[data-stav]');
     if (t) { filtr.stav = t.dataset.stav; filtr.text = ''; jdi('seznam'); }
   };
-  obsah.onkeydown = e => { if (e.key === 'Enter' && e.target.matches('.tile[data-stav]')) e.target.click(); };
+  obsah.onkeydown = e => { if (e.key === 'Enter' && e.target.matches('.tile[data-stav], .tile[data-hodiny]')) e.target.click(); };
 }
 function sklon(n, a, b, c) { return n === 1 ? a : (n >= 2 && n <= 4 ? b : c); }
 
@@ -491,10 +543,10 @@ function vDetail() {
     '<section class="card"><h2>Stav a zařazení</h2><div class="fields">' +
     pole(z, 'Stav', 'select', { volby: D.stavy, bezPrazdne: true }) +
     pole(z, 'Dobrovolníkem od', 'date') +
-    pole(z, 'Organizace', 'select', { volby: D.organizace }) +
     mistoHtml +
     pole(z, 'Poznámky', 'textarea', { full: true, rows: 4 }) +
-    '</div>' + (edit && !D.organizace.length ? '<p class="muted small">Organizace zatím nejsou zadané. Přidáte je v Administraci → Organizace.</p>' : '') + '</section>' +
+    '</div></section>' +
+    htmlOrgSekce(z) +
 
     '<section class="card"><h2>Schůzka</h2>' +
     (ma ? '<p class="info">Domluveno: <strong>' + esc(fmtTermin(z['Termín schůzky'])) + '</strong>' + (z['Místo schůzky'] ? ' · ' + esc(z['Místo schůzky']) : '') + '</p>'
@@ -550,6 +602,8 @@ function vDetail() {
 
   $('#zpet').onclick = () => jdi(stav.zpet || 'seznam');
   obsah.onclick = null; obsah.onkeydown = null;
+  kresliPrirazeni(z);
+  kresliSouhrnHodin(z);
   const sm = $('#smazat');
   if (sm) sm.onclick = async () => {
     const o = await dialog({
@@ -648,16 +702,525 @@ async function ulozit(nazev, hodnota) {
   }
 }
 
-// ---------- Hodiny ----------
-function vHodiny() {
-  obsah.onclick = null;
-  obsah.innerHTML = '<h1>Dobrovolnické hodiny</h1><p class="sub">Tuto část připravujeme.</p>' +
-    '<div class="card"><p style="margin-top:0">Plánované funkce:</p><ul>' +
-    '<li>online zápis hodin dobrovolníkem i koordinátorem</li>' +
-    '<li>potvrzení hodin přijímající organizací</li>' +
-    '<li>vzdálené potvrzení součtu hodin dobrovolníkem</li>' +
-    '<li>automatické vyplnění docházkového listu a souhrny pro výkazy</li></ul>' +
-    '<p class="muted small" style="margin-bottom:0">Struktura dat je připravená v listu „Hodiny“.</p></div>';
+// ---------- Hodiny: pomocné ----------
+const H = { filtr: { mesic: '', org: '', dobrovolnik: '', stav: '' }, data: null, vyber: new Set() };
+function dnesISO() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function tentoMesic() { return dnesISO().slice(0, 7); }
+function fmtMin(m) {
+  m = Math.round(Number(m) || 0);
+  const h = Math.floor(m / 60), r = m % 60;
+  if (!h) return r + ' min';
+  return h + ' h' + (r ? ' ' + r + ' min' : '');
+}
+// „2“, „1,5“, „1.5“, „1:30“, „90m“, „45 min“ → minuty (zaokrouhleno na 5); null = neplatné
+function parsujDelku(s) {
+  s = String(s || '').trim().toLowerCase().replace(/\s+/g, '');
+  if (!s) return 0;
+  let m = null, x;
+  if ((x = s.match(/^(\d{1,2}):(\d{2})$/))) m = +x[1] * 60 + +x[2];
+  else if ((x = s.match(/^(\d{1,4})m(in)?$/))) m = +x[1];
+  else if ((x = s.match(/^(\d{1,2})([.,](\d+))?h?$/))) m = parseFloat(x[1] + '.' + (x[3] || '0')) * 60;
+  if (m == null || isNaN(m)) return null;
+  m = Math.round(m / 5) * 5;
+  return m > 0 && m <= 1440 ? m : null;
+}
+function minutOdDo(od, doo) {
+  const a = String(od).match(/^(\d{2}):(\d{2})/), b = String(doo).match(/^(\d{2}):(\d{2})/);
+  if (!a || !b) return 0;
+  let m = (+b[1] * 60 + +b[2]) - (+a[1] * 60 + +a[2]);
+  if (m <= 0) m += 1440;
+  return Math.round(m / 5) * 5;
+}
+const orgPodleId = id => (D.organizaceVse || []).find(o => o.id === id) || { id: id, nazev: id };
+function platnePrir(p, datum) {
+  return (!p.od || p.od <= datum) && (!p.do || datum <= p.do) && (p.aktivni || (p.do && datum <= p.do));
+}
+// organizace, ke kterým je dobrovolník k datu přiřazený
+function orgDobrovolnika(id, datum) {
+  const ids = (D.prirazeni || []).filter(p => p.dobrovolnik === id && platnePrir(p, datum)).map(p => p.orgId);
+  return ids.filter((x, i) => ids.indexOf(x) === i).map(orgPodleId);
+}
+// dobrovolníci přiřazení k organizaci k datu (nebo kdykoli v rozmezí od–do)
+function dobrovolniciOrg(orgId, od, doo) {
+  doo = doo || od;
+  const ids = (D.prirazeni || []).filter(p => p.orgId === orgId &&
+    (!p.od || p.od <= doo) && (!p.do || p.do >= od) && (p.aktivni || p.do)).map(p => p.dobrovolnik);
+  return D.dobrovolnici.filter(z => ids.indexOf(z.ID) >= 0)
+    .sort((a, b) => (a['Příjmení'] + a['Jméno']).localeCompare(b['Příjmení'] + b['Jméno'], 'cs'));
+}
+function dobrovolniciSPrirazenim() {
+  const ids = (D.prirazeni || []).map(p => p.dobrovolnik);
+  return D.dobrovolnici.filter(z => ids.indexOf(z.ID) >= 0)
+    .sort((a, b) => (a['Příjmení'] + a['Jméno']).localeCompare(b['Příjmení'] + b['Jméno'], 'cs'));
+}
+function cinnostiPro(orgNazev) {
+  const c = (D.cinnosti || []).filter(x => x.org === 'Všechny organizace' || x.org === orgNazev).map(x => x.cinnost);
+  return c.filter((x, i) => c.indexOf(x) === i);
+}
+const popisDobr = z => (z['Příjmení'] || '') + ' ' + (z['Jméno'] || '') + ' (' + z.ID + ')';
+const BARVY_HODIN = { 'Ke schválení': '#fff3cd', 'Schváleno': '#c9ecd6', 'Zamítnuto': '#ffd8a8' };
+const badgeH = s => '<span class="badge" style="background:' + (BARVY_HODIN[s] || '#eceeed') + '">' + esc(s) + '</span>';
+function poZmeneHodin() { zastarale = true; }
+
+// ---------- Modální okno ----------
+function otevriModal(html, siroke) {
+  const m = $('#modal');
+  $('#modalBox').classList.toggle('wide', !!siroke);
+  $('#modalBox').innerHTML = html;
+  m.hidden = false;
+  document.body.style.overflow = 'hidden';
+  return $('#modalBox');
+}
+function zavriModal() { $('#modal').hidden = true; document.body.style.overflow = ''; $('#modalBox').innerHTML = ''; }
+$('#modal').addEventListener('click', e => { if (e.target.id === 'modal') zavriModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#modal').hidden) zavriModal(); });
+
+// Společné části formulářů: čas (od–do / délka) a činnost
+function htmlCas(pref, z) {
+  z = z || {};
+  const rezim = z.od || z.do ? 'cas' : (z.minut ? 'delka' : 'cas');
+  const h = z.minut ? Math.floor(z.minut / 60) : 1, mi = z.minut ? z.minut % 60 : 0;
+  let hOpt = '', mOpt = '';
+  for (let i = 0; i <= 24; i++) hOpt += '<option' + (i === h ? ' selected' : '') + '>' + i + '</option>';
+  for (let i = 0; i < 60; i += 5) mOpt += '<option value="' + i + '"' + (i === mi ? ' selected' : '') + '>' + String(i).padStart(2, '0') + '</option>';
+  return '<div class="fld full"><label><span>Odpracovaný čas</span><em class="ind" id="' + pref + 'Vysl"></em></label>' +
+    '<div class="seg" id="' + pref + 'Rezim"><label><input type="radio" name="' + pref + 'rz" value="cas"' + (rezim === 'cas' ? ' checked' : '') + '><span>Od – do</span></label>' +
+    '<label><input type="radio" name="' + pref + 'rz" value="delka"' + (rezim === 'delka' ? ' checked' : '') + '><span>Jen délka</span></label></div>' +
+    '<div class="row2" id="' + pref + 'Cas"' + (rezim === 'cas' ? '' : ' hidden') + '>' +
+    '<input type="time" step="300" id="' + pref + 'Od" value="' + esc(z.od || '') + '" aria-label="Od"><span>–</span>' +
+    '<input type="time" step="300" id="' + pref + 'Do" value="' + esc(z.do || '') + '" aria-label="Do"></div>' +
+    '<div class="row2" id="' + pref + 'Delka"' + (rezim === 'delka' ? '' : ' hidden') + '>' +
+    '<select id="' + pref + 'H" aria-label="Hodiny">' + hOpt + '</select><span>h</span>' +
+    '<select id="' + pref + 'M" aria-label="Minuty">' + mOpt + '</select><span>min</span></div></div>';
+}
+function napojCas(el, pref) {
+  const prepocet = () => {
+    const rz = $('input[name="' + pref + 'rz"]:checked', el).value;
+    $('#' + pref + 'Cas', el).hidden = rz !== 'cas';
+    $('#' + pref + 'Delka', el).hidden = rz !== 'delka';
+    const m = cas(el, pref).minut;
+    $('#' + pref + 'Vysl', el).textContent = m ? '= ' + fmtMin(m) : '';
+  };
+  $$('input[name="' + pref + 'rz"], #' + pref + 'Od, #' + pref + 'Do, #' + pref + 'H, #' + pref + 'M', el).forEach(x => x.addEventListener('change', prepocet));
+  $$('#' + pref + 'Od, #' + pref + 'Do', el).forEach(x => x.addEventListener('input', prepocet));
+  prepocet();
+}
+function cas(el, pref) {
+  const rz = $('input[name="' + pref + 'rz"]:checked', el).value;
+  if (rz === 'cas') {
+    const od = $('#' + pref + 'Od', el).value, doo = $('#' + pref + 'Do', el).value;
+    return { od: od, do: doo, minut: od && doo ? minutOdDo(od, doo) : 0 };
+  }
+  return { od: '', do: '', minut: Number($('#' + pref + 'H', el).value) * 60 + Number($('#' + pref + 'M', el).value) };
+}
+function htmlCinnost(pref, orgNazev, hodnota) {
+  const c = cinnostiPro(orgNazev);
+  const jina = hodnota && c.indexOf(hodnota) < 0;
+  return '<div class="fld full"><label><span>Činnost</span></label><div class="chips" id="' + pref + 'Cin">' +
+    c.map(x => '<label class="chip"><input type="radio" name="' + pref + 'cin" value="' + esc(x) + '"' + (x === hodnota ? ' checked' : '') + '><span>' + esc(x) + '</span></label>').join('') +
+    '<label class="chip"><input type="radio" name="' + pref + 'cin" value="__jina"' + (jina ? ' checked' : '') + '><span>Jiná…</span></label></div>' +
+    '<input type="text" id="' + pref + 'CinText" placeholder="Napište činnost" maxlength="200" value="' + esc(jina ? hodnota : '') + '"' + (jina ? '' : ' hidden') + ' style="margin-top:8px"></div>';
+}
+function napojCinnost(el, pref) {
+  $('#' + pref + 'Cin', el).addEventListener('change', () => {
+    const v = $('input[name="' + pref + 'cin"]:checked', el);
+    const t = $('#' + pref + 'CinText', el);
+    t.hidden = !v || v.value !== '__jina';
+    if (!t.hidden) t.focus();
+  });
+}
+function cinnost(el, pref) {
+  const v = $('input[name="' + pref + 'cin"]:checked', el);
+  if (!v) return '';
+  return v.value === '__jina' ? $('#' + pref + 'CinText', el).value.trim() : v.value;
+}
+
+// ---------- Formulář: jeden zápis ----------
+function formZapis(z, poUlozeni) {
+  z = z || {};
+  const volby = dobrovolniciSPrirazenim();
+  if (!volby.length) { toast('Nejdřív přiřaďte dobrovolníky k organizacím (v detailu dobrovolníka).', 'err'); return; }
+  const el = otevriModal(
+    '<h2>' + (z.id ? 'Upravit zápis hodin' : 'Zapsat hodiny') + '</h2>' +
+    '<div class="fields">' +
+    '<div class="fld full"><label><span>Dobrovolník</span></label><select id="zDobr">' +
+    '<option value="">— vyberte —</option>' + volby.map(x => '<option value="' + esc(x.ID) + '"' + (x.ID === z.dobrovolnik ? ' selected' : '') + '>' + esc(popisDobr(x)) + '</option>').join('') + '</select></div>' +
+    '<div class="fld"><label><span>Datum</span></label><input type="date" id="zDatum" max="' + dnesISO() + '" value="' + esc(z.datum || dnesISO()) + '"></div>' +
+    '<div class="fld"><label><span>Organizace</span></label><select id="zOrg"></select></div>' +
+    htmlCas('z', z) +
+    '<div class="fld full" id="zCinWrap"></div>' +
+    '<div class="fld full"><label><span>Poznámka</span></label><input type="text" id="zPozn" maxlength="1000" value="' + esc(z.poznamka || '') + '"></div>' +
+    '</div><p class="mchyba" id="zChyba" hidden></p>' +
+    '<div class="dlg-btns"><button class="btn ghost" id="zZpet">Zrušit</button><button class="btn" id="zUlozit">Uložit</button></div>');
+  let orgPuv = z.orgId || '';
+  const obnovOrg = () => {
+    const orgs = orgDobrovolnika($('#zDobr', el).value, $('#zDatum', el).value || dnesISO());
+    const s = $('#zOrg', el);
+    if (orgPuv && !orgs.some(o => o.id === orgPuv)) orgs.push(orgPodleId(orgPuv));
+    s.innerHTML = orgs.length ? orgs.map(o => '<option value="' + esc(o.id) + '"' + (o.id === orgPuv ? ' selected' : '') + '>' + esc(o.nazev) + '</option>').join('')
+      : '<option value="">— není přiřazen —</option>';
+    obnovCin();
+  };
+  const obnovCin = () => {
+    const puv = cinnost(el, 'z') || z.cinnost || '';
+    $('#zCinWrap', el).outerHTML = '<div class="fld full" id="zCinWrap">' + htmlCinnost('z', orgPodleId($('#zOrg', el).value).nazev, puv) + '</div>';
+    napojCinnost(el, 'z');
+  };
+  $('#zDobr', el).addEventListener('change', () => { orgPuv = ''; obnovOrg(); });
+  $('#zDatum', el).addEventListener('change', () => { orgPuv = $('#zOrg', el).value; obnovOrg(); });
+  $('#zOrg', el).addEventListener('change', () => { orgPuv = $('#zOrg', el).value; obnovCin(); });
+  obnovOrg();
+  napojCas(el, 'z');
+  $('#zZpet', el).onclick = zavriModal;
+  $('#zUlozit', el).onclick = async () => {
+    const c = cas(el, 'z');
+    const data = {
+      id: z.id || '', dobrovolnik: $('#zDobr', el).value, orgId: $('#zOrg', el).value, datum: $('#zDatum', el).value,
+      od: c.od, do: c.do, minut: c.minut, cinnost: cinnost(el, 'z'), poznamka: $('#zPozn', el).value
+    };
+    const ch = $('#zChyba', el);
+    const chyba = !data.dobrovolnik ? 'Vyberte dobrovolníka.' : !data.orgId ? 'Dobrovolník není k tomuto datu přiřazený k žádné organizaci.' :
+      !data.datum ? 'Zadejte datum.' : !data.minut ? 'Zadejte odpracovaný čas.' : !data.cinnost ? 'Vyberte činnost.' : '';
+    if (chyba) { ch.textContent = chyba; ch.hidden = false; return; }
+    const b = $('#zUlozit', el); b.disabled = true; b.textContent = 'Ukládám…';
+    try {
+      await api('ulozHodiny', data);
+      zavriModal(); poZmeneHodin();
+      toast((z.id ? 'Zápis upraven: ' : 'Zapsáno: ') + fmtMin(data.minut));
+      if (poUlozeni) poUlozeni();
+    } catch (e) { ch.textContent = e.message; ch.hidden = false; b.disabled = false; b.textContent = 'Uložit'; }
+  };
+}
+
+// ---------- Formulář: akce / směna (více dobrovolníků) ----------
+function formAkce(poUlozeni) {
+  const orgs = (D.organizaceVse || []).filter(o => o.aktivni && (D.prirazeni || []).some(p => p.orgId === o.id));
+  if (!orgs.length) { toast('Nejdřív přiřaďte dobrovolníky k organizacím.', 'err'); return; }
+  const el = otevriModal(
+    '<h2>Zapsat akci / směnu</h2><p class="muted small" style="margin-top:-8px">Stejné datum, čas a činnost pro více dobrovolníků najednou.</p>' +
+    '<div class="fields">' +
+    '<div class="fld"><label><span>Organizace</span></label><select id="aOrg">' + orgs.map(o => '<option value="' + esc(o.id) + '">' + esc(o.nazev) + '</option>').join('') + '</select></div>' +
+    '<div class="fld"><label><span>Datum</span></label><input type="date" id="aDatum" max="' + dnesISO() + '" value="' + dnesISO() + '"></div>' +
+    htmlCas('a', {}) +
+    '<div class="fld full" id="aCinWrap"></div>' +
+    '<div class="fld full"><label><span>Poznámka</span></label><input type="text" id="aPozn" maxlength="1000"></div>' +
+    '<div class="fld full"><label><span>Přítomní dobrovolníci</span><em class="ind" id="aPocet"></em></label>' +
+    '<div class="row2"><input type="search" id="aHledat" placeholder="Hledat jméno…"><button class="btn ghost" type="button" id="aVse">Vybrat vše</button></div>' +
+    '<div class="checklist" id="aSeznam"></div></div>' +
+    '</div><p class="mchyba" id="aChyba" hidden></p>' +
+    '<div class="dlg-btns"><button class="btn ghost" id="aZpet">Zrušit</button><button class="btn" id="aUlozit">Uložit akci</button></div>', true);
+  const vybrani = new Set();
+  const obnov = () => {
+    const org = $('#aOrg', el).value, datum = $('#aDatum', el).value || dnesISO();
+    const lide = dobrovolniciOrg(org, datum).filter(z => orgDobrovolnika(z.ID, datum).some(o => o.id === org));
+    Array.from(vybrani).forEach(id => { if (!lide.some(z => z.ID === id)) vybrani.delete(id); });
+    const q = $('#aHledat', el).value.trim().toLowerCase();
+    $('#aSeznam', el).innerHTML = lide.length ? lide.filter(z => !q || popisDobr(z).toLowerCase().includes(q)).map(z =>
+      '<label><input type="checkbox" value="' + esc(z.ID) + '"' + (vybrani.has(z.ID) ? ' checked' : '') + '> ' + esc(popisDobr(z)) + '</label>').join('')
+      : '<p class="muted small">K této organizaci není k tomuto datu nikdo přiřazený.</p>';
+    $('#aPocet', el).textContent = 'vybráno ' + vybrani.size;
+    $('#aCinWrap', el).innerHTML = htmlCinnost('a', orgPodleId(org).nazev, cinnost(el, 'a'));
+    napojCinnost(el, 'a');
+  };
+  $('#aSeznam', el).addEventListener('change', e => {
+    if (e.target.checked) vybrani.add(e.target.value); else vybrani.delete(e.target.value);
+    $('#aPocet', el).textContent = 'vybráno ' + vybrani.size;
+  });
+  $('#aVse', el).onclick = () => { $$('#aSeznam input', el).forEach(i => { i.checked = true; vybrani.add(i.value); }); $('#aPocet', el).textContent = 'vybráno ' + vybrani.size; };
+  $('#aHledat', el).addEventListener('input', obnov);
+  $('#aOrg', el).addEventListener('change', () => { vybrani.clear(); obnov(); });
+  $('#aDatum', el).addEventListener('change', obnov);
+  obnov();
+  napojCas(el, 'a');
+  $('#aZpet', el).onclick = zavriModal;
+  $('#aUlozit', el).onclick = async () => {
+    const c = cas(el, 'a');
+    const data = { orgId: $('#aOrg', el).value, datum: $('#aDatum', el).value, od: c.od, do: c.do, minut: c.minut,
+      cinnost: cinnost(el, 'a'), poznamka: $('#aPozn', el).value, dobrovolnici: Array.from(vybrani) };
+    const ch = $('#aChyba', el);
+    const chyba = !data.datum ? 'Zadejte datum.' : !data.minut ? 'Zadejte odpracovaný čas.' : !data.cinnost ? 'Vyberte činnost.' :
+      !data.dobrovolnici.length ? 'Zaškrtněte přítomné dobrovolníky.' : '';
+    if (chyba) { ch.textContent = chyba; ch.hidden = false; return; }
+    const b = $('#aUlozit', el); b.disabled = true; b.textContent = 'Ukládám…';
+    try {
+      const r = await api('ulozAkci', data);
+      zavriModal(); poZmeneHodin();
+      toast('Akce zapsána: ' + r.pocet + ' × ' + fmtMin(data.minut));
+      if (poUlozeni) poUlozeni();
+    } catch (e) { ch.textContent = e.message; ch.hidden = false; b.disabled = false; b.textContent = 'Uložit akci'; }
+  };
+}
+
+// ---------- Přehled a správa hodin ----------
+async function vHodiny() {
+  obsah.onclick = null; obsah.onkeydown = null;
+  const f = H.filtr;
+  if (f.mesic === '' && !f.dobrovolnik) f.mesic = tentoMesic();
+  const edit = muze('Koordinátor');
+  const orgs = D.organizaceVse || [];
+  const lide = dobrovolniciSPrirazenim();
+  obsah.innerHTML =
+    '<div class="hhead"><div><h1>Dobrovolnické hodiny</h1><p class="sub" id="hSouhrn">Načítám…</p></div>' +
+    (edit ? '<div class="btns"><button class="btn" id="hNovy">+ Zapsat hodiny</button><button class="btn ghost" id="hAkce">+ Akce / směna</button><button class="btn ghost" id="hVykaz">Měsíční výkaz</button></div>' : '') + '</div>' +
+    '<div class="toolbar">' +
+    '<input type="month" id="hMesic" value="' + esc(f.mesic) + '" title="Měsíc (prázdné = celé období)">' +
+    '<select id="hOrg"><option value="">Všechny organizace</option>' + orgs.map(o => '<option value="' + esc(o.id) + '"' + (o.id === f.org ? ' selected' : '') + '>' + esc(o.nazev) + '</option>').join('') + '</select>' +
+    '<select id="hDobr"><option value="">Všichni dobrovolníci</option>' + lide.map(z => '<option value="' + esc(z.ID) + '"' + (z.ID === f.dobrovolnik ? ' selected' : '') + '>' + esc(popisDobr(z)) + '</option>').join('') + '</select>' +
+    '<select id="hStav"><option value="">Všechny stavy</option>' + ['Ke schválení', 'Schváleno', 'Zamítnuto'].map(s => '<option' + (s === f.stav ? ' selected' : '') + '>' + s + '</option>').join('') + '</select>' +
+    '</div><div id="hUzav"></div><div id="hHromadne"></div><div class="scroll" id="hTab"><div class="loading">Načítám…</div></div>';
+  const zmena = () => {
+    f.mesic = $('#hMesic').value; f.org = $('#hOrg').value; f.dobrovolnik = $('#hDobr').value; f.stav = $('#hStav').value;
+    nactiTabHodin();
+  };
+  ['#hMesic', '#hOrg', '#hDobr', '#hStav'].forEach(s => $(s).addEventListener('change', zmena));
+  if (edit) {
+    $('#hNovy').onclick = () => formZapis({ dobrovolnik: f.dobrovolnik }, nactiTabHodin);
+    $('#hAkce').onclick = () => formAkce(nactiTabHodin);
+    $('#hVykaz').onclick = () => jdi('vykaz', { org: f.org, mesic: f.mesic || tentoMesic() });
+  }
+  nactiTabHodin();
+}
+
+function obdobi(mesic) {
+  if (!mesic) return { od: '', do: '' };
+  const [r, m] = mesic.split('-').map(Number);
+  const posl = new Date(r, m, 0).getDate();
+  return { od: mesic + '-01', do: mesic + '-' + String(posl).padStart(2, '0') };
+}
+
+async function nactiTabHodin() {
+  const f = H.filtr, tab = $('#hTab');
+  if (!tab) return;
+  tab.innerHTML = '<div class="loading">Načítám…</div>';
+  H.vyber.clear();
+  try {
+    const o = obdobi(f.mesic);
+    H.data = await api('nactiHodiny', { od: o.od, do: o.do, org: f.org, dobrovolnik: f.dobrovolnik, stav: f.stav });
+  } catch (e) { tab.innerHTML = '<div class="card">' + esc(e.message) + '</div>'; return; }
+  kresliTabHodin();
+}
+
+function kresliTabHodin() {
+  const z = H.data.zaznamy, edit = muze('Koordinátor');
+  const sch = z.filter(x => x.stav === 'Schváleno').reduce((s, x) => s + x.minut, 0);
+  const ke = z.filter(x => x.stav === 'Ke schválení');
+  $('#hSouhrn').innerHTML = 'Schváleno <strong>' + fmtMin(sch) + '</strong> · ' + z.length + ' ' + sklon(z.length, 'zápis', 'zápisy', 'zápisů') +
+    (ke.length ? ' · <span class="warn">' + ke.length + ' ke schválení (' + fmtMin(ke.reduce((s, x) => s + x.minut, 0)) + ')</span>' : '');
+  $('#hUzav').innerHTML = H.data.uzavrenoDo ? '<p class="info small">Měsíce do ' + esc(H.data.uzavrenoDo.split('-').reverse().join('/')) + ' včetně jsou uzavřené – měnit je může jen hlavní admin.</p>' : '';
+  if (!z.length) { $('#hTab').innerHTML = '<div class="card muted">Žádné zápisy pro zvolený filtr.</div>'; $('#hHromadne').innerHTML = ''; return; }
+  $('#hTab').innerHTML = '<table class="list hodiny"><thead><tr>' + (edit ? '<th><input type="checkbox" id="hVse" aria-label="Vybrat vše"></th>' : '') +
+    '<th>Datum</th><th>Dobrovolník</th><th class="hm">Organizace</th><th>Čas</th><th class="hm">Činnost</th><th>Stav</th>' + (edit ? '<th></th>' : '') + '</tr></thead><tbody>' +
+    z.map(x => '<tr data-h="' + esc(x.id) + '">' + (edit ? '<td><input type="checkbox" class="hSel" value="' + esc(x.id) + '"></td>' : '') +
+      '<td>' + esc(fmtD(x.datum)) + '</td>' +
+      '<td><strong>' + esc(x.jmeno) + '</strong><div class="id">' + esc(x.dobrovolnik) + '</div></td>' +
+      '<td class="hm">' + esc(x.org) + '</td>' +
+      '<td><strong>' + esc(fmtMin(x.minut)) + '</strong>' + (x.od ? '<div class="id">' + esc(x.od + '–' + x.do) + '</div>' : '') + '</td>' +
+      '<td class="hm"><div class="clip" title="' + esc(x.cinnost + (x.poznamka ? ' – ' + x.poznamka : '')) + '">' + esc(x.cinnost) + '</div>' +
+      (x.zdroj ? '<div class="id">' + esc(x.zdroj) + '</div>' : '') + '</td>' +
+      '<td>' + badgeH(x.stav) + '</td>' +
+      (edit ? '<td class="akce">' + (x.stav === 'Ke schválení' ? '<button class="ikon ok" data-a="schvalit" title="Schválit">✓</button><button class="ikon ne" data-a="zamitnout" title="Zamítnout">✕</button>' : '') +
+        '<button class="ikon" data-a="upravit" title="Upravit">✎</button></td>' : '') + '</tr>').join('') +
+    '</tbody></table>';
+  kresliHromadne();
+  if (!edit) return;
+  $('#hTab').onclick = async e => {
+    const b = e.target.closest('button[data-a]');
+    if (!b) return;
+    const id = b.closest('tr').dataset.h, x = H.data.zaznamy.find(q => q.id === id);
+    if (b.dataset.a === 'upravit') return formZapis(x, nactiTabHodin);
+    await zmenStav([id], b.dataset.a === 'schvalit' ? 'Schváleno' : 'Zamítnuto');
+  };
+  $('#hTab').onchange = e => {
+    if (e.target.id === 'hVse') { $$('.hSel').forEach(c => { c.checked = e.target.checked; if (c.checked) H.vyber.add(c.value); else H.vyber.delete(c.value); }); }
+    else if (e.target.classList.contains('hSel')) { if (e.target.checked) H.vyber.add(e.target.value); else H.vyber.delete(e.target.value); }
+    kresliHromadne();
+  };
+}
+
+function kresliHromadne() {
+  const el = $('#hHromadne');
+  if (!H.vyber.size) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="bulk"><span>Vybráno ' + H.vyber.size + '</span>' +
+    '<button class="btn" data-b="Schváleno">Schválit</button><button class="btn ghost" data-b="Zamítnuto">Zamítnout</button>' +
+    '<button class="btn ghost danger" data-b="smazat">Smazat</button></div>';
+  el.onclick = async e => {
+    const b = e.target.closest('button[data-b]'); if (!b) return;
+    const ids = Array.from(H.vyber);
+    if (b.dataset.b === 'smazat') {
+      const o = await dialog({ text: 'Opravdu smazat ' + ids.length + ' ' + sklon(ids.length, 'zápis', 'zápisy', 'zápisů') + ' hodin?', potvrdit: 'Smazat' });
+      if (!o.ok) return;
+      try { const r = await api('smazHodiny', ids); poZmeneHodin(); toast('Smazáno: ' + r.pocet); nactiTabHodin(); } catch (err) { toast(err.message, 'err'); }
+    } else await zmenStav(ids, b.dataset.b);
+  };
+}
+
+async function zmenStav(ids, stavH) {
+  try {
+    const r = await api('zmenStavHodin', ids, stavH);
+    poZmeneHodin();
+    toast((stavH === 'Schváleno' ? 'Schváleno: ' : 'Zamítnuto: ') + r.pocet);
+    nactiTabHodin();
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+// ---------- Měsíční výkaz (tabulka dobrovolníci × dny) ----------
+async function vVykaz() {
+  obsah.onclick = null; obsah.onkeydown = null;
+  const orgs = (D.organizaceVse || []).filter(o => o.aktivni && (D.prirazeni || []).some(p => p.orgId === o.id));
+  if (!orgs.length) { obsah.innerHTML = '<h1>Měsíční výkaz</h1><div class="card">Nejdřív přiřaďte dobrovolníky k organizacím.</div>'; return; }
+  if (!stav.org || !orgs.some(o => o.id === stav.org)) stav.org = orgs[0].id;
+  if (!stav.mesic) stav.mesic = tentoMesic();
+  obsah.innerHTML =
+    '<div class="dhead"><button class="back" id="vZpet">← Hodiny</button><div><h1>Měsíční výkaz</h1>' +
+    '<p class="sub" style="margin:0">Vepište hodiny do políček (např. 2 · 1,5 · 1:30 · 45m). Uloží se jen nově vyplněná políčka.</p></div></div>' +
+    '<div class="card"><div class="fields">' +
+    '<div class="fld"><label><span>Organizace</span></label><select id="vOrg">' + orgs.map(o => '<option value="' + esc(o.id) + '"' + (o.id === stav.org ? ' selected' : '') + '>' + esc(o.nazev) + '</option>').join('') + '</select></div>' +
+    '<div class="fld"><label><span>Měsíc</span></label><input type="month" id="vMesic" max="' + tentoMesic() + '" value="' + esc(stav.mesic) + '"></div>' +
+    '<div class="fld full" id="vCinWrap"></div>' +
+    '<div class="fld full"><label><span>Poznámka (pro všechny zápisy)</span></label><input type="text" id="vPozn" maxlength="1000"></div>' +
+    '</div></div><div id="vMrizka"><div class="loading">Načítám…</div></div>';
+  $('#vZpet').onclick = () => jdi('hodiny');
+  const prekresli = () => { stav.org = $('#vOrg').value; stav.mesic = $('#vMesic').value || tentoMesic(); kresliVykaz(); };
+  $('#vOrg').addEventListener('change', prekresli);
+  $('#vMesic').addEventListener('change', prekresli);
+  kresliVykaz();
+}
+
+async function kresliVykaz() {
+  const org = stav.org, mesic = stav.mesic;
+  $('#vCinWrap').innerHTML = htmlCinnost('v', orgPodleId(org).nazev, cinnost(obsah, 'v') || (cinnostiPro(orgPodleId(org).nazev)[0] || ''));
+  napojCinnost(obsah, 'v');
+  const o = obdobi(mesic);
+  const lide = dobrovolniciOrg(org, o.od, o.do);
+  const el = $('#vMrizka');
+  if (!lide.length) { el.innerHTML = '<div class="card muted">K této organizaci není v tomto měsíci nikdo přiřazený.</div>'; return; }
+  el.innerHTML = '<div class="loading">Načítám…</div>';
+  let existujici = [];
+  try { existujici = (await api('nactiHodiny', { od: o.od, do: o.do, org: org })).zaznamy; } catch (e) { toast(e.message, 'err'); }
+  const dnu = Number(o.do.slice(8)), dnes = dnesISO();
+  const zkratky = ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'];
+  const [r, m] = mesic.split('-').map(Number);
+  let hlav = '<th class="jm">Dobrovolník</th>';
+  for (let d = 1; d <= dnu; d++) {
+    const wd = new Date(r, m - 1, d).getDay();
+    hlav += '<th class="' + (wd === 0 || wd === 6 ? 'vk' : '') + '">' + d + '<br><small>' + zkratky[wd] + '</small></th>';
+  }
+  hlav += '<th>Nově</th><th>Již zapsáno</th>';
+  const radky = lide.map(z => {
+    let tr = '<td class="jm"><strong>' + esc((z['Příjmení'] || '') + ' ' + (z['Jméno'] || '')) + '</strong><div class="id">' + esc(z.ID) + '</div></td>';
+    for (let d = 1; d <= dnu; d++) {
+      const datum = mesic + '-' + String(d).padStart(2, '0');
+      const wd = new Date(r, m - 1, d).getDay();
+      const ok = datum <= dnes && orgDobrovolnika(z.ID, datum).some(x => x.id === org);
+      const uz = existujici.filter(x => x.dobrovolnik === z.ID && x.datum === datum).reduce((s, x) => s + x.minut, 0);
+      tr += '<td class="' + (wd === 0 || wd === 6 ? 'vk' : '') + '">' +
+        (ok ? '<input class="bunka" data-z="' + esc(z.ID) + '" data-d="' + d + '" inputmode="decimal" aria-label="' + esc(z.ID + ' ' + d + '.') + '"' + (uz ? ' placeholder="' + esc(fmtKratce(uz)) + '" title="Už zapsáno ' + esc(fmtMin(uz)) + '"' : '') + '>' : '<span class="nelze">·</span>') + '</td>';
+    }
+    const celkem = existujici.filter(x => x.dobrovolnik === z.ID).reduce((s, x) => s + x.minut, 0);
+    tr += '<td class="sum" data-sum="' + esc(z.ID) + '">–</td><td class="sum">' + (celkem ? esc(fmtMin(celkem)) : '–') + '</td>';
+    return '<tr>' + tr + '</tr>';
+  }).join('');
+  el.innerHTML = '<div class="vykaz-wrap"><table class="vykaz"><thead><tr>' + hlav + '</tr></thead><tbody>' + radky + '</tbody></table></div>' +
+    '<p class="muted small">Šedé hodnoty v políčkách = už zapsáno v systému. Tečka = dobrovolník v ten den není k organizaci přiřazený.</p>' +
+    '<p class="mchyba" id="vChyba" hidden></p>' +
+    '<div class="btns"><button class="btn" id="vUlozit">Uložit výkaz</button><span class="muted small" id="vCelkem"></span></div>';
+  const prepocet = () => {
+    let vse = 0, chyby = 0;
+    lide.forEach(z => {
+      let s = 0;
+      $$('.bunka[data-z="' + CSS.escape(z.ID) + '"]', el).forEach(i => {
+        const v = parsujDelku(i.value);
+        i.classList.toggle('bad', v === null);
+        if (v === null) chyby++; else s += v;
+      });
+      $('[data-sum="' + CSS.escape(z.ID) + '"]', el).textContent = s ? fmtMin(s) : '–';
+      vse += s;
+    });
+    $('#vCelkem', el).textContent = vse ? 'Celkem nově ' + fmtMin(vse) + (chyby ? ' · neplatná políčka: ' + chyby : '') : (chyby ? 'Neplatná políčka: ' + chyby : '');
+  };
+  el.oninput = e => { if (e.target.classList.contains('bunka')) prepocet(); };
+  $('#vUlozit', el).onclick = async () => {
+    const polozky = [];
+    let spatne = 0;
+    $$('.bunka', el).forEach(i => {
+      const v = parsujDelku(i.value);
+      if (v === null) spatne++;
+      else if (v > 0) polozky.push({ dobrovolnik: i.dataset.z, den: Number(i.dataset.d), minut: v });
+    });
+    const ch = $('#vChyba', el);
+    const c = cinnost(obsah, 'v');
+    const chyba = spatne ? 'Opravte červeně označená políčka.' : !polozky.length ? 'Výkaz neobsahuje žádné nové hodiny.' : !c ? 'Vyberte činnost.' : '';
+    if (chyba) { ch.textContent = chyba; ch.hidden = false; return; }
+    ch.hidden = true;
+    const b = $('#vUlozit', el); b.disabled = true; b.textContent = 'Ukládám…';
+    try {
+      const r = await api('ulozVykaz', { orgId: org, mesic: mesic, cinnost: c, poznamka: $('#vPozn').value, polozky: polozky });
+      poZmeneHodin();
+      toast('Výkaz uložen: ' + r.pocet + ' ' + sklon(r.pocet, 'zápis', 'zápisy', 'zápisů'));
+      kresliVykaz();
+    } catch (e) { ch.textContent = e.message; ch.hidden = false; b.disabled = false; b.textContent = 'Uložit výkaz'; }
+  };
+}
+function fmtKratce(m) { const h = Math.floor(m / 60), r = m % 60; return r ? h + ':' + String(r).padStart(2, '0') : String(h); }
+
+// ---------- Detail dobrovolníka: organizace a hodiny ----------
+function htmlOrgSekce(z) {
+  return '<section class="card" id="orgSekce"><h2>Organizace a hodiny</h2><div id="orgSeznam"></div><div id="hodSouhrn"><div class="loading" style="padding:12px 0">Načítám hodiny…</div></div></section>';
+}
+function kresliPrirazeni(z) {
+  const edit = muze('Koordinátor');
+  const pr = (D.prirazeni || []).filter(p => p.dobrovolnik === z.ID);
+  const dnes = dnesISO();
+  const aktivni = p => p.aktivni && (!p.do || p.do >= dnes);
+  const volne = (D.organizaceVse || []).filter(o => o.aktivni && !pr.some(p => p.orgId === o.id && aktivni(p)));
+  $('#orgSeznam').innerHTML =
+    (pr.length ? '<ul class="doclist">' + pr.map(p => '<li><span><strong>' + esc(p.org) + '</strong><br><span class="muted small">' +
+      (p.od ? 'od ' + esc(fmtD(p.od)) : 'od začátku') + (p.do ? ' do ' + esc(fmtD(p.do)) : '') + (aktivni(p) ? '' : ' · ukončeno') + '</span></span>' +
+      (edit ? (aktivni(p) ? '<button class="btn ghost small-btn" data-ukoncit="' + esc(p.id) + '">Ukončit</button>' : '<button class="btn ghost small-btn" data-obnovit="' + esc(p.id) + '">Obnovit</button>') : '') +
+      '</li>').join('') + '</ul>' : '<p class="muted">Zatím není přiřazen k žádné organizaci.</p>') +
+    (edit ? (volne.length ? '<div class="row2 pridat-org"><select id="noveOrg">' + volne.map(o => '<option value="' + esc(o.id) + '">' + esc(o.nazev) + '</option>').join('') + '</select>' +
+      '<input type="date" id="noveOd" value="' + dnes + '" title="Od kdy"><button class="btn" id="pridatOrg">Přiřadit</button></div>'
+      : ((D.organizaceVse || []).length ? '' : '<p class="muted small">Organizace přidáte v Administraci → Organizace.</p>')) : '');
+  if (!edit) return;
+  const po = r => { D.prirazeni = r.prirazeni; z['Organizace'] = orgDobrovolnika(z.ID, dnes).map(o => o.nazev).join(', '); kresliPrirazeni(z); };
+  const b = $('#pridatOrg');
+  if (b) b.onclick = async () => {
+    b.disabled = true;
+    try { po(await api('pridejPrirazeni', z.ID, $('#noveOrg').value, $('#noveOd').value, '')); toast('Přiřazeno'); }
+    catch (e) { toast(e.message, 'err'); b.disabled = false; }
+  };
+  $('#orgSeznam').onclick = async e => {
+    const u = e.target.closest('[data-ukoncit]'), o = e.target.closest('[data-obnovit]');
+    try {
+      if (u) {
+        const ok = await dialog({ text: 'Ukončit přiřazení k této organizaci ke dnešnímu dni? Dosavadní hodiny zůstanou zachované.', potvrdit: 'Ukončit' });
+        if (ok.ok) { po(await api('ukonciPrirazeni', u.dataset.ukoncit, dnes)); toast('Přiřazení ukončeno'); }
+      } else if (o) { po(await api('obnovPrirazeni', o.dataset.obnovit)); toast('Přiřazení obnoveno'); }
+    } catch (err) { toast(err.message, 'err'); }
+  };
+}
+async function kresliSouhrnHodin(z) {
+  const el = $('#hodSouhrn');
+  if (!el) return;
+  let data;
+  try { data = await api('nactiHodiny', { dobrovolnik: z.ID }); } catch (e) { el.innerHTML = '<p class="muted small">' + esc(e.message) + '</p>'; return; }
+  if (!$('#hodSouhrn') || stav.id !== z.ID) return;
+  const zz = data.zaznamy, sch = zz.filter(x => x.stav === 'Schváleno');
+  const rok = dnesISO().slice(0, 4), mes = tentoMesic();
+  const suma = a => a.reduce((s, x) => s + x.minut, 0);
+  const ke = zz.filter(x => x.stav === 'Ke schválení');
+  el.innerHTML = '<div class="stats"><div><strong>' + fmtMin(suma(sch)) + '</strong><span>celkem</span></div>' +
+    '<div><strong>' + fmtMin(suma(sch.filter(x => x.datum.slice(0, 4) === rok))) + '</strong><span>letos</span></div>' +
+    '<div><strong>' + fmtMin(suma(sch.filter(x => x.datum.slice(0, 7) === mes))) + '</strong><span>tento měsíc</span></div></div>' +
+    (ke.length ? '<p class="warn small">Ke schválení: ' + ke.length + ' (' + fmtMin(suma(ke)) + ')</p>' : '') +
+    (zz.length ? '<ul class="doclist">' + zz.slice(0, 5).map(x => '<li><span>' + esc(fmtD(x.datum)) + ' · ' + esc(x.cinnost) + '<br><span class="muted small">' + esc(x.org) + '</span></span><span>' + esc(fmtMin(x.minut)) + ' ' + badgeH(x.stav) + '</span></li>').join('') + '</ul>'
+      : '<p class="muted small">Zatím žádné hodiny.</p>') +
+    '<div class="btns">' + (muze('Koordinátor') ? '<button class="btn" id="dZapsat">Zapsat hodiny</button>' : '') +
+    (zz.length ? '<button class="btn ghost" id="dVse">Všechny hodiny →</button>' : '') + '</div>';
+  const zap = $('#dZapsat');
+  if (zap) zap.onclick = () => formZapis({ dobrovolnik: z.ID }, () => kresliSouhrnHodin(z));
+  const vse = $('#dVse');
+  if (vse) vse.onclick = () => { H.filtr = { mesic: '', org: '', dobrovolnik: z.ID, stav: '' }; jdi('hodiny'); };
 }
 
 // ---------- Administrace ----------
@@ -694,7 +1257,11 @@ async function vAdmin() {
   if (ADM.listy.ADMINI) zalozky.push(['ADMINI', 'Administrátoři']);
   if (ADM.listy.SABLONY) zalozky.push(['SABLONY', 'Šablony e-mailů']);
   zalozky.push(['DOKUMENTY', 'Šablony dokumentů']);
-  zalozky.push(['ORGANIZACE', 'Organizace'], ['MISTA', 'Místa'], ['OBLASTI', 'Oblasti zájmu']);
+  zalozky.push(['ORGANIZACE', 'Organizace'], ['CINNOSTI', 'Činnosti'], ['MISTA', 'Místa'], ['OBLASTI', 'Oblasti zájmu']);
+  const orgVolby = ['Všechny organizace'].concat((D.organizaceVse || []).map(o => o.nazev));
+  KONF.CINNOSTI = { nazev: 'Činnosti', sloupce: { 0: orgVolby, 1: 'text', 2: ['ANO', 'NE'] },
+    pridat: [['organizace', 'Organizace', orgVolby], ['nazev', 'Činnost', 'text']],
+    napoveda: 'Přednastavené činnosti, na které se při zápisu hodin jen klikne. „Všechny organizace“ = nabízí se u každé organizace. Neaktivní (NE) se přestanou nabízet, staré zápisy zůstanou.' };
   if (!stav.tab || !zalozky.some(z => z[0] === stav.tab)) stav.tab = zalozky[0][0];
 
   obsah.innerHTML = '<h1>Administrace</h1><p class="sub">Změny se ukládají automaticky po opuštění pole.</p>' +
@@ -733,7 +1300,7 @@ function admNastaveni() {
   const L = ADM.listy.NASTAVENI;
   return '<div class="card">' + L.radky.map(row => {
     const k = row.v[0], v = row.v[1], popis = row.v[2];
-    const typ = /^(text_po_odeslani|uvodni_text_formulare)$/.test(k) ? 'textarea' : (/^(minimalni_vek|delka_schuzky_min)$/.test(k) ? 'number' : 'text');
+    const typ = /^(text_po_odeslani|uvodni_text_formulare)$/.test(k) ? 'textarea' : (/^(minimalni_vek|delka_schuzky_min|hodiny_zpetne_dni|platnost_odkazu_dni|delka_prihlaseni_hod)$/.test(k) ? 'number' : (k === 'hodiny_uzavreno_do' ? 'month' : 'text'));
     const url = /^slozka_/.test(k) ? odkazDrive(v, 'folder') : (/^sablona_/.test(k) ? odkazDrive(v, 'doc') : (/^https?:\/\//.test(v) ? v : ''));
     return '<div class="setrow"><div class="lbl">' + esc(popis || k) + '<br><code>' + esc(k) + '</code></div><div>' +
       admVstup('NASTAVENI', row.r, 1, k, typ, v, typ === 'textarea' ? ' style="min-height:80px"' : '') +
