@@ -175,8 +175,6 @@
       <div class="chyba">Toto je povinná otázka</div>
     </div>
 
-    <div class="sekce"><div>Trvalé bydliště a kontakt</div></div>
-
     <div class="card q" data-q="ulice" data-povinne>
       <label class="label" for="ulice">Trvalé bydliště <span class="hv">*</span></label>
       <span class="pod">ulice, č.p.</span>
@@ -205,12 +203,6 @@
       <input class="vstup" type="email" id="email" name="email" maxlength="200" autocomplete="email" inputmode="email" placeholder="Vaše odpověď">
       <div class="chyba">Toto je povinná otázka</div>
     </div>
-    <div class="card q" data-q="kontakt">
-      <span class="label">Jak vás máme nejlépe kontaktovat?</span>
-      <div class="volby" id="kontakty"></div>
-    </div>
-
-    <div class="sekce"><div>Vzdělání a zaměstnání</div></div>
 
     <div class="card q" data-q="zamestnani" data-povinne>
       <label class="label" for="zamestnani">Současné zaměstnání nebo studium <span class="hv">*</span></label>
@@ -223,32 +215,10 @@
       <div class="chyba">Toto je povinná otázka</div>
     </div>
 
-    <div class="sekce"><div>Dobrovolnictví</div></div>
-
-    <div class="card q" data-q="oblasti" data-povinne>
-      <span class="label">V jaké oblasti byste chtěl/a pomáhat? <span class="hv">*</span></span>
-      <p class="napoveda">Můžete vybrat více možností.</p>
-      <div class="volby" id="oblasti"></div>
-      <div class="chyba">Toto je povinná otázka</div>
-    </div>
-    <div class="card q" data-q="mista">
-      <span class="label">Kde byste chtěl/a pomáhat?</span>
-      <p class="napoveda">Můžete vybrat více možností.</p>
-      <div class="volby" id="mista"></div>
-    </div>
-    <div class="card q" data-q="dostupnost">
-      <span class="label">Kdy máte čas?</span>
-      <div class="volby" id="dostupnost"></div>
-    </div>
     <div class="card q" data-q="zkusenosti">
       <label class="label" for="zkusenosti">Zájmy, dovednosti, zkušenosti</label>
       <textarea class="vstup" id="zkusenosti" name="zkusenosti" maxlength="2000" rows="1" placeholder="Vaše odpověď"></textarea>
     </div>
-    <div class="card q" data-q="zdroj">
-      <span class="label">Jak jste se o nás dozvěděl/a?</span>
-      <div class="volby" id="zdroje"></div>
-    </div>
-
     <div class="card q" data-q="gdpr" data-povinne>
       <span class="label">Souhlasím se zpracováním osobních údajů <span class="hv">*</span></span>
       <span class="pod" id="gdprOdkaz"></span>
@@ -322,12 +292,7 @@
     document.title = (cfg.nadpis || 'Registrace dobrovolníka') + ' – ' + cfg.nazev;
     $('pata').textContent = cfg.nazev + (cfg.podnazev ? ' · ' + cfg.podnazev : '');
 
-    volby('kontakty', 'kontakt', cfg.kontakty, 'radio');
     volby('vzdelani', 'vzdelani', cfg.vzdelani, 'radio');
-    volby('oblasti', 'oblasti', cfg.oblasti, 'checkbox', 'oblastJine');
-    volby('mista', 'mista', cfg.mista, 'checkbox', 'mistoJine');
-    volby('dostupnost', 'dostupnost', cfg.dostupnost, 'checkbox');
-    volby('zdroje', 'zdroj', cfg.zdroje, 'radio');
 
     if (cfg.odkazGdpr) {
       const a = document.createElement('a');
@@ -373,9 +338,6 @@
     if (hodnota('telefon') && !/^[+0-9 ()\-\/]{6,}$/.test(hodnota('telefon'))) chyby.push(oznac('telefon', 'Zkontrolujte prosím telefonní číslo'));
     if (hodnota('email') && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(hodnota('email'))) chyby.push(oznac('email', 'Zadejte platnou e-mailovou adresu'));
     if (!vybrane('vzdelani').length) chyby.push(oznac('vzdelani'));
-    const obl = vybrane('oblasti');
-    if (!obl.length) chyby.push(oznac('oblasti'));
-    else if (obl.indexOf('Jiné') >= 0 && !hodnota('oblastJine')) chyby.push(oznac('oblasti', 'Upřesněte prosím možnost „Jiné“'));
     if (!$('gdpr').checked) chyby.push(oznac('gdpr'));
     return chyby;
   }
@@ -390,7 +352,6 @@
       if (vstup) setTimeout(() => vstup.focus({ preventScroll: true }), 300);
       return;
     }
-    const mista = vybrane('mista').filter(m => m !== 'Jiné');
     const data = {
       dobaVyplneni: Date.now() - casStart,
       web_hp: $('web_hp').value,
@@ -398,13 +359,8 @@
       datumNarozeni: $('datumNarozeni').value,
       ulice: hodnota('ulice'), obec: hodnota('obec'), psc: hodnota('psc'),
       telefon: hodnota('telefon'), email: hodnota('email'),
-      kontakt: vybrane('kontakt')[0] || '',
       zamestnani: hodnota('zamestnani'), vzdelani: vybrane('vzdelani')[0] || '',
-      oblasti: vybrane('oblasti'), oblastJine: hodnota('oblastJine'),
-      mista: mista, mistoJine: vybrane('mista').indexOf('Jiné') >= 0 ? hodnota('mistoJine') : '',
-      dostupnost: vybrane('dostupnost'),
       zkusenosti: hodnota('zkusenosti'),
-      zdroj: vybrane('zdroj')[0] || '',
       gdpr: $('gdpr').checked
     };
     const b = $('odeslat');
