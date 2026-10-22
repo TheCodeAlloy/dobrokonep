@@ -184,7 +184,7 @@
       <button class="btn" type="submit" id="lPoslat">Poslat kód</button>
     </form>
     <form id="lfKod" hidden>
-      <p class="muted small" style="margin:6px 0 0">Kód jsme poslali na <strong id="lKam"></strong>. Platí 10 minut.</p>
+      <p class="muted small" style="margin:6px 0 0">Na <strong id="lKam"></strong> jsme poslali e-mail. <strong>V mobilu stačí v e-mailu klepnout na tlačítko „Přihlásit se do dashboardu“.</strong> Nebo sem opište kód z e-mailu. Kód i odkaz platí 10 minut.</p>
       <label for="lKod">Kód z e-mailu</label>
       <input type="text" id="lKod" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required>
       <button class="btn" type="submit" id="lPrihlasit">Přihlásit</button>
@@ -817,6 +817,25 @@ function admUdalosti(el) {
 }
 
 // ---------- Přihlášení ----------
+// Zapamatuje si, že čekáme na kód (po návratu z e-mailu se nemusí začínat znovu)
+function cekam(email) {
+  try {
+    if (email) localStorage.setItem('dc_cekam', JSON.stringify({ email: email, cas: Date.now() }));
+    else localStorage.removeItem('dc_cekam');
+  } catch (e) { /* bez úložiště */ }
+}
+function cekaNaKod() {
+  try {
+    const c = JSON.parse(localStorage.getItem('dc_cekam') || 'null');
+    return c && Date.now() - c.cas < 10 * 60000 ? c.email : '';
+  } catch (e) { return ''; }
+}
+function ukazZadaniKodu(email) {
+  $('#lEmail').value = email;
+  $('#lKam').textContent = email;
+  $('#lfEmail').hidden = true; $('#lfKod').hidden = false; $('#lKod').value = '';
+  setTimeout(() => $('#lKod').focus(), 0);
+}
 function ukazPrihlaseni(zprava) {
   TOKEN = ''; ulozToken('');
   $('#app').hidden = true; $('#login').hidden = false;
@@ -832,9 +851,9 @@ $('#lfEmail').addEventListener('submit', async e => {
   const email = $('#lEmail').value.trim();
   const b = $('#lPoslat'); b.disabled = true; b.textContent = 'Odesílám…';
   try {
-    await volej('posliPrihlasovaciKod', [email]);
-    $('#lKam').textContent = email;
-    $('#lfEmail').hidden = true; $('#lfKod').hidden = false; $('#lKod').value = ''; $('#lKod').focus();
+    await volej('posliPrihlasovaciKod', [email, BOOT.startId]);
+    cekam(email);
+    ukazZadaniKodu(email);
   } catch (err) { chybaPrihlaseni(err.message); }
   b.disabled = false; b.textContent = 'Poslat kód';
 });
@@ -844,13 +863,13 @@ $('#lfKod').addEventListener('submit', async e => {
   const b = $('#lPrihlasit'); b.disabled = true; b.textContent = 'Ověřuji…';
   try {
     const r = await volej('overPrihlasovaciKod', [$('#lEmail').value.trim(), $('#lKod').value]);
-    TOKEN = r.token; ADMIN = r.admin; ulozToken(TOKEN);
+    TOKEN = r.token; ADMIN = r.admin; ulozToken(TOKEN); cekam('');
     $('#login').hidden = true;
     await spust();
   } catch (err) { chybaPrihlaseni(err.message); }
   b.disabled = false; b.textContent = 'Přihlásit';
 });
-$('#lZnovu').addEventListener('click', () => ukazPrihlaseni(''));
+$('#lZnovu').addEventListener('click', () => { cekam(''); ukazPrihlaseni(''); });
 $('#odhlasit').addEventListener('click', async () => {
   try { await volej('odhlasit', [TOKEN]); } catch (e) { /* nevadí */ }
   ukazPrihlaseni('Byli jste odhlášeni.');
@@ -877,7 +896,28 @@ volej('konfigurace', []).then(cfg => {
   $$('.nazevOrg').forEach(el => el.textContent = cfg.nazev);
   document.title = 'Dashboard – ' + cfg.nazev;
 }).catch(() => { /* název není nutný */ });
-if (TOKEN) spust(); else ukazPrihlaseni('');
+(async function start() {
+  const param = new URLSearchParams(location.search);
+  const odkaz = param.get('prihlaseni');
+  if (odkaz) {
+    // Přihlášení klepnutím na odkaz z e-mailu; parametr z adresy hned odstraníme
+    param.delete('prihlaseni');
+    try { history.replaceState(null, '', location.pathname + (param.toString() ? '?' + param.toString() : '')); } catch (e) { /* nevadí */ }
+    try {
+      const r = await volej('overPrihlasovaciOdkaz', [odkaz]);
+      TOKEN = r.token; ADMIN = r.admin; ulozToken(TOKEN); cekam('');
+      return spust();
+    } catch (err) {
+      if (TOKEN) return spust();
+      ukazPrihlaseni(err.message);
+      return;
+    }
+  }
+  if (TOKEN) return spust();
+  const email = cekaNaKod();
+  ukazPrihlaseni('');
+  if (email) ukazZadaniKodu(email);
+})();
 </script>
 </body>
 </html>
