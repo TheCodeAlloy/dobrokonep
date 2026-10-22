@@ -6,241 +6,193 @@
 <title>Chcete se zapojit jako dobrovolník?</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --coral: #cd605c;
-    --coral-dark: #b84f4b;
-    --coral-light: #f3d6d5;
-    --bg: #f8e7e7;
+    --primary: #c4524e;
+    --primary-hover: #a9423f;
+    --accent: #fbe9e8;
+    --accent-strong: #f4cfcd;
+    --text: #2a2121;
+    --muted: #6e6262;
+    --border: #e6d6d5;
+    --bg: #fbf3f2;
     --card: #ffffff;
-    --text: #202124;
-    --muted: #5f6368;
-    --line: #dadce0;
-    --error: #d93025;
+    --error: #b42318;
+    --error-bg: #fdecea;
     --teal: #8dbbc1;
+    --radius: 14px;
   }
   * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
   body {
     margin: 0; background: var(--bg); color: var(--text);
-    font: 400 14px/1.5 Roboto, Arial, sans-serif;
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   }
-  .wrap { max-width: 640px; margin: 0 auto; padding: 12px 16px 40px; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 28px 16px 56px; }
 
-  /* Záhlaví (banner) */
-  .banner {
-    position: relative; overflow: hidden; border-radius: 8px; background: var(--coral);
-    min-height: 152px; display: flex; align-items: center; gap: 18px; padding: 24px 28px; margin-bottom: 12px;
-  }
-  .banner .kruh { position: absolute; border-radius: 50%; pointer-events: none; }
-  .banner .k1 { width: 150px; height: 150px; left: -36px; bottom: -70px; background: rgba(255,255,255,.18); }
-  .banner .k2 { width: 150px; height: 150px; right: -30px; top: -60px; background: rgba(120,40,40,.22); }
-  .banner .k3 { width: 74px; height: 74px; right: -14px; bottom: -22px; background: #d9d9d9; }
-  .banner .k4 { width: 16px; height: 16px; right: 92px; top: 34px; background: rgba(255,255,255,.45); }
+  /* Záhlaví */
+  .hero { display: flex; align-items: center; gap: 16px; margin-bottom: 22px; }
   .logo {
-    position: relative; flex: none; width: 92px; height: 92px; border-radius: 50%; background: #fff;
-    border: 4px solid var(--teal); display: flex; align-items: center; justify-content: center; overflow: hidden;
+    flex: none; width: 64px; height: 64px; border-radius: 50%; background: #fff; border: 3px solid var(--teal);
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
   }
   .logo img { width: 100%; height: 100%; object-fit: contain; }
-  .logo span { font: 700 13px/1.1 Poppins, sans-serif; color: var(--coral); text-align: center; padding: 6px; }
-  .banner h2 { position: relative; margin: 0; color: #fff; font: 700 21px/1.45 Poppins, sans-serif; }
+  .logo span { font: 600 9px/1.1 Poppins, sans-serif; color: var(--primary); text-align: center; padding: 4px; }
+  .org strong { display: block; font: 600 16px/1.3 Poppins, sans-serif; }
+  .org small { color: var(--muted); font-size: 14px; }
 
-  /* Karty */
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 22px 24px; margin-bottom: 12px; }
-  .card.titul { border-top: 10px solid var(--coral); padding: 22px 24px 0; }
-  .card.titul h1 { font: 700 30px/1.25 Roboto, Arial, sans-serif; margin: 0 0 14px; }
-  .uvod p { margin: 0 0 14px; font-size: 15px; line-height: 1.6; }
-  .uvod p:last-child { margin-bottom: 18px; }
-  .povinne { border-top: 1px solid var(--line); margin: 0 -24px; padding: 14px 24px; color: var(--error); font-size: 14px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; margin-bottom: 16px; }
+  .intro { padding: 28px 26px 24px; border: 0; box-shadow: 0 1px 0 var(--border), 0 8px 24px rgba(196, 82, 78, .08); position: relative; overflow: hidden; }
+  .intro::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 5px; background: linear-gradient(90deg, var(--primary), #e58f86); }
+  .intro h1 { font: 700 27px/1.25 Poppins, sans-serif; margin: 0 0 14px; }
+  .uvod p { margin: 0 0 12px; color: #3d3333; }
+  .uvod p:last-child { margin-bottom: 0; }
+  .uvod strong { color: var(--text); }
 
-  .sekce { border-radius: 8px; overflow: hidden; margin: 22px 0 12px; border: 1px solid var(--line); }
-  .sekce div { background: var(--coral); color: var(--text); padding: 12px 24px; font-size: 15px; font-weight: 500; }
+  h2 { font: 600 17px/1.3 Poppins, sans-serif; margin: 0 0 16px; display: flex; align-items: center; gap: 10px; }
+  h2 .cislo { width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: var(--primary); font-size: 13px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
 
-  .q { transition: border-color .15s; }
-  .q.err { border-color: var(--error); }
-  .q .label { font-size: 16px; font-weight: 400; display: block; margin-bottom: 4px; }
-  .q .label .hv { color: var(--error); }
-  .q .pod { display: block; font-size: 13px; font-style: italic; color: var(--text); margin-bottom: 4px; }
-  .q .napoveda { color: var(--muted); font-size: 13px; margin: 2px 0 6px; }
-  .q .napoveda a, .q .pod a { color: #1a73e8; }
-  .q .chyba { display: none; color: var(--error); font-size: 12px; margin-top: 10px; align-items: center; gap: 6px; }
-  .q.err .chyba { display: flex; }
-  .q .chyba::before { content: "!"; display: inline-flex; width: 16px; height: 16px; border-radius: 50%; background: var(--error); color: #fff; font-size: 11px; font-weight: 700; align-items: center; justify-content: center; }
-
-  /* Pole s podtržením jako ve Formulářích Google */
-  .vstup {
-    width: 50%; min-width: 220px; margin-top: 14px; border: 0; border-bottom: 1px solid var(--line);
-    padding: 6px 0 7px; font: 400 15px Roboto, Arial, sans-serif; color: var(--text); background: transparent; outline: none;
-    border-radius: 0; transition: border-color .2s, box-shadow .2s;
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+  .full { grid-column: 1 / -1; }
+  .f label, .f .lbl { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+  .req { color: var(--primary); }
+  .f input[type=text], .f input[type=email], .f input[type=tel], .f input[type=date], .f textarea {
+    width: 100%; padding: 11px 13px; font: inherit; color: inherit; background: #fff;
+    border: 1px solid var(--border); border-radius: 10px; transition: border-color .15s, box-shadow .15s;
   }
-  .vstup::placeholder { color: #70757a; }
-  .vstup:focus { border-bottom-color: var(--coral); box-shadow: 0 1px 0 var(--coral); }
-  .q.err .vstup { border-bottom-color: var(--error); }
-  textarea.vstup { width: 100%; resize: none; overflow: hidden; min-height: 34px; line-height: 1.45; }
-  input[type=date].vstup { width: auto; min-width: 170px; }
-  .vstup.vedle { margin-top: 0; width: 100%; min-width: 0; }
+  .f textarea { min-height: 104px; resize: vertical; }
+  .f input:focus, .f textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--accent-strong); }
+  .f input::placeholder, .f textarea::placeholder { color: #a99c9b; }
+  .f.err input, .f.err textarea { border-color: var(--error); background: var(--error-bg); }
+  .f.err .chips { outline: 2px solid var(--error); outline-offset: 5px; border-radius: 10px; }
+  .f .msg { display: none; color: var(--error); font-size: 13px; margin-top: 5px; }
+  .f.err .msg { display: block; }
 
-  /* Přepínače a zaškrtávátka */
-  .volby { display: flex; flex-direction: column; margin-top: 10px; }
-  .volba { display: flex; align-items: center; gap: 14px; padding: 9px 0; cursor: pointer; font-size: 14px; }
-  .volba input[type=radio], .volba input[type=checkbox] { position: absolute; opacity: 0; width: 1px; height: 1px; }
-  .volba .zn {
-    flex: none; width: 20px; height: 20px; border: 2px solid var(--muted); display: inline-flex; align-items: center; justify-content: center;
-    transition: border-color .15s;
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { position: relative; cursor: pointer; }
+  .chip input { position: absolute; opacity: 0; pointer-events: none; }
+  .chip span {
+    display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px;
+    font-size: 14px; background: #fff; transition: background .15s, border-color .15s, color .15s;
   }
-  .volba input[type=radio] + .zn { border-radius: 50%; }
-  .volba input[type=checkbox] + .zn { border-radius: 2px; }
-  .volba input:checked + .zn { border-color: var(--coral); }
-  .volba input[type=radio]:checked + .zn::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--coral); }
-  .volba input[type=checkbox]:checked + .zn { background: var(--coral); }
-  .volba input[type=checkbox]:checked + .zn::after {
-    content: ""; width: 5px; height: 10px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); margin-top: -2px;
-  }
-  .volba input:focus-visible + .zn { box-shadow: 0 0 0 6px var(--coral-light); }
-  .volba.jine { align-items: center; }
-  .volba.jine .jine-text { flex: 1; min-width: 0; max-width: 360px; }
+  .chip:hover span { border-color: var(--primary); }
+  .chip input:checked + span { background: var(--accent); border-color: var(--primary); color: var(--primary); font-weight: 600; }
+  .chip input:checked + span::before { content: "✓ "; }
+  .chip input:focus-visible + span { outline: 2px solid var(--primary); outline-offset: 2px; }
 
-  /* Tlačítka */
-  .akce { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; gap: 12px; }
-  .btn {
-    background: var(--coral); color: #fff; border: 0; border-radius: 4px; padding: 10px 24px;
-    font: 500 14px Roboto, Arial, sans-serif; letter-spacing: .25px; cursor: pointer; box-shadow: 0 1px 2px rgba(60,64,67,.3);
-  }
-  .btn:hover { background: var(--coral-dark); }
-  .btn:disabled { opacity: .6; cursor: wait; }
-  .odkaz { background: none; border: 0; color: var(--coral); font: 500 14px Roboto, Arial, sans-serif; cursor: pointer; padding: 8px; }
-  .odkaz:hover { background: var(--coral-light); border-radius: 4px; }
-  .chyba-celkova { background: #fce8e6; color: var(--error); border-radius: 8px; padding: 12px 16px; margin-top: 12px; }
-  .pata { color: var(--muted); font-size: 12px; text-align: center; margin-top: 26px; }
-  .nacitam { text-align: center; color: var(--muted); padding: 30px 0 40px; }
+  .consent { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
+  .consent input { width: 20px; height: 20px; margin: 2px 0 0; flex: none; accent-color: var(--primary); }
+  .consent a { color: var(--primary); }
+
   .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .alert { background: var(--error-bg); color: var(--error); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; }
+  .btn {
+    width: 100%; padding: 15px; font: 600 17px Poppins, sans-serif; color: #fff; background: var(--primary);
+    border: 0; border-radius: 12px; cursor: pointer; box-shadow: 0 6px 16px rgba(196, 82, 78, .25); transition: background .15s, transform .05s;
+  }
+  .btn:hover { background: var(--primary-hover); }
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled { opacity: .6; cursor: wait; }
+  .pozn { text-align: center; color: var(--muted); font-size: 13px; margin: 12px 0 0; }
+  .nacitam { text-align: center; color: var(--muted); padding: 40px 0; }
 
-  .hotovo h1 { margin-bottom: 10px !important; }
-  .hotovo p { font-size: 15px; margin: 0 0 12px; }
-  .hotovo .id { display: inline-block; background: var(--coral-light); color: var(--coral-dark); font-weight: 700; padding: 6px 12px; border-radius: 6px; margin-bottom: 22px; }
+  .done { text-align: center; padding: 40px 24px; }
+  .done .ok { width: 60px; height: 60px; border-radius: 50%; background: var(--accent); color: var(--primary); font-size: 30px; line-height: 60px; margin: 0 auto 14px; }
+  .done h2 { justify-content: center; font-size: 22px; margin-bottom: 8px; }
+  .done p { margin: 0; color: #3d3333; }
+  .done .id { display: inline-block; margin-top: 14px; padding: 7px 14px; background: var(--accent); border-radius: 10px; font-weight: 700; color: var(--primary); }
 
   [hidden] { display: none !important; }
-
-  @media (max-width: 600px) {
-    .wrap { padding: 8px 10px 32px; }
-    .banner { padding: 18px; gap: 14px; min-height: 120px; }
-    .logo { width: 68px; height: 68px; border-width: 3px; }
-    .banner h2 { font-size: 16px; }
+  @media (max-width: 560px) {
+    .wrap { padding: 18px 12px 40px; }
+    .grid { grid-template-columns: 1fr; }
     .card { padding: 18px 16px; }
-    .card.titul { padding: 18px 16px 0; }
-    .card.titul h1 { font-size: 24px; }
-    .povinne { margin: 0 -16px; padding: 12px 16px; }
-    .sekce div { padding: 12px 16px; }
-    .vstup { width: 100%; min-width: 0; }
+    .intro { padding: 24px 18px 20px; }
+    .intro h1 { font-size: 23px; }
   }
 </style>
 </head>
 <body>
 <main class="wrap">
-  <header class="banner">
-    <span class="kruh k1"></span><span class="kruh k2"></span><span class="kruh k3"></span><span class="kruh k4"></span>
+  <header class="hero">
     <div class="logo"><img src="logo.png" alt="Logo" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'DOBROVOLNICKÉ CENTRUM'}))"></div>
-    <h2><span id="bNazev">Dobrovolnické centrum</span><br><span id="bPodnazev"></span></h2>
+    <div class="org"><strong id="bNazev">Dobrovolnické centrum</strong><small id="bPodnazev"></small></div>
   </header>
 
-  <section class="card titul" id="titulKarta">
-    <h1 id="nadpis">Chcete se zapojit jako dobrovolník?</h1>
+  <section class="card intro" id="intro">
+    <h1 id="nadpis"></h1>
     <div class="uvod" id="uvod"></div>
-    <div class="povinne" id="povinneInfo" hidden>* Označuje povinnou otázku</div>
   </section>
 
   <div class="nacitam" id="nacitam">Načítám formulář…</div>
 
   <form id="f" novalidate hidden>
-    <div class="sekce"><div>Osobní údaje</div></div>
-
-    <div class="card q" data-q="jmeno" data-povinne>
-      <label class="label" for="jmeno">Jméno <span class="hv">*</span></label>
-      <input class="vstup" id="jmeno" name="jmeno" maxlength="100" autocomplete="given-name" placeholder="Vaše odpověď">
-      <div class="chyba">Toto je povinná otázka</div>
-    </div>
-    <div class="card q" data-q="prijmeni" data-povinne>
-      <label class="label" for="prijmeni">Příjmení <span class="hv">*</span></label>
-      <input class="vstup" id="prijmeni" name="prijmeni" maxlength="100" autocomplete="family-name" placeholder="Vaše odpověď">
-      <div class="chyba">Toto je povinná otázka</div>
-    </div>
-    <div class="card q" data-q="titul">
-      <label class="label" for="titul">Titul</label>
-      <input class="vstup" id="titul" name="titul" maxlength="40" autocomplete="honorific-prefix" placeholder="Vaše odpověď">
-    </div>
-    <div class="card q" data-q="datumNarozeni" data-povinne>
-      <label class="label" for="datumNarozeni">Datum narození <span class="hv">*</span></label>
-      <input class="vstup" type="date" id="datumNarozeni" name="datumNarozeni" min="1900-01-01" autocomplete="bday">
-      <div class="chyba">Toto je povinná otázka</div>
-    </div>
-
-    <div class="card q" data-q="ulice" data-povinne>
-      <label class="label" for="ulice">Trvalé bydliště <span class="hv">*</span></label>
-      <span class="pod">ulice, č.p.</span>
-      <input class="vstup" id="ulice" name="ulice" maxlength="200" autocomplete="address-line1" placeholder="Vaše odpověď">
-      <div class="chyba">Toto je povinná otázka</div>
-    </div>
-    <div class="card q" data-q="obec" data-povinne>
-      <label class="label" for="obec">Trvalé bydliště <span class="hv">*</span></label>
-      <span class="pod">město</span>
-      <input class="vstup" id="obec" name="obec" maxlength="100" autocomplete="address-level2" placeholder="Vaše odpověď">
-      <div class="chyba">Toto je povinná otázka</div>
-    </div>
-    <div class="card q" data-q="psc" data-povinne>
-      <label class="label" for="psc">Trvalé bydliště <span class="hv">*</span></label>
-      <span class="pod">PSČ</span>
-      <input class="vstup" id="psc" name="psc" maxlength="6" inputmode="numeric" autocomplete="postal-code" placeholder="Vaše odpověď">
-      <div class="chyba">Toto je povinná otázka</div>
-    </div>
-    <div class="card q" data-q="telefon" data-povinne>
-      <label class="label" for="telefon">Telefon <span class="hv">*</span></label>
-      <input class="vstup" type="tel" id="telefon" name="telefon" maxlength="40" autocomplete="tel" placeholder="Vaše odpověď">
-      <div class="chyba">Toto je povinná otázka</div>
-    </div>
-    <div class="card q" data-q="email" data-povinne>
-      <label class="label" for="email">E-mail <span class="hv">*</span></label>
-      <input class="vstup" type="email" id="email" name="email" maxlength="200" autocomplete="email" inputmode="email" placeholder="Vaše odpověď">
-      <div class="chyba">Toto je povinná otázka</div>
-    </div>
-
-    <div class="card q" data-q="zamestnani" data-povinne>
-      <label class="label" for="zamestnani">Současné zaměstnání nebo studium <span class="hv">*</span></label>
-      <input class="vstup" id="zamestnani" name="zamestnani" maxlength="200" placeholder="Vaše odpověď">
-      <div class="chyba">Toto je povinná otázka</div>
-    </div>
-    <div class="card q" data-q="vzdelani" data-povinne>
-      <span class="label">Nejvyšší dokončené vzdělání <span class="hv">*</span></span>
-      <div class="volby" id="vzdelani"></div>
-      <div class="chyba">Toto je povinná otázka</div>
-    </div>
-
-    <div class="card q" data-q="zkusenosti">
-      <label class="label" for="zkusenosti">Zájmy, dovednosti, zkušenosti</label>
-      <textarea class="vstup" id="zkusenosti" name="zkusenosti" maxlength="2000" rows="1" placeholder="Vaše odpověď"></textarea>
-    </div>
-    <div class="card q" data-q="gdpr" data-povinne>
-      <span class="label">Souhlasím se zpracováním osobních údajů <span class="hv">*</span></span>
-      <span class="pod" id="gdprOdkaz"></span>
-      <div class="volby">
-        <label class="volba"><input type="checkbox" id="gdpr" name="gdpr"><span class="zn"></span>Ano, souhlasím</label>
+    <section class="card">
+      <h2><span class="cislo">1</span>Osobní údaje</h2>
+      <div class="grid">
+        <div class="f" data-q="jmeno"><label for="jmeno">Jméno <span class="req">*</span></label>
+          <input type="text" id="jmeno" maxlength="100" autocomplete="given-name"><div class="msg">Vyplňte prosím jméno.</div></div>
+        <div class="f" data-q="prijmeni"><label for="prijmeni">Příjmení <span class="req">*</span></label>
+          <input type="text" id="prijmeni" maxlength="100" autocomplete="family-name"><div class="msg">Vyplňte prosím příjmení.</div></div>
+        <div class="f" data-q="titul"><label for="titul">Titul</label>
+          <input type="text" id="titul" maxlength="40" autocomplete="honorific-prefix" placeholder="např. Mgr."></div>
+        <div class="f" data-q="datumNarozeni"><label for="datumNarozeni">Datum narození <span class="req">*</span></label>
+          <input type="date" id="datumNarozeni" min="1900-01-01" autocomplete="bday"><div class="msg">Vyplňte prosím datum narození.</div></div>
       </div>
-      <div class="chyba">Toto je povinná otázka</div>
-    </div>
+    </section>
+
+    <section class="card">
+      <h2><span class="cislo">2</span>Trvalé bydliště a kontakt</h2>
+      <div class="grid">
+        <div class="f full" data-q="ulice"><label for="ulice">Ulice a číslo popisné <span class="req">*</span></label>
+          <input type="text" id="ulice" maxlength="200" autocomplete="address-line1"><div class="msg">Vyplňte prosím ulici a číslo popisné.</div></div>
+        <div class="f" data-q="obec"><label for="obec">Město <span class="req">*</span></label>
+          <input type="text" id="obec" maxlength="100" autocomplete="address-level2"><div class="msg">Vyplňte prosím město.</div></div>
+        <div class="f" data-q="psc"><label for="psc">PSČ <span class="req">*</span></label>
+          <input type="text" id="psc" maxlength="6" inputmode="numeric" autocomplete="postal-code" placeholder="530 02"><div class="msg">Vyplňte prosím PSČ.</div></div>
+        <div class="f" data-q="telefon"><label for="telefon">Telefon <span class="req">*</span></label>
+          <input type="tel" id="telefon" maxlength="40" autocomplete="tel" placeholder="+420 …"><div class="msg">Vyplňte prosím telefon.</div></div>
+        <div class="f" data-q="email"><label for="email">E-mail <span class="req">*</span></label>
+          <input type="email" id="email" maxlength="200" autocomplete="email" inputmode="email"><div class="msg">Vyplňte prosím e-mail.</div></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2><span class="cislo">3</span>Vzdělání a zkušenosti</h2>
+      <div class="grid">
+        <div class="f full" data-q="zamestnani"><label for="zamestnani">Současné zaměstnání nebo studium <span class="req">*</span></label>
+          <input type="text" id="zamestnani" maxlength="200"><div class="msg">Vyplňte prosím zaměstnání nebo studium.</div></div>
+        <div class="f full" data-q="vzdelani"><span class="lbl">Nejvyšší dokončené vzdělání <span class="req">*</span></span>
+          <div class="chips" id="vzdelani"></div><div class="msg">Vyberte prosím vzdělání.</div></div>
+        <div class="f full" data-q="zkusenosti"><label for="zkusenosti">Zájmy, dovednosti, zkušenosti</label>
+          <textarea id="zkusenosti" maxlength="2000" placeholder="Co vás baví, co umíte, s čím máte zkušenost…"></textarea></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="f" data-q="gdpr">
+        <label class="consent"><input type="checkbox" id="gdpr">
+          <span>Souhlasím se zpracováním osobních údajů. <span class="req">*</span> <span id="gdprOdkaz"></span></span></label>
+        <div class="msg">Pro odeslání je potřeba souhlas se zpracováním osobních údajů.</div>
+      </div>
+    </section>
 
     <div class="hp" aria-hidden="true">
       <label for="web_hp">Nevyplňujte</label>
-      <input type="text" id="web_hp" name="web_hp" tabindex="-1" autocomplete="off">
+      <input type="text" id="web_hp" tabindex="-1" autocomplete="off">
     </div>
 
-    <div class="chyba-celkova" id="chyba" role="alert" hidden></div>
-    <div class="akce">
-      <button class="btn" type="submit" id="odeslat">Odeslat</button>
-      <button class="odkaz" type="button" id="vymazat">Vymazat formulář</button>
-    </div>
+    <div id="chyba" class="alert" role="alert" hidden></div>
+    <button type="submit" class="btn" id="odeslat">Odeslat registraci</button>
+    <p class="pozn">Pole označená <span class="req">*</span> jsou povinná.</p>
   </form>
 
-  <p class="pata" id="pata"></p>
+  <section id="hotovo" class="card done" hidden>
+    <div class="ok" aria-hidden="true">✓</div>
+    <h2>Děkujeme!</h2>
+    <p id="hotovoText"></p>
+    <div class="id" id="hotovoId"></div>
+  </section>
 </main>
 
 <script src="config.js"></script>
@@ -256,31 +208,8 @@
   }
   // Úvodní text: **tučně**, prázdný řádek = nový odstavec
   function formatuj(text) {
-    return String(text || '').trim().split(/\n\s*\n/).map(odst =>
-      '<p>' + esc(odst).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>') + '</p>').join('');
-  }
-
-  function volby(kontejner, nazev, polozky, typ, jine) {
-    const c = $(kontejner);
-    c.innerHTML = '';
-    polozky.forEach(v => {
-      const l = document.createElement('label');
-      l.className = 'volba';
-      l.innerHTML = '<input type="' + typ + '" name="' + nazev + '"><span class="zn"></span><span></span>';
-      l.querySelector('input').value = v;
-      l.lastChild.textContent = v;
-      c.appendChild(l);
-    });
-    if (jine) {
-      const l = document.createElement('label');
-      l.className = 'volba jine';
-      l.innerHTML = '<input type="' + typ + '" name="' + nazev + '" value="Jiné"><span class="zn"></span><span>Jiné:</span>' +
-        '<input class="vstup vedle jine-text" id="' + jine + '" maxlength="200" aria-label="Jiné – upřesněte">';
-      c.appendChild(l);
-      const txt = l.querySelector('.jine-text'), chk = l.querySelector('input');
-      txt.addEventListener('input', () => { chk.checked = txt.value.trim() !== ''; zmena(chk); });
-      txt.addEventListener('click', e => e.preventDefault());
-    }
+    return String(text || '').trim().split(/\n\s*\n/).filter(Boolean).map(o =>
+      '<p>' + esc(o).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>') + '</p>').join('');
   }
 
   function vyplnStranku(cfg) {
@@ -290,66 +219,72 @@
     $('nadpis').textContent = cfg.nadpis || 'Registrace dobrovolníka';
     $('uvod').innerHTML = formatuj(cfg.uvod);
     document.title = (cfg.nadpis || 'Registrace dobrovolníka') + ' – ' + cfg.nazev;
-    $('pata').textContent = cfg.nazev + (cfg.podnazev ? ' · ' + cfg.podnazev : '');
 
-    volby('vzdelani', 'vzdelani', cfg.vzdelani, 'radio');
-
+    const c = $('vzdelani');
+    (cfg.vzdelani || []).forEach(v => {
+      const l = document.createElement('label');
+      l.className = 'chip';
+      l.innerHTML = '<input type="radio" name="vzdelani"><span></span>';
+      l.querySelector('input').value = v;
+      l.querySelector('span').textContent = v;
+      c.appendChild(l);
+    });
     if (cfg.odkazGdpr) {
       const a = document.createElement('a');
-      a.href = cfg.odkazGdpr; a.target = '_blank'; a.rel = 'noopener'; a.textContent = cfg.odkazGdpr;
+      a.href = cfg.odkazGdpr; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Informace o zpracování osobních údajů';
       $('gdprOdkaz').appendChild(a);
     }
     $('datumNarozeni').max = new Date().toISOString().slice(0, 10);
   }
 
-  // Automatická výška textového pole
-  $('zkusenosti').addEventListener('input', e => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; });
-
-  const karta = el => el.closest('.q');
-  function zmena(el) { const k = karta(el); if (k) k.classList.remove('err'); $('chyba').hidden = true; }
-  form.addEventListener('input', e => zmena(e.target));
-  form.addEventListener('change', e => zmena(e.target));
+  const pole = el => el.closest('.f');
+  function vycisti(el) { const p = pole(el); if (p) p.classList.remove('err'); $('chyba').hidden = true; }
+  form.addEventListener('input', e => vycisti(e.target));
+  form.addEventListener('change', e => vycisti(e.target));
 
   const hodnota = id => $(id).value.trim();
-  const vybrane = nazev => Array.from(form.querySelectorAll('input[name="' + nazev + '"]:checked')).map(i => i.value);
+  const vybrane = n => Array.from(form.querySelectorAll('input[name="' + n + '"]:checked')).map(i => i.value);
   function vek(iso) {
     const p = iso.split('-').map(Number), d = new Date();
     let v = d.getFullYear() - p[0];
     if (d.getMonth() + 1 < p[1] || (d.getMonth() + 1 === p[1] && d.getDate() < p[2])) v--;
     return v;
   }
-
   function oznac(q, text) {
-    const k = form.querySelector('[data-q="' + q + '"]');
-    k.classList.add('err');
-    const ch = k.querySelector('.chyba');
-    if (ch) ch.textContent = text || 'Toto je povinná otázka';
-    return k;
+    const p = form.querySelector('[data-q="' + q + '"]');
+    p.classList.add('err');
+    if (text) p.querySelector('.msg').textContent = text;
+    return p;
   }
 
   function zkontroluj() {
-    const chyby = [];
-    ['jmeno', 'prijmeni', 'ulice', 'obec', 'psc', 'telefon', 'email', 'zamestnani'].forEach(id => { if (!hodnota(id)) chyby.push(oznac(id)); });
+    const ch = [];
+    ['jmeno', 'prijmeni'].forEach(id => { if (!hodnota(id)) ch.push(oznac(id)); });
     const dn = $('datumNarozeni').value;
-    if (!dn) chyby.push(oznac('datumNarozeni'));
-    else if (dn > $('datumNarozeni').max || dn < '1900-01-01') chyby.push(oznac('datumNarozeni', 'Zadejte platné datum narození'));
-    else if (CFG.minVek && vek(dn) < CFG.minVek) chyby.push(oznac('datumNarozeni', 'Pro registraci je potřeba mít alespoň ' + CFG.minVek + ' let. Pokud jste mladší, ozvěte se nám prosím e-mailem.'));
-    if (hodnota('psc') && !/^\d{3}\s?\d{2}$/.test(hodnota('psc'))) chyby.push(oznac('psc', 'PSČ má mít 5 číslic, např. 530 02'));
-    if (hodnota('telefon') && !/^[+0-9 ()\-\/]{6,}$/.test(hodnota('telefon'))) chyby.push(oznac('telefon', 'Zkontrolujte prosím telefonní číslo'));
-    if (hodnota('email') && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(hodnota('email'))) chyby.push(oznac('email', 'Zadejte platnou e-mailovou adresu'));
-    if (!vybrane('vzdelani').length) chyby.push(oznac('vzdelani'));
-    if (!$('gdpr').checked) chyby.push(oznac('gdpr'));
-    return chyby;
+    if (!dn) ch.push(oznac('datumNarozeni', 'Vyplňte prosím datum narození.'));
+    else if (dn > $('datumNarozeni').max || dn < '1900-01-01') ch.push(oznac('datumNarozeni', 'Zadejte platné datum narození.'));
+    else if (CFG.minVek && vek(dn) < CFG.minVek) ch.push(oznac('datumNarozeni', 'Pro registraci je potřeba mít alespoň ' + CFG.minVek + ' let. Pokud jste mladší, ozvěte se nám prosím e-mailem.'));
+    ['ulice', 'obec'].forEach(id => { if (!hodnota(id)) ch.push(oznac(id)); });
+    if (!hodnota('psc')) ch.push(oznac('psc', 'Vyplňte prosím PSČ.'));
+    else if (!/^\d{3}\s?\d{2}$/.test(hodnota('psc'))) ch.push(oznac('psc', 'PSČ má mít 5 číslic, např. 530 02.'));
+    if (!hodnota('telefon')) ch.push(oznac('telefon', 'Vyplňte prosím telefon.'));
+    else if (!/^[+0-9 ()\-\/]{6,}$/.test(hodnota('telefon'))) ch.push(oznac('telefon', 'Zkontrolujte prosím telefonní číslo.'));
+    if (!hodnota('email')) ch.push(oznac('email', 'Vyplňte prosím e-mail.'));
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(hodnota('email'))) ch.push(oznac('email', 'Zadejte platnou e-mailovou adresu.'));
+    if (!hodnota('zamestnani')) ch.push(oznac('zamestnani'));
+    if (!vybrane('vzdelani').length) ch.push(oznac('vzdelani'));
+    if (!$('gdpr').checked) ch.push(oznac('gdpr'));
+    return ch;
   }
 
   form.addEventListener('submit', e => {
     e.preventDefault();
     $('chyba').hidden = true;
-    const chyby = zkontroluj();
-    if (chyby.length) {
-      chyby[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-      const vstup = chyby[0].querySelector('input:not([type=radio]):not([type=checkbox]), textarea');
-      if (vstup) setTimeout(() => vstup.focus({ preventScroll: true }), 300);
+    const ch = zkontroluj();
+    if (ch.length) {
+      ch[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const v = ch[0].querySelector('input[type=text], input[type=email], input[type=tel], input[type=date], textarea');
+      if (v) setTimeout(() => v.focus({ preventScroll: true }), 300);
       return;
     }
     const data = {
@@ -368,35 +303,24 @@
     volejApi('odeslatRegistraci', [data])
       .then(r => {
         form.hidden = true;
-        $('povinneInfo').hidden = true;
-        const t = $('titulKarta');
-        t.classList.add('hotovo');
-        $('nadpis').textContent = 'Děkujeme! 💗';
-        $('uvod').innerHTML = '<p>' + esc(r.text || 'Registrace byla odeslána.') + '</p>' +
-          (r.id ? '<span class="id">Vaše registrační číslo: ' + esc(r.id) + '</span>' : '');
+        $('intro').hidden = true;
+        $('hotovoText').textContent = r.text || 'Registrace byla odeslána.';
+        if (r.id) $('hotovoId').textContent = 'Vaše registrační číslo: ' + r.id; else $('hotovoId').hidden = true;
+        $('hotovo').hidden = false;
         window.scrollTo(0, 0);
       })
       .catch(err => {
-        b.disabled = false; b.textContent = 'Odeslat';
+        b.disabled = false; b.textContent = 'Odeslat registraci';
         $('chyba').textContent = err.message || 'Odeslání se nepodařilo. Zkuste to prosím znovu.';
         $('chyba').hidden = false;
+        $('chyba').scrollIntoView({ behavior: 'smooth', block: 'center' });
       });
-  });
-
-  $('vymazat').addEventListener('click', () => {
-    if (!confirm('Opravdu vymazat všechny odpovědi ve formuláři?')) return;
-    form.reset();
-    form.querySelectorAll('.q.err').forEach(k => k.classList.remove('err'));
-    $('chyba').hidden = true;
-    $('zkusenosti').style.height = '';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
   volejApi('konfigurace', [])
     .then(cfg => {
       vyplnStranku(cfg);
       $('nacitam').hidden = true;
-      $('povinneInfo').hidden = false;
       form.hidden = false;
       casStart = Date.now();
     })
