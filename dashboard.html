@@ -152,6 +152,10 @@
   .login input { width: 100%; padding: 11px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; }
   .login .btn { width: 100%; margin-top: 14px; padding: 11px; }
   .login .chyba { color: var(--error); font-size: 14px; margin: 10px 0 0; }
+  .gwrap { margin-top: 16px; }
+  .gwrap #gBtn { display: flex; justify-content: center; min-height: 44px; }
+  .nebo { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; margin: 16px 0 2px; }
+  .nebo::before, .nebo::after { content: ""; flex: 1; height: 1px; background: var(--border); }
   .linkbtn { background: none; border: 0; color: var(--primary); cursor: pointer; padding: 0; font-size: 13px; text-decoration: underline; margin-top: 12px; }
   .loading { padding: 60px 0; text-align: center; color: var(--muted); }
   [hidden] { display: none !important; }
@@ -177,12 +181,21 @@
   <div class="card">
     <p class="muted small nazevOrg" style="margin:0"></p>
     <h1>Přihlášení do dashboardu</h1>
+    <div class="gwrap" id="gWrap" hidden>
+      <div id="gBtn"></div>
+      <div class="nebo">nebo e-mailem s kódem</div>
+    </div>
     <form id="lfEmail">
       <p class="muted small" style="margin:6px 0 0">Zadejte svůj e-mail. Pokud jste mezi administrátory, přijde vám jednorázový kód.</p>
       <label for="lEmail">E-mail</label>
       <input type="email" id="lEmail" autocomplete="email" required>
       <button class="btn" type="submit" id="lPoslat">Poslat kód</button>
     </form>
+    <div id="lfOdkaz" hidden>
+      <p class="muted small" style="margin:6px 0 0">Přihlašujete se odkazem z e-mailu. Dokončete přihlášení klepnutím na tlačítko.</p>
+      <button class="btn" type="button" id="lOdkazBtn">Přihlásit se</button>
+      <button class="linkbtn" type="button" id="lOdkazJinak">Přihlásit se jinak (e-mailem a kódem)</button>
+    </div>
     <form id="lfKod" hidden>
       <p class="muted small" style="margin:6px 0 0">Na <strong id="lKam"></strong> jsme poslali e-mail. <strong>V mobilu stačí v e-mailu klepnout na tlačítko „Přihlásit se do dashboardu“.</strong> Nebo sem opište kód z e-mailu. Kód i odkaz platí 10 minut.</p>
       <label for="lKod">Kód z e-mailu</label>
@@ -191,6 +204,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-22d</p>
   </div>
 </div>
 <div class="app" id="app" hidden>
@@ -839,7 +853,7 @@ function ukazZadaniKodu(email) {
 function ukazPrihlaseni(zprava) {
   TOKEN = ''; ulozToken('');
   $('#app').hidden = true; $('#login').hidden = false;
-  $('#lfEmail').hidden = false; $('#lfKod').hidden = true;
+  $('#lfEmail').hidden = false; $('#lfKod').hidden = true; $('#lfOdkaz').hidden = true;
   $('#lPoslat').disabled = false; $('#lPrihlasit').disabled = false;
   const ch = $('#lChyba'); ch.textContent = zprava || ''; ch.hidden = !zprava;
   setTimeout(() => $('#lEmail').focus(), 0);
@@ -895,23 +909,79 @@ async function spust() {
 volej('konfigurace', []).then(cfg => {
   $$('.nazevOrg').forEach(el => el.textContent = cfg.nazev);
   document.title = 'Dashboard – ' + cfg.nazev;
+  if (cfg.googleClientId) nactiGoogle(cfg.googleClientId);
 }).catch(() => { /* název není nutný */ });
+
+// ---------- Přihlášení účtem Google ----------
+function nactiGoogle(clientId) {
+  const sc = document.createElement('script');
+  sc.src = 'https://accounts.google.com/gsi/client';
+  sc.async = true;
+  sc.onload = () => {
+    try {
+      google.accounts.id.initialize({ client_id: clientId, callback: poGoogle, ux_mode: 'popup' });
+      google.accounts.id.renderButton($('#gBtn'), { theme: 'outline', size: 'large', text: 'signin_with', shape: 'pill', locale: 'cs', width: 280 });
+      $('#gWrap').hidden = false;
+    } catch (e) { /* bez Google tlačítka zůstane přihlášení kódem */ }
+  };
+  document.head.appendChild(sc);
+}
+async function poGoogle(odpoved) {
+  $('#lChyba').hidden = true;
+  try {
+    const r = await volej('prihlasitGoogle', [odpoved.credential]);
+    TOKEN = r.token; ADMIN = r.admin; ulozToken(TOKEN); cekam('');
+    $('#login').hidden = true;
+    await spust();
+  } catch (err) { chybaPrihlaseni(err.message); }
+}
 (async function start() {
   const param = new URLSearchParams(location.search);
-  const odkaz = param.get('prihlaseni');
-  if (odkaz) {
-    // Přihlášení klepnutím na odkaz z e-mailu; parametr z adresy hned odstraníme
-    param.delete('prihlaseni');
+  const vstup = param.get('vstup');
+  if (vstup) {
+    // Osobní odkaz z notifikace – platí několik dní a lze ho použít opakovaně
+    param.delete('vstup');
     try { history.replaceState(null, '', location.pathname + (param.toString() ? '?' + param.toString() : '')); } catch (e) { /* nevadí */ }
+    if (TOKEN) return spust();
+    $('#login').hidden = false;
+    $('#lfEmail').hidden = true;
+    $('#lChyba').hidden = false; $('#lChyba').style.color = 'var(--muted)'; $('#lChyba').textContent = 'Přihlašuji…';
     try {
-      const r = await volej('overPrihlasovaciOdkaz', [odkaz]);
+      const r = await volej('prihlasitOdkazem', [vstup]);
+      $('#lChyba').style.color = '';
       TOKEN = r.token; ADMIN = r.admin; ulozToken(TOKEN); cekam('');
+      $('#login').hidden = true;
       return spust();
     } catch (err) {
-      if (TOKEN) return spust();
+      $('#lChyba').style.color = '';
       ukazPrihlaseni(err.message);
       return;
     }
+  }
+  const odkaz = param.get('prihlaseni');
+  if (odkaz) {
+    // Přihlášení odkazem z e-mailu. Dokončí se až klepnutím na tlačítko, aby odkaz
+    // nespotřebovala e-mailová aplikace, která si stránky načítá na pozadí.
+    param.delete('prihlaseni');
+    try { history.replaceState(null, '', location.pathname + (param.toString() ? '?' + param.toString() : '')); } catch (e) { /* nevadí */ }
+    if (TOKEN) return spust();
+    ukazPrihlaseni('');
+    $('#lfEmail').hidden = true; $('#lfOdkaz').hidden = false;
+    $('#lOdkazJinak').onclick = () => ukazPrihlaseni('');
+    $('#lOdkazBtn').onclick = async () => {
+      const b = $('#lOdkazBtn'); b.disabled = true; b.textContent = 'Přihlašuji…';
+      $('#lChyba').hidden = true;
+      try {
+        const r = await volej('overPrihlasovaciOdkaz', [odkaz]);
+        TOKEN = r.token; ADMIN = r.admin; ulozToken(TOKEN); cekam('');
+        $('#login').hidden = true;
+        await spust();
+      } catch (err) {
+        b.disabled = false; b.textContent = 'Přihlásit se';
+        chybaPrihlaseni(err.message);
+      }
+    };
+    return;
   }
   if (TOKEN) return spust();
   const email = cekaNaKod();
