@@ -252,7 +252,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-22e</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-22f</p>
   </div>
 </div>
 <div class="app" id="app" hidden>
@@ -547,6 +547,7 @@ function vDetail() {
     pole(z, 'Poznámky', 'textarea', { full: true, rows: 4 }) +
     '</div></section>' +
     htmlOrgSekce(z) +
+    '<section class="card" id="portalKarta"></section>' +
 
     '<section class="card"><h2>Schůzka</h2>' +
     (ma ? '<p class="info">Domluveno: <strong>' + esc(fmtTermin(z['Termín schůzky'])) + '</strong>' + (z['Místo schůzky'] ? ' · ' + esc(z['Místo schůzky']) : '') + '</p>'
@@ -604,6 +605,7 @@ function vDetail() {
   obsah.onclick = null; obsah.onkeydown = null;
   kresliPrirazeni(z);
   kresliSouhrnHodin(z);
+  kresliPortal(z);
   const sm = $('#smazat');
   if (sm) sm.onclick = async () => {
     const o = await dialog({
@@ -737,14 +739,14 @@ function platnePrir(p, datum) {
 }
 // organizace, ke kterým je dobrovolník k datu přiřazený
 function orgDobrovolnika(id, datum) {
-  const ids = (D.prirazeni || []).filter(p => p.dobrovolnik === id && platnePrir(p, datum)).map(p => p.orgId);
+  // administrátor může zapisovat i zpětně – rozhoduje jen to, že přiřazení existuje
+  const ids = (D.prirazeni || []).filter(p => p.dobrovolnik === id).map(p => p.orgId);
   return ids.filter((x, i) => ids.indexOf(x) === i).map(orgPodleId);
 }
 // dobrovolníci přiřazení k organizaci k datu (nebo kdykoli v rozmezí od–do)
 function dobrovolniciOrg(orgId, od, doo) {
   doo = doo || od;
-  const ids = (D.prirazeni || []).filter(p => p.orgId === orgId &&
-    (!p.od || p.od <= doo) && (!p.do || p.do >= od) && (p.aktivni || p.do)).map(p => p.dobrovolnik);
+  const ids = (D.prirazeni || []).filter(p => p.orgId === orgId).map(p => p.dobrovolnik);
   return D.dobrovolnici.filter(z => ids.indexOf(z.ID) >= 0)
     .sort((a, b) => (a['Příjmení'] + a['Jméno']).localeCompare(b['Příjmení'] + b['Jméno'], 'cs'));
 }
@@ -912,7 +914,7 @@ function formAkce(poUlozeni) {
   const vybrani = new Set();
   const obnov = () => {
     const org = $('#aOrg', el).value, datum = $('#aDatum', el).value || dnesISO();
-    const lide = dobrovolniciOrg(org, datum).filter(z => orgDobrovolnika(z.ID, datum).some(o => o.id === org));
+    const lide = dobrovolniciOrg(org, datum);
     Array.from(vybrani).forEach(id => { if (!lide.some(z => z.ID === id)) vybrani.delete(id); });
     const q = $('#aHledat', el).value.trim().toLowerCase();
     $('#aSeznam', el).innerHTML = lide.length ? lide.filter(z => !q || popisDobr(z).toLowerCase().includes(q)).map(z =>
@@ -1111,7 +1113,7 @@ async function kresliVykaz() {
     for (let d = 1; d <= dnu; d++) {
       const datum = mesic + '-' + String(d).padStart(2, '0');
       const wd = new Date(r, m - 1, d).getDay();
-      const ok = datum <= dnes && orgDobrovolnika(z.ID, datum).some(x => x.id === org);
+      const ok = datum <= dnes;
       const uz = existujici.filter(x => x.dobrovolnik === z.ID && x.datum === datum).reduce((s, x) => s + x.minut, 0);
       tr += '<td class="' + (wd === 0 || wd === 6 ? 'vk' : '') + '">' +
         (ok ? '<input class="bunka" data-z="' + esc(z.ID) + '" data-d="' + d + '" inputmode="decimal" aria-label="' + esc(z.ID + ' ' + d + '.') + '"' + (uz ? ' placeholder="' + esc(fmtKratce(uz)) + '" title="Už zapsáno ' + esc(fmtMin(uz)) + '"' : '') + '>' : '<span class="nelze">·</span>') + '</td>';
@@ -1121,7 +1123,7 @@ async function kresliVykaz() {
     return '<tr>' + tr + '</tr>';
   }).join('');
   el.innerHTML = '<div class="vykaz-wrap"><table class="vykaz"><thead><tr>' + hlav + '</tr></thead><tbody>' + radky + '</tbody></table></div>' +
-    '<p class="muted small">Šedé hodnoty v políčkách = už zapsáno v systému. Tečka = dobrovolník v ten den není k organizaci přiřazený.</p>' +
+    '<p class="muted small">Šedé hodnoty v políčkách = už zapsáno v systému. Budoucí dny vyplnit nejde.</p>' +
     '<p class="mchyba" id="vChyba" hidden></p>' +
     '<div class="btns"><button class="btn" id="vUlozit">Uložit výkaz</button><span class="muted small" id="vCelkem"></span></div>';
   const prepocet = () => {
@@ -1163,6 +1165,29 @@ async function kresliVykaz() {
 }
 function fmtKratce(m) { const h = Math.floor(m / 60), r = m % 60; return r ? h + ':' + String(r).padStart(2, '0') : String(h); }
 
+// ---------- Detail dobrovolníka: portál dobrovolníka ----------
+function kresliPortal(z) {
+  const el = $('#portalKarta');
+  if (!el) return;
+  const aktivni = z['Stav'] === 'Aktivní dobrovolník', email = String(z['E-mail'] || '').trim();
+  const poslano = z['Pozvánka do portálu'];
+  el.innerHTML = '<h2>Portál dobrovolníka</h2>' +
+    '<p class="muted small" style="margin-top:-6px">Stránka, kde si dobrovolník sám zapisuje hodiny a vidí svůj přehled. Přihlašuje se svým e-mailem.</p>' +
+    (!aktivni ? '<p class="small">Přístup má jen dobrovolník ve stavu <strong>Aktivní dobrovolník</strong>.</p>'
+      : !email ? '<p class="small">Dobrovolník nemá vyplněný e-mail – hodiny mu zapisujte vy.</p>'
+      : '<p class="small" style="margin:0 0 10px">' + (poslano ? 'Pozvánka odeslána ' + esc(fmtT(poslano)) + '.' : 'Pozvánka zatím nebyla odeslána.') +
+        ' Dobrovolník se může přihlásit i sám na stránce <em>hodiny.html</em> svým e-mailem.</p>' +
+        (muze('Koordinátor') ? '<button class="btn ghost" id="bPozvanka">' + (poslano ? 'Poslat pozvánku znovu' : 'Poslat pozvánku do portálu') + '</button>' : ''));
+  const b = $('#bPozvanka');
+  if (b) b.onclick = async () => {
+    const o = await dialog({ text: 'Poslat na ' + email + ' e-mail s osobním odkazem do portálu pro zápis hodin?', potvrdit: 'Poslat' });
+    if (!o.ok) return;
+    b.disabled = true; b.textContent = 'Odesílám…';
+    try { const r = await api('posliPozvankuPortal', z.ID); nahrad(r.zaznam); kresliPortal(r.zaznam); toast('Pozvánka odeslána'); }
+    catch (e) { toast(e.message, 'err'); b.disabled = false; b.textContent = 'Poslat pozvánku do portálu'; }
+  };
+}
+
 // ---------- Detail dobrovolníka: organizace a hodiny ----------
 function htmlOrgSekce(z) {
   return '<section class="card" id="orgSekce"><h2>Organizace a hodiny</h2><div id="orgSeznam"></div><div id="hodSouhrn"><div class="loading" style="padding:12px 0">Načítám hodiny…</div></div></section>';
@@ -1176,10 +1201,12 @@ function kresliPrirazeni(z) {
   $('#orgSeznam').innerHTML =
     (pr.length ? '<ul class="doclist">' + pr.map(p => '<li><span><strong>' + esc(p.org) + '</strong><br><span class="muted small">' +
       (p.od ? 'od ' + esc(fmtD(p.od)) : 'od začátku') + (p.do ? ' do ' + esc(fmtD(p.do)) : '') + (aktivni(p) ? '' : ' · ukončeno') + '</span></span>' +
-      (edit ? (aktivni(p) ? '<button class="btn ghost small-btn" data-ukoncit="' + esc(p.id) + '">Ukončit</button>' : '<button class="btn ghost small-btn" data-obnovit="' + esc(p.id) + '">Obnovit</button>') : '') +
+      (edit ? '<span class="btns">' + '<button class="btn ghost small-btn" data-upravit="' + esc(p.id) + '">Data</button>' +
+        (aktivni(p) ? '<button class="btn ghost small-btn" data-ukoncit="' + esc(p.id) + '">Ukončit</button>' : '<button class="btn ghost small-btn" data-obnovit="' + esc(p.id) + '">Obnovit</button>') + '</span>' : '') +
       '</li>').join('') + '</ul>' : '<p class="muted">Zatím není přiřazen k žádné organizaci.</p>') +
     (edit ? (volne.length ? '<div class="row2 pridat-org"><select id="noveOrg">' + volne.map(o => '<option value="' + esc(o.id) + '">' + esc(o.nazev) + '</option>').join('') + '</select>' +
-      '<input type="date" id="noveOd" value="' + dnes + '" title="Od kdy"><button class="btn" id="pridatOrg">Přiřadit</button></div>'
+      '<input type="date" id="noveOd" title="Od kdy (nevyplněno = od začátku)"><button class="btn" id="pridatOrg">Přiřadit</button></div>' +
+      '<p class="muted small" style="margin:6px 0 0">Datum „od“ můžete nechat prázdné nebo zadat i zpětně.</p>'
       : ((D.organizaceVse || []).length ? '' : '<p class="muted small">Organizace přidáte v Administraci → Organizace.</p>')) : '');
   if (!edit) return;
   const po = r => { D.prirazeni = r.prirazeni; z['Organizace'] = orgDobrovolnika(z.ID, dnes).map(o => o.nazev).join(', '); kresliPrirazeni(z); };
@@ -1190,8 +1217,22 @@ function kresliPrirazeni(z) {
     catch (e) { toast(e.message, 'err'); b.disabled = false; }
   };
   $('#orgSeznam').onclick = async e => {
-    const u = e.target.closest('[data-ukoncit]'), o = e.target.closest('[data-obnovit]');
+    const u = e.target.closest('[data-ukoncit]'), o = e.target.closest('[data-obnovit]'), up = e.target.closest('[data-upravit]');
     try {
+      if (up) {
+        const p = pr.find(x => x.id === up.dataset.upravit);
+        const el = otevriModal('<h2>Období přiřazení</h2><p class="muted small" style="margin-top:-8px">' + esc(p.org) + '</p><div class="fields">' +
+          '<div class="fld"><label><span>Od</span></label><input type="date" id="pOd" value="' + esc(p.od) + '"></div>' +
+          '<div class="fld"><label><span>Do</span></label><input type="date" id="pDo" value="' + esc(p.do) + '"></div></div>' +
+          '<p class="muted small">Prázdné „od“ = od začátku, prázdné „do“ = stále trvá.</p><p class="mchyba" id="pChyba" hidden></p>' +
+          '<div class="dlg-btns"><button class="btn ghost" id="pZpet">Zrušit</button><button class="btn" id="pUlozit">Uložit</button></div>');
+        $('#pZpet', el).onclick = zavriModal;
+        $('#pUlozit', el).onclick = async () => {
+          try { po(await api('upravPrirazeni', p.id, $('#pOd', el).value, $('#pDo', el).value)); zavriModal(); toast('Uloženo'); }
+          catch (err) { $('#pChyba', el).textContent = err.message; $('#pChyba', el).hidden = false; }
+        };
+        return;
+      }
       if (u) {
         const ok = await dialog({ text: 'Ukončit přiřazení k této organizaci ke dnešnímu dni? Dosavadní hodiny zůstanou zachované.', potvrdit: 'Ukončit' });
         if (ok.ok) { po(await api('ukonciPrirazeni', u.dataset.ukoncit, dnes)); toast('Přiřazení ukončeno'); }
