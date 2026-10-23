@@ -1,0 +1,5 @@
+node_modules/
+testy/vystup/
+.clasprc.json
+*.log
+.DS_Store
