@@ -252,7 +252,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-23f</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-23g</p>
   </div>
 </div>
 <div class="app" id="app" hidden>
@@ -539,6 +539,10 @@ function pole(z, nazev, typ, o) {
   return '<div class="fld' + (o.full ? ' full' : '') + '"><label><span>' + esc(o.label || nazev) + '</span><em class="ind" data-ind="' + esc(nazev) + '"></em></label>' + input + '</div>';
 }
 
+// Tlačítko smazání dokumentu (jen u upravitelného záznamu a jen když dokument existuje)
+function smazBtn(typ, url, edit) {
+  return edit && url ? ' <button class="btn ghost danger small" data-smaz="' + typ + '">Smazat</button>' : '';
+}
 // Věk v letech k dnešku (null, pokud chybí datum)
 function vekKDatu(s) {
   const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -613,9 +617,9 @@ function vDetail() {
     '<section class="card"><h2>Dokumenty</h2><ul class="doclist">' +
     '<li><span>Osobní složka</span>' + odkaz(z['Složka'], 'Otevřít složku') + '</li>' +
     '<li><span>Registrační formulář</span>' + odkaz(z['Registrace (PDF)'], 'PDF') + '</li>' +
-    '<li><span>Smlouva' + (z['Číslo smlouvy'] ? ' <code>' + esc(z['Číslo smlouvy']) + '</code>' : '') + (z['Datum smlouvy'] ? ' <span class="muted small">' + esc(fmtD(z['Datum smlouvy'])) + '</span>' : '') + '</span>' + odkaz(z['Smlouva (PDF)'], 'Dokument') + '</li>' +
-    '<li><span>Docházkový list</span>' + odkaz(z['Docházkový list'], 'Dokument') + '</li>' +
-    '<li><span>Záznam o přípravě</span>' + odkaz(z['Záznam o přípravě'], 'Dokument') + '</li></ul>' +
+    '<li><span>Smlouva' + (z['Číslo smlouvy'] ? ' <code>' + esc(z['Číslo smlouvy']) + '</code>' : '') + (z['Datum smlouvy'] ? ' <span class="muted small">' + esc(fmtD(z['Datum smlouvy'])) + '</span>' : '') + '</span>' + odkaz(z['Smlouva (PDF)'], 'Dokument') + smazBtn('smlouva', z['Smlouva (PDF)'], edit) + '</li>' +
+    '<li><span>Docházkový list</span>' + odkaz(z['Docházkový list'], 'Dokument') + smazBtn('dochazka', z['Docházkový list'], edit) + '</li>' +
+    '<li><span>Záznam o přípravě</span>' + odkaz(z['Záznam o přípravě'], 'Dokument') + smazBtn('priprava', z['Záznam o přípravě'], edit) + '</li></ul>' +
     (edit ? '<div class="btns"><button class="btn" data-gen="smlouva">' + (z['Smlouva (PDF)'] ? 'Vygenerovat smlouvu znovu' : 'Vygenerovat smlouvu') + '</button>' +
       '<button class="btn ghost" data-gen="dochazka">Vygenerovat docházkový list</button>' +
       '<button class="btn ghost" data-gen="priprava">Záznam o přípravě</button></div>' : '') +
@@ -712,6 +716,18 @@ function vDetail() {
     } catch (e) { toast(e.message, 'err'); sz.disabled = false; }
   };
 
+  $$('[data-smaz]').forEach(b => b.onclick = async () => {
+    const typ = b.dataset.smaz;
+    const nazvy = { smlouva: 'smlouvu', dochazka: 'docházkový list', priprava: 'záznam o přípravě' };
+    const o = await dialog({ text: 'Opravdu chcete smazat ' + nazvy[typ] + '? Dokument se přesune do koše na Disku, odkud ho lze do 30 dnů obnovit.', potvrdit: 'Smazat' });
+    if (!o.ok) return;
+    b.disabled = true;
+    try {
+      const r = await api('smazDokument', z.ID, typ);
+      nahrad(r.zaznam); render();
+      toast('Dokument byl smazán.');
+    } catch (e) { toast(e.message, 'err'); b.disabled = false; }
+  });
   $$('[data-gen]').forEach(b => b.onclick = async () => {
     const typ = b.dataset.gen;
     if (typ === 'smlouva' && z['Smlouva (PDF)']) {

@@ -44,6 +44,7 @@ const API_ADMIN = {
   naplanujSchuzku: function () { return naplanujSchuzku.apply(null, arguments); },
   zrusSchuzku: function () { return zrusSchuzku.apply(null, arguments); },
   generujDokument: function () { return generujDokument.apply(null, arguments); },
+  smazDokument: function () { return smazDokument.apply(null, arguments); },
   vytvorUkazkoveSablony: function () { return vytvorUkazkoveSablony.apply(null, arguments); },
   nactiAdministraci: function () { return nactiAdministraci.apply(null, arguments); },
   ulozBunkuListu: function () { return ulozBunkuListu.apply(null, arguments); },

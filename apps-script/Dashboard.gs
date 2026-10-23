@@ -694,6 +694,38 @@ function generujDokument(token, id, typ, misto, skolitel, skolitelPraxe) {
   });
 }
 
+// Smazání dokumentu z karty: dokument i jeho zástupce se přesunou do koše na Disku (lze obnovit 30 dní)
+// a v tabulce se vymaže odkaz. Číslo smlouvy zůstává, aby se nepřidělovalo znovu.
+function smazDokument(token, id, typ) {
+  const a = overAdmin_(token, 'Koordinátor');
+  const sloupec = { smlouva: 'Smlouva (PDF)', dochazka: 'Docházkový list', priprava: 'Záznam o přípravě' }[typ];
+  if (!sloupec) throw new Error('Neznámý typ dokumentu.');
+  return sZamkem_(() => {
+    const sh = list_(LISTY.DOBROVOLNICI);
+    const hlav = hlavicky_(sh);
+    const radek = najdiRadek_(sh, hlav, id);
+    const z = zaznamObjekt_(sh, hlav, radek);
+    const fid = extrahujId_(z[sloupec]);
+    if (!fid) throw new Error('Tento dokument už v kartě není.');
+    try { DriveApp.getFileById(fid).setTrashed(true); } catch (e) { console.warn(e); }
+    const idSlozky = extrahujId_(z['Složka']);
+    if (idSlozky) {
+      try {
+        const it = DriveApp.getFolderById(idSlozky).getFiles();
+        while (it.hasNext()) {
+          const f = it.next();
+          if (f.getMimeType() === MimeType.SHORTCUT && f.getTargetId() === fid) f.setTrashed(true);
+        }
+      } catch (e) { console.warn(e); }
+    }
+    const zmeny = { 'Naposledy upraveno': new Date(), 'Upravil/a': a.email };
+    zmeny[sloupec] = '';
+    zapisDoRadku_(sh, radek, hlav, zmeny);
+    log_('Smazán dokument (' + sloupec + ')', id, '');
+    return { zaznam: zaznamObjekt_(sh, hlav, radek) };
+  });
+}
+
 // Místa školení z Nastavení (oddělená čárkou), např. „Pardubice, Chrudim“
 function mistaSkoleni_(n) {
   return String(n.mista_skoleni || '').split(',').map(s => s.trim()).filter(Boolean);
