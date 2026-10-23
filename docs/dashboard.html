@@ -327,14 +327,14 @@ function toast(text, typ, odkaz) {
 }
 function dialog(o) {
   return new Promise(ok => {
-    $('#dlgText').textContent = o.text;
+    $('#dlgText').innerHTML = esc(o.text) + (o.chyba ? '<br><strong class="warn">' + esc(o.chyba) + '</strong>' : '');
     $('#dlgAno').textContent = o.potvrdit || 'Potvrdit';
     $('#dlgCheckWrap').hidden = !o.zaskrtnout;
     $('#dlgCheck').checked = !!o.vychoziZaskrtnuto;
     $('#dlgCheckText').textContent = o.zaskrtnout || '';
     $('#dlgVyber').hidden = !o.vyber && !o.pole;
     $('#dlgVyber').innerHTML = (o.vyber || []).map(v => '<label style="display:block;margin-bottom:12px"><span class="muted small">' + esc(v.popisek) + '</span>' +
-      '<select data-vyber="' + esc(v.klic) + '" style="width:100%">' + v.moznosti.map(m => '<option value="' + esc(m) + '">' + esc(m) + '</option>').join('') + '</select></label>').join('') +
+      '<select data-vyber="' + esc(v.klic) + '" style="width:100%">' + v.moznosti.map(m => '<option value="' + esc(m) + '"' + (m === v.vybrano ? ' selected' : '') + '>' + esc(m) + '</option>').join('') + '</select></label>').join('') +
       (o.pole || []).map(p => '<label style="display:block;margin-bottom:12px"><span class="muted small">' + esc(p.popisek) + '</span>' +
       (p.typ === 'textarea'
         ? '<textarea data-udaj="' + esc(p.klic) + '" rows="5" style="width:100%">' + esc(p.hodnota || '') + '</textarea></label>'
@@ -558,6 +558,26 @@ function vekKDatu(s) {
   if (t.getMonth() < d.getMonth() || (t.getMonth() === d.getMonth() && t.getDate() < d.getDate())) vek--;
   return vek;
 }
+// Co ještě chybí pro smlouvu (hodnoty z okna mají přednost před kartou); prázdný text = vše vyplněno
+function chybaSmlouvy(z, u) {
+  const hod = k => String(u[k] !== undefined ? u[k] : (z[k] || '')).trim();
+  const vek = vekKDatu(hod('Datum narození'));
+  const chybi = [];
+  if (!hod('Služba do')) chybi.push('konec služby');
+  if (!hod('Datum narození')) chybi.push('datum narození');
+  if (!hod('Ulice a č.p.')) chybi.push('ulice a č.p.');
+  if (!hod('PSČ')) chybi.push('PSČ');
+  if (!hod('Obec')) chybi.push('obec');
+  if (!hod('E-mail')) chybi.push('e-mail');
+  if (!hod('Telefon')) chybi.push('telefon');
+  if (vek !== null && vek < 18) {
+    [['Zástupce – jméno', 'jméno zástupce'], ['Zástupce – adresa', 'adresa zástupce'], ['Zástupce – datum narození', 'datum narození zástupce'],
+      ['Zástupce – e-mail', 'e-mail zástupce'], ['Zástupce – telefon', 'telefon zástupce']]
+      .forEach(([k, popisek]) => { if (!hod(k)) chybi.push(popisek); });
+  }
+  return chybi.length ? 'Doplňte prosím: ' + chybi.join(', ') + '.' : '';
+}
+
 // Údaje pro smlouvu, které v kartě chybí (a u dobrovolníka do 18 let údaje zástupce)
 function poliSmlouvy(z) {
   const vek = vekKDatu(z['Datum narození']);
@@ -764,15 +784,20 @@ function vDetail() {
     if (typ === 'smlouva') {
       const orgy = String(z['Organizace'] || '').split(',').map(s => s.trim()).filter(Boolean);
       if (!orgy.length) { toast('Dobrovolník nemá přiřazenou organizaci. Nejdřív ho přiřaďte.', 'err'); return; }
-      const o = await dialog({ text: 'Doplňte údaje do smlouvy. Vyplněné údaje se uloží do karty dobrovolníka.', potvrdit: 'Vytvořit smlouvu',
-        vyber: [
-          { klic: 'kontakt', popisek: 'Kontaktní osoba ve smlouvě', moznosti: D.nastaveni.kontaktniOsoby },
-          { klic: 'organizace', popisek: 'Přijímající organizace', moznosti: orgy }
-        ],
-        pole: poliSmlouvy(z) });
-      if (!o.ok) return;
+      // Okno zůstává otevřené, dokud nejsou vyplněné všechny povinné údaje; vyplněné hodnoty se zachovají
+      let pole = poliSmlouvy(z), vyber = null, chyba = '', o;
+      do {
+        vyber = [
+          { klic: 'kontakt', popisek: 'Kontaktní osoba ve smlouvě', moznosti: D.nastaveni.kontaktniOsoby, vybrano: volby.kontakt },
+          { klic: 'organizace', popisek: 'Přijímající organizace', moznosti: orgy, vybrano: volby.organizace }
+        ];
+        o = await dialog({ text: 'Doplňte údaje do smlouvy. Vyplněné údaje se uloží do karty dobrovolníka.', potvrdit: 'Vytvořit smlouvu', vyber: vyber, pole: pole, chyba: chyba });
+        if (!o.ok) return;
+        chyba = chybaSmlouvy(z, o.udaje);
+        volby = o.volby;
+        pole = pole.map(p => Object.assign({}, p, { hodnota: o.udaje[p.klic] !== undefined ? o.udaje[p.klic] : p.hodnota }));
+      } while (chyba);
       udaje = o.udaje;
-      volby = o.volby;
     }
     if (typ === 'priprava') {
       const n = D.nastaveni;

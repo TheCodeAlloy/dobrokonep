@@ -804,7 +804,7 @@ function vlozCinnosti_(body, text) {
   const jeSeznam = prvek.getType() === DocumentApp.ElementType.LIST_ITEM;
   const odrazka = jeSeznam ? prvek.asListItem().getGlyphType() : null;
   const uroven = jeSeznam ? prvek.asListItem().getNestingLevel() : 0;
-  prvek.asParagraph().setText(radky[0] || '');
+  (jeSeznam ? prvek.asListItem() : prvek.asParagraph()).setText(radky[0] || '');
   let index = body.getChildIndex(prvek) + 1;
   radky.slice(1).forEach(r => {
     if (jeSeznam) body.insertListItem(index++, r).setGlyphType(odrazka).setNestingLevel(uroven);
