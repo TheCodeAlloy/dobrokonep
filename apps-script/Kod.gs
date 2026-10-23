@@ -51,6 +51,7 @@ const SLOUPCE_DOBROVOLNICI = [
   'Číslo smlouvy', 'Smlouva (PDF)', 'Datum smlouvy', 'Docházkový list',
   'Složka', 'Registrace (PDF)', 'Pozvánka do portálu', 'Upozornění', 'Naposledy upraveno', 'Upravil/a',
   'Služba do', 'Zástupce – jméno', 'Zástupce – adresa', 'Zástupce – datum narození', 'Zástupce – e-mail', 'Zástupce – telefon',
+  'Činnosti ve smlouvě',
   'Záznam o přípravě'
 ];
 
@@ -133,6 +134,8 @@ function vychoziNastaveni_(email) {
     ['kalendar_id', '', 'ID kalendáře pro schůzky (prázdné = hlavní kalendář účtu, pod kterým systém běží)'],
     ['delka_schuzky_min', 60, 'Délka schůzky v minutách'],
     ['misto_schuzky_vychozi', '', 'Výchozí místo schůzky (předvyplní se při plánování)'],
+    ['kontaktni_osoby', 'Mgr. Kateřina Mužíková, tel. 608 236 547, muzikova@konep.cz; Ing. Lucie Křivková, tel. 775 551 412, krivkova@konep.cz', 'Kontaktní osoby na výběr do smlouvy (oddělte středníkem)'],
+    ['cinnosti_smlouvy', 'Pravidelná návštěva klientů v domově seniorů (povídání si, četba, hraní společenských her, pobyt na zahradě domova, procházky po blízkém okolí domova apod.)\nPomoc se zajištěním jednorázových akcí a volnočasových projektů pro klienty domova (akce v domově, návštěvy kulturních zařízení, výlety apod.)', 'Výchozí činnosti do článku III smlouvy (každá na nový řádek)'],
     ['sablona_smlouvy_18', '', 'Dokument Google se šablonou smlouvy pro dobrovolníky od 18 let (odkaz nebo ID)'],
     ['sablona_smlouvy_15_17', '', 'Dokument Google se šablonou smlouvy pro dobrovolníky 15–17 let (odkaz nebo ID)'],
     ['sablona_dochazky', '', 'Dokument Google se šablonou docházkového listu (odkaz nebo ID)'],

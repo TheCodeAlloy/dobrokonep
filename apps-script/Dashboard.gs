@@ -16,7 +16,8 @@ const POLE_EDITOVATELNA = [
   'Preferovaný kontakt', 'Oblasti zájmu', 'Oblast – jiné', 'Preferované místo', 'Dostupnost',
   'Zkušenosti a dovednosti', 'Zaměstnání / studium', 'Vzdělání', 'Jak se o nás dozvěděl/a', 'Stav', 'Místo působení',
   'Dobrovolníkem od', 'Poznámky', 'Upozornění',
-  'Služba do', 'Zástupce – jméno', 'Zástupce – adresa', 'Zástupce – datum narození', 'Zástupce – e-mail', 'Zástupce – telefon'
+  'Služba do', 'Zástupce – jméno', 'Zástupce – adresa', 'Zástupce – datum narození', 'Zástupce – e-mail', 'Zástupce – telefon',
+  'Činnosti ve smlouvě'
 ];
 
 // Funkce, ne konstanta: LISTY je definováno v Kod.gs, který se načítá později.
@@ -300,6 +301,8 @@ function nactiData(token) {
     vzdelani: VZDELANI,
     nastaveni: {
       misto_schuzky_vychozi: String(n.misto_schuzky_vychozi || ''),
+      kontaktniOsoby: kontaktniOsoby_(n),
+      cinnostiSmlouvy: String(n.cinnosti_smlouvy || ''),
       sablonaSmlouvy: !!extrahujId_(n.sablona_smlouvy_18) && !!extrahujId_(n.sablona_smlouvy_15_17),
       sablonaDochazky: !!extrahujId_(n.sablona_dochazky),
       sablonaPripravy: !!extrahujId_(n.sablona_pripravy),
@@ -614,7 +617,7 @@ function smazZaznam(token, id, smazatSoubory) {
 
 // ===== DOKUMENTY (SMLOUVA, DOCHÁZKOVÝ LIST) ===================
 
-function generujDokument(token, id, typ, misto, skolitel, skolitelPraxe, udaje) {
+function generujDokument(token, id, typ, misto, skolitel, skolitelPraxe, udaje, kontakt, organizace) {
   const a = overAdmin_(token, 'Koordinátor');
   if (['smlouva', 'dochazka', 'priprava'].indexOf(typ) < 0) throw new Error('Neznámý typ dokumentu.');
   const n = nastaveni_();
@@ -635,6 +638,10 @@ function generujDokument(token, id, typ, misto, skolitel, skolitelPraxe, udaje) 
     if (typ === 'smlouva') {
       const chybi = chybejiciUdajeSmlouvy_(z, vek);
       if (chybi.length) throw new Error('Doplňte prosím: ' + chybi.join(', ') + '.');
+      if (kontaktniOsoby_(n).indexOf(kontakt) < 0) throw new Error('Vyberte kontaktní osobu.');
+      if (String(z['Organizace'] || '').split(',').map(s => s.trim()).indexOf(String(organizace || '').trim()) < 0) {
+        throw new Error('Vyberte přijímající organizaci, ke které je dobrovolník přiřazený.');
+      }
     }
     const klic = typ === 'smlouva'
       ? (vek < 18 ? 'sablona_smlouvy_15_17' : 'sablona_smlouvy_18')
@@ -667,12 +674,13 @@ function generujDokument(token, id, typ, misto, skolitel, skolitelPraxe, udaje) 
       : typ === 'smlouva' ? slozkaZNastaveni_(n.slozka_smlouvy, 'slozka_smlouvy') : null;
     const kopie = DriveApp.getFileById(sablonaId).makeCopy(nazev, spolecnaSlozka || osobni);
     const doc = DocumentApp.openById(kopie.getId());
-    const hodnoty = promenneDokumentu_(n, z, cislo || '', misto || '', skolitel || '', skolitelPraxe || '');
+    const hodnoty = promenneDokumentu_(n, z, cislo || '', misto || '', skolitel || '', skolitelPraxe || '', kontakt || '', organizace || '');
     if (typ === 'smlouva') hodnoty.datum_smlouvy = hodnoty.dnesni_datum; // datum smlouvy = den vytvoření
     [doc.getBody(), doc.getHeader(), doc.getFooter()].forEach(sekce => {
       if (!sekce) return;
       Object.keys(hodnoty).forEach(k => sekce.replaceText('\\{\\{\\s*' + k + '\\s*\\}\\}', hodnoty[k]));
     });
+    if (typ === 'smlouva') vlozCinnosti_(doc.getBody(), z['Činnosti ve smlouvě'] || n.cinnosti_smlouvy || '');
     doc.saveAndClose();
 
     // Všechny dokumenty zůstávají Dokumenty Google (editovatelné před tiskem a pro pozdější elektronický podpis).
@@ -701,7 +709,8 @@ const UDAJE_SMLOUVY = {
   'Služba do': 'datum', 'Datum narození': 'datum', 'Ulice a č.p.': 'text', 'PSČ': 'text', 'Obec': 'text',
   'E-mail': 'text', 'Telefon': 'text',
   'Zástupce – jméno': 'text', 'Zástupce – adresa': 'text', 'Zástupce – datum narození': 'datum',
-  'Zástupce – e-mail': 'text', 'Zástupce – telefon': 'text'
+  'Zástupce – e-mail': 'text', 'Zástupce – telefon': 'text',
+  'Činnosti ve smlouvě': 'text'
 };
 
 function ulozUdajeDobrovolnika_(sh, hlav, radek, udaje) {
@@ -718,6 +727,7 @@ function ulozUdajeDobrovolnika_(sh, hlav, radek, udaje) {
 function chybejiciUdajeSmlouvy_(z, vek) {
   const chybi = [];
   if (!z['Služba do']) chybi.push('konec služby');
+  if (!z['Organizace']) chybi.push('přiřazení k přijímající organizaci');
   if (!z['Datum narození']) chybi.push('datum narození');
   if (!z['Ulice a č.p.'] || !z['Obec'] || !z['PSČ']) chybi.push('trvalé bydliště');
   if (!z['E-mail']) chybi.push('e-mail');
@@ -779,18 +789,42 @@ function vekKDatu_(narozeni, kDatu) {
   return vek;
 }
 
+// Kontaktní osoby pro smlouvu z Nastavení (oddělené středníkem)
+function kontaktniOsoby_(n) {
+  return String(n.kontaktni_osoby || '').split(';').map(s => s.trim()).filter(Boolean);
+}
+
+// Činnosti v článku III: první řádek nahradí zástupný znak, další se vloží jako nové odrážky
+// (stejný typ odrážky a odsazení jako v šabloně)
+function vlozCinnosti_(body, text) {
+  const hit = body.findText('\\{\\{\\s*cinnosti\\s*\\}\\}');
+  if (!hit) return;
+  const radky = String(text || '').split('\n').map(s => s.trim()).filter(Boolean);
+  const prvek = hit.getElement().getParent();
+  const jeSeznam = prvek.getType() === DocumentApp.ElementType.LIST_ITEM;
+  const odrazka = jeSeznam ? prvek.asListItem().getGlyphType() : null;
+  const uroven = jeSeznam ? prvek.asListItem().getNestingLevel() : 0;
+  prvek.asParagraph().setText(radky[0] || '');
+  let index = body.getChildIndex(prvek) + 1;
+  radky.slice(1).forEach(r => {
+    if (jeSeznam) body.insertListItem(index++, r).setGlyphType(odrazka).setNestingLevel(uroven);
+    else body.insertParagraph(index++, r);
+  });
+}
+
 // Školitelé z Nastavení (oddělení středníkem, protože jména obsahují čárky)
 function skolitele_(n) {
   return String(n.skolitele_skoleni || '').split(';').map(s => s.trim()).filter(Boolean);
 }
 
-function promenneDokumentu_(n, z, cislo, misto, skolitel, skolitelPraxe) {
+function promenneDokumentu_(n, z, cislo, misto, skolitel, skolitelPraxe, kontakt, organizace) {
   const d = s => {
     const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
     return m ? (+m[3]) + '. ' + (+m[2]) + '. ' + m[1] : String(s || '');
   };
   const prvniOrg = String(z['Organizace'] || '').split(',')[0].trim();
-  const org = organizace_().find(o => o.nazev === prvniOrg) || {};
+  const vybranaOrg = String(organizace || '').trim() || prvniOrg; // ve smlouvě ta, kterou vybere koordinátor
+  const org = organizace_().find(o => o.nazev === vybranaOrg) || {};
   const tecky = '……………………';
   const nebo = v => String(v || '').trim() || tecky;
   return {
@@ -829,6 +863,9 @@ function promenneDokumentu_(n, z, cislo, misto, skolitel, skolitelPraxe) {
     misto_skoleni: nebo(misto),
     skolitel: nebo(skolitel),
     skolitel_praxe: nebo(skolitelPraxe),
+    kontakt_osoba: nebo(kontakt),
+    prijimajici_organizace: nebo(vybranaOrg),
+    prijimajici_adresa: nebo(org.adresa),
     dnesni_datum: Utilities.formatDate(new Date(), TZ, 'd. M. yyyy'),
     nazev_organizace: String(n.nazev_organizace || '')
   };
