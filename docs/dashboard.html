@@ -252,7 +252,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-23i</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-23j</p>
   </div>
 </div>
 <div class="app" id="app" hidden>
@@ -332,9 +332,11 @@ function dialog(o) {
     $('#dlgCheckWrap').hidden = !o.zaskrtnout;
     $('#dlgCheck').checked = !!o.vychoziZaskrtnuto;
     $('#dlgCheckText').textContent = o.zaskrtnout || '';
-    $('#dlgVyber').hidden = !o.vyber;
+    $('#dlgVyber').hidden = !o.vyber && !o.pole;
     $('#dlgVyber').innerHTML = (o.vyber || []).map(v => '<label style="display:block;margin-bottom:12px"><span class="muted small">' + esc(v.popisek) + '</span>' +
-      '<select data-vyber="' + esc(v.klic) + '" style="width:100%">' + v.moznosti.map(m => '<option value="' + esc(m) + '">' + esc(m) + '</option>').join('') + '</select></label>').join('');
+      '<select data-vyber="' + esc(v.klic) + '" style="width:100%">' + v.moznosti.map(m => '<option value="' + esc(m) + '">' + esc(m) + '</option>').join('') + '</select></label>').join('') +
+      (o.pole || []).map(p => '<label style="display:block;margin-bottom:12px"><span class="muted small">' + esc(p.popisek) + '</span>' +
+      '<input type="' + esc(p.typ) + '" data-udaj="' + esc(p.klic) + '" value="' + esc(p.hodnota || '') + '" style="width:100%"></label>').join('');
     // Výběr s „kopiruj“ se po změně zdrojového výběru nastaví na stejnou hodnotu (ale jde změnit)
     (o.vyber || []).filter(v => v.kopiruj).forEach(v => {
       $('#dlgVyber [data-vyber="' + v.kopiruj + '"]').onchange = e => { $('#dlgVyber [data-vyber="' + v.klic + '"]').value = e.target.value; };
@@ -343,8 +345,10 @@ function dialog(o) {
     const konec = v => {
       const volby = {};
       $$('#dlgVyber [data-vyber]').forEach(s => volby[s.dataset.vyber] = s.value);
+      const udaje = {};
+      $$('#dlgVyber [data-udaj]').forEach(i => udaje[i.dataset.udaj] = i.value);
       $('#dlg').hidden = true; $('#dlgAno').onclick = $('#dlgNe').onclick = null;
-      ok({ ok: v, check: $('#dlgCheck').checked, volby });
+      ok({ ok: v, check: $('#dlgCheck').checked, volby, udaje });
     };
     $('#dlgAno').onclick = () => konec(true);
     $('#dlgNe').onclick = () => konec(false);
@@ -552,13 +556,29 @@ function vekKDatu(s) {
   if (t.getMonth() < d.getMonth() || (t.getMonth() === d.getMonth() && t.getDate() < d.getDate())) vek--;
   return vek;
 }
+// Údaje pro smlouvu, které v kartě chybí (a u dobrovolníka do 18 let údaje zástupce)
+function poliSmlouvy(z) {
+  const vek = vekKDatu(z['Datum narození']);
+  const pole = [{ klic: 'Služba do', popisek: 'Služba do (konec služby)', typ: 'date', hodnota: z['Služba do'] || '' }];
+  [['Datum narození', 'Datum narození', 'date'], ['Ulice a č.p.', 'Trvalé bydliště – ulice a č.p.', 'text'], ['PSČ', 'PSČ', 'text'],
+    ['Obec', 'Obec', 'text'], ['E-mail', 'E-mail', 'email'], ['Telefon', 'Telefon', 'tel']]
+    .forEach(([k, p, t]) => { if (!z[k]) pole.push({ klic: k, popisek: p, typ: t, hodnota: '' }); });
+  if (vek !== null && vek < 18) {
+    [['Zástupce – jméno', 'Jméno a příjmení zástupce', 'text'], ['Zástupce – adresa', 'Trvalé bydliště zástupce', 'text'],
+      ['Zástupce – datum narození', 'Datum narození zástupce', 'date'], ['Zástupce – e-mail', 'E-mail zástupce', 'email'],
+      ['Zástupce – telefon', 'Telefon zástupce', 'tel']]
+      .forEach(([k, p, t]) => pole.push({ klic: k, popisek: p, typ: t, hodnota: z[k] || '' }));
+  }
+  return pole;
+}
 // Karta zákonného zástupce: u dobrovolníka do 18 let, nebo když už je něco vyplněno
 function zastupceHtml(z) {
   return '<section class="card"><h2>Zákonný zástupce</h2><p class="muted small">Vyplňte u dobrovolníka do 18 let. Údaje se použijí do smlouvy.</p><div class="fields">' +
     pole(z, 'Zástupce – jméno', 'text', { label: 'Jméno a příjmení' }) +
     pole(z, 'Zástupce – datum narození', 'date') +
     pole(z, 'Zástupce – adresa', 'text', { full: true, label: 'Trvalé bydliště' }) +
-    pole(z, 'Zástupce – kontakt', 'text', { full: true, label: 'Kontakt (e-mail, telefon)' }) +
+    pole(z, 'Zástupce – e-mail', 'email', { full: true, label: 'E-mail zástupce' }) +
+    pole(z, 'Zástupce – telefon', 'tel', { label: 'Telefon zástupce' }) +
     '</div></section>';
 }
 
@@ -735,6 +755,12 @@ function vDetail() {
       const o = await dialog({ text: 'Smlouva už existuje (' + z['Číslo smlouvy'] + '). Vytvořit novou verzi se stejným číslem? Původní soubor zůstane zachovaný.', potvrdit: 'Vytvořit novou verzi' });
       if (!o.ok) return;
     }
+    let udaje = null;
+    if (typ === 'smlouva') {
+      const o = await dialog({ text: 'Doplňte údaje do smlouvy. Vyplněné údaje se uloží do karty dobrovolníka.', potvrdit: 'Vytvořit smlouvu', pole: poliSmlouvy(z) });
+      if (!o.ok) return;
+      udaje = o.udaje;
+    }
     let volby = {};
     if (typ === 'priprava') {
       const n = D.nastaveni;
@@ -750,7 +776,7 @@ function vDetail() {
     }
     const puvodni = b.textContent; b.disabled = true; b.textContent = 'Generuji…';
     try {
-      const r = await api('generujDokument', z.ID, typ, volby.misto || '', volby.skolitel || '', volby.skolitelPraxe || '');
+      const r = await api('generujDokument', z.ID, typ, volby.misto || '', volby.skolitel || '', volby.skolitelPraxe || '', udaje);
       nahrad(r.zaznam); render();
       const nazvy = { priprava: 'Záznam o přípravě vytvořen.', smlouva: 'Smlouva vygenerována.', dochazka: 'Docházkový list vygenerován.' };
       toast(nazvy[typ], '', { url: r.docUrl, text: 'Otevřít dokument' });

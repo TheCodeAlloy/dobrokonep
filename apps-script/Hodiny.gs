@@ -169,7 +169,7 @@ function sestavRocniVykaz_(rok) {
       datumCz_(z['Datum narození']),
       [z['Ulice a č.p.'], [z['PSČ'], z['Obec']].filter(String).join(' ')].filter(String).join(', '),
       z['E-mail'] || '', z['Telefon'] || '',
-      [z['Zástupce – jméno'], z['Zástupce – kontakt']].filter(String).join(', '),
+      [z['Zástupce – jméno'], z['Zástupce – e-mail'], z['Zástupce – telefon']].filter(String).join(', '),
       orgy[0] || '', orgy[1] || '', orgy[2] || '',
       z['Místo působení'] || '',
       z['Číslo smlouvy'] || '', datumCz_(z['Datum smlouvy'])

@@ -16,7 +16,7 @@ const POLE_EDITOVATELNA = [
   'Preferovaný kontakt', 'Oblasti zájmu', 'Oblast – jiné', 'Preferované místo', 'Dostupnost',
   'Zkušenosti a dovednosti', 'Zaměstnání / studium', 'Vzdělání', 'Jak se o nás dozvěděl/a', 'Stav', 'Místo působení',
   'Dobrovolníkem od', 'Poznámky', 'Upozornění',
-  'Služba do', 'Zástupce – jméno', 'Zástupce – adresa', 'Zástupce – datum narození', 'Zástupce – kontakt'
+  'Služba do', 'Zástupce – jméno', 'Zástupce – adresa', 'Zástupce – datum narození', 'Zástupce – e-mail', 'Zástupce – telefon'
 ];
 
 // Funkce, ne konstanta: LISTY je definováno v Kod.gs, který se načítá později.
@@ -614,7 +614,7 @@ function smazZaznam(token, id, smazatSoubory) {
 
 // ===== DOKUMENTY (SMLOUVA, DOCHÁZKOVÝ LIST) ===================
 
-function generujDokument(token, id, typ, misto, skolitel, skolitelPraxe) {
+function generujDokument(token, id, typ, misto, skolitel, skolitelPraxe, udaje) {
   const a = overAdmin_(token, 'Koordinátor');
   if (['smlouva', 'dochazka', 'priprava'].indexOf(typ) < 0) throw new Error('Neznámý typ dokumentu.');
   const n = nastaveni_();
@@ -626,13 +626,15 @@ function generujDokument(token, id, typ, misto, skolitel, skolitelPraxe) {
     const sh = list_(LISTY.DOBROVOLNICI);
     const hlav = hlavicky_(sh);
     const radek = najdiRadek_(sh, hlav, id);
+    // Údaje, které doplnil koordinátor v okně před generováním, se uloží do karty
+    if (typ === 'smlouva' && udaje) ulozUdajeDobrovolnika_(sh, hlav, radek, udaje);
     const z = zaznamObjekt_(sh, hlav, radek);
 
     // Smlouva: verze podle věku dobrovolníka k dnešnímu dni (pod 18 let = verze pro 15–17 let)
     const vek = vekKDatu_(z['Datum narození'], new Date());
-    if (typ === 'smlouva' && vek === null) throw new Error('U dobrovolníka chybí datum narození. Doplňte ho v kartě.');
-    if (typ === 'smlouva' && vek < 18 && !z['Zástupce – jméno']) {
-      throw new Error('Dobrovolník je mladší 18 let. Doplňte v kartě údaje zákonného zástupce.');
+    if (typ === 'smlouva') {
+      const chybi = chybejiciUdajeSmlouvy_(z, vek);
+      if (chybi.length) throw new Error('Doplňte prosím: ' + chybi.join(', ') + '.');
     }
     const klic = typ === 'smlouva'
       ? (vek < 18 ? 'sablona_smlouvy_15_17' : 'sablona_smlouvy_18')
@@ -692,6 +694,42 @@ function generujDokument(token, id, typ, misto, skolitel, skolitelPraxe) {
     zapisDoRadku_(sh, radek, hlav, zmeny);
     return { docUrl: kopie.getUrl(), zaznam: zaznamObjekt_(sh, hlav, radek) };
   });
+}
+
+// Údaje, které se doplňují v okně před generováním smlouvy: název sloupce → typ hodnoty
+const UDAJE_SMLOUVY = {
+  'Služba do': 'datum', 'Datum narození': 'datum', 'Ulice a č.p.': 'text', 'PSČ': 'text', 'Obec': 'text',
+  'E-mail': 'text', 'Telefon': 'text',
+  'Zástupce – jméno': 'text', 'Zástupce – adresa': 'text', 'Zástupce – datum narození': 'datum',
+  'Zástupce – e-mail': 'text', 'Zástupce – telefon': 'text'
+};
+
+function ulozUdajeDobrovolnika_(sh, hlav, radek, udaje) {
+  const zmeny = {};
+  Object.keys(udaje).forEach(k => {
+    if (!UDAJE_SMLOUVY[k]) return;
+    const v = String(udaje[k] == null ? '' : udaje[k]).trim().slice(0, 300);
+    zmeny[k] = UDAJE_SMLOUVY[k] === 'datum' ? (parsujDatum_(v) || '') : v;
+  });
+  zapisDoRadku_(sh, radek, hlav, zmeny);
+}
+
+// Co chybí pro smlouvu: konec služby, základní údaje a u dobrovolníka do 18 let zástupce
+function chybejiciUdajeSmlouvy_(z, vek) {
+  const chybi = [];
+  if (!z['Služba do']) chybi.push('konec služby');
+  if (!z['Datum narození']) chybi.push('datum narození');
+  if (!z['Ulice a č.p.'] || !z['Obec'] || !z['PSČ']) chybi.push('trvalé bydliště');
+  if (!z['E-mail']) chybi.push('e-mail');
+  if (!z['Telefon']) chybi.push('telefon');
+  if (vek !== null && vek < 18) {
+    if (!z['Zástupce – jméno']) chybi.push('jméno zástupce');
+    if (!z['Zástupce – adresa']) chybi.push('adresa zástupce');
+    if (!z['Zástupce – datum narození']) chybi.push('datum narození zástupce');
+    if (!z['Zástupce – e-mail']) chybi.push('e-mail zástupce');
+    if (!z['Zástupce – telefon']) chybi.push('telefon zástupce');
+  }
+  return chybi;
 }
 
 // Smazání dokumentu z karty: dokument i jeho zástupce se přesunou do koše na Disku (lze obnovit 30 dní)
@@ -786,7 +824,8 @@ function promenneDokumentu_(n, z, cislo, misto, skolitel, skolitelPraxe) {
     zastupce_jmeno: nebo(z['Zástupce – jméno']),
     zastupce_adresa: nebo(z['Zástupce – adresa']),
     zastupce_datum_narozeni: nebo(d(z['Zástupce – datum narození'])),
-    zastupce_kontakt: nebo(z['Zástupce – kontakt']),
+    zastupce_email: nebo(z['Zástupce – e-mail']),
+    zastupce_telefon: nebo(z['Zástupce – telefon']),
     misto_skoleni: nebo(misto),
     skolitel: nebo(skolitel),
     skolitel_praxe: nebo(skolitelPraxe),

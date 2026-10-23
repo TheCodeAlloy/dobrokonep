@@ -50,7 +50,7 @@ const SLOUPCE_DOBROVOLNICI = [
   'Organizace', 'Místo působení', 'Dobrovolníkem od', 'Poznámky',
   'Číslo smlouvy', 'Smlouva (PDF)', 'Datum smlouvy', 'Docházkový list',
   'Složka', 'Registrace (PDF)', 'Pozvánka do portálu', 'Upozornění', 'Naposledy upraveno', 'Upravil/a',
-  'Služba do', 'Zástupce – jméno', 'Zástupce – adresa', 'Zástupce – datum narození', 'Zástupce – kontakt',
+  'Služba do', 'Zástupce – jméno', 'Zástupce – adresa', 'Zástupce – datum narození', 'Zástupce – e-mail', 'Zástupce – telefon',
   'Záznam o přípravě'
 ];
 
