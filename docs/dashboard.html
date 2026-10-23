@@ -252,7 +252,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-23h</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-23i</p>
   </div>
 </div>
 <div class="app" id="app" hidden>
@@ -414,8 +414,8 @@ async function jdi(view, extra) {
   if (zastarale || Date.now() - posledniNacteni > 60000) obnovNaPozadi();
 }
 function render() {
-  $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.view === stav.view || (stav.view === 'detail' && b.dataset.view === 'seznam') || (stav.view === 'vykaz' && b.dataset.view === 'hodiny')));
-  ({ prehled: vPrehled, seznam: vSeznam, detail: vDetail, hodiny: vHodiny, vykaz: vVykaz, admin: vAdmin }[stav.view] || vPrehled)();
+  $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.view === stav.view || (stav.view === 'detail' && b.dataset.view === 'seznam') || ((stav.view === 'vykaz' || stav.view === 'rocni') && b.dataset.view === 'hodiny')));
+  ({ prehled: vPrehled, seznam: vSeznam, detail: vDetail, hodiny: vHodiny, vykaz: vVykaz, rocni: vRocni, admin: vAdmin }[stav.view] || vPrehled)();
 }
 $('#nav').addEventListener('click', e => {
   const b = e.target.closest('button[data-view]');
@@ -1048,7 +1048,7 @@ async function vHodiny() {
   const lide = dobrovolniciSPrirazenim();
   obsah.innerHTML =
     '<div class="hhead"><div><h1>Dobrovolnické hodiny</h1><p class="sub" id="hSouhrn">Načítám…</p></div>' +
-    (edit ? '<div class="btns"><button class="btn" id="hNovy">+ Zapsat hodiny</button><button class="btn ghost" id="hAkce">+ Akce / směna</button><button class="btn ghost" id="hVykaz">Měsíční výkaz</button></div>' : '') + '</div>' +
+    (edit ? '<div class="btns"><button class="btn" id="hNovy">+ Zapsat hodiny</button><button class="btn ghost" id="hAkce">+ Akce / směna</button><button class="btn ghost" id="hVykaz">Měsíční výkaz</button><button class="btn ghost" id="hRocni">Roční výkaz</button></div>' : '') + '</div>' +
     '<div class="toolbar">' +
     '<input type="month" id="hMesic" value="' + esc(f.mesic) + '" title="Měsíc (prázdné = celé období)">' +
     '<select id="hOrg"><option value="">Všechny organizace</option>' + orgs.map(o => '<option value="' + esc(o.id) + '"' + (o.id === f.org ? ' selected' : '') + '>' + esc(o.nazev) + '</option>').join('') + '</select>' +
@@ -1065,6 +1065,7 @@ async function vHodiny() {
     $('#hNovy').onclick = () => formZapis({ dobrovolnik: f.dobrovolnik }, nactiTabHodin);
     $('#hAkce').onclick = () => formAkce(nactiTabHodin);
     $('#hVykaz').onclick = () => jdi('vykaz', { org: f.org, mesic: f.mesic || tentoMesic() });
+    $('#hRocni').onclick = () => jdi('rocni', { rok: new Date().getFullYear() });
   }
   nactiTabHodin();
 }
@@ -1170,6 +1171,43 @@ async function zmenStav(ids, stavH) {
 }
 
 // ---------- Měsíční výkaz (tabulka dobrovolníci × dny) ----------
+// ---------- Roční výkaz (dobrovolníci × měsíce, jen schválené hodiny) ----------
+async function vRocni() {
+  obsah.onclick = null; obsah.onkeydown = null;
+  const aktualni = new Date().getFullYear();
+  if (!stav.rok) stav.rok = aktualni;
+  const roky = [aktualni - 2, aktualni - 1, aktualni, aktualni + 1];
+  obsah.innerHTML =
+    '<div class="dhead"><button class="back" id="rZpet">← Hodiny</button><div><h1>Roční výkaz dobrovolníků</h1>' +
+    '<p class="sub" style="margin:0">Schválené hodiny za jednotlivé měsíce. Export vytvoří Google tabulku.</p></div></div>' +
+    '<div class="toolbar"><select id="rRok">' + roky.map(r => '<option' + (r === Number(stav.rok) ? ' selected' : '') + '>' + r + '</option>').join('') + '</select>' +
+    '<button class="btn" id="rExport">Exportovat jako Google tabulku</button></div>' +
+    '<div class="scroll" id="rTab"><div class="loading">Načítám…</div></div>';
+  $('#rZpet').onclick = () => jdi('hodiny');
+  $('#rRok').addEventListener('change', () => { stav.rok = Number($('#rRok').value); nactiRocni(); });
+  $('#rExport').onclick = async () => {
+    const b = $('#rExport'); const puvodni = b.textContent;
+    b.disabled = true; b.textContent = 'Vytvářím tabulku…';
+    try {
+      const r = await api('exportujRocniVykaz', Number(stav.rok));
+      toast('Tabulka vytvořena.', '', { url: r.url, text: 'Otevřít tabulku' });
+    } catch (e) { toast(e.message, 'err'); }
+    b.disabled = false; b.textContent = puvodni;
+  };
+  nactiRocni();
+}
+
+async function nactiRocni() {
+  const el = $('#rTab');
+  el.innerHTML = '<div class="loading">Načítám…</div>';
+  try {
+    const r = await api('rocniVykaz', Number(stav.rok));
+    if (!r.radky.length) { el.innerHTML = '<p class="muted">Za rok ' + esc(stav.rok) + ' nejsou žádné schválené hodiny.</p>'; return; }
+    el.innerHTML = '<table class="list"><thead><tr>' + r.hlavicky.map(h => '<th>' + esc(h) + '</th>').join('') + '</tr></thead><tbody>' +
+      r.radky.map(row => '<tr>' + row.map(v => '<td>' + esc(String(v)) + '</td>').join('') + '</tr>').join('') + '</tbody></table>';
+  } catch (e) { el.innerHTML = '<p class="warn">' + esc(e.message) + '</p>'; }
+}
+
 async function vVykaz() {
   obsah.onclick = null; obsah.onkeydown = null;
   const orgs = (D.organizaceVse || []).filter(o => o.aktivni && (D.prirazeni || []).some(p => p.orgId === o.id));

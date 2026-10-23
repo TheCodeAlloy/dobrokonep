@@ -109,6 +109,89 @@ function novyKlic_(prefix) {
 
 function ymd_(d) { return d instanceof Date ? Utilities.formatDate(d, TZ, 'yyyy-MM-dd') : String(d || '').slice(0, 10); }
 
+// ===== ROČNÍ VÝKAZ (dobrovolníci × měsíce, jen schválené hodiny) =====
+const MESICE_VYKAZU = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen', 'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec'];
+
+function vykazHlavicky_() {
+  return ['Jméno', 'Datum narození', 'Trvalé bydliště', 'E-mail', 'Telefon', 'Zákonný zástupce',
+    'Organizace 1', 'Organizace 2', 'Organizace 3', 'Místo výkonu', 'Číslo smlouvy', 'Datum smlouvy']
+    .concat(MESICE_VYKAZU.map(m => m + ' (h)'), ['Celkem (h)']);
+}
+
+function rocniVykaz(token, rok) {
+  overAdmin_(token, 'Koordinátor');
+  return { hlavicky: vykazHlavicky_(), radky: sestavRocniVykaz_(rok) };
+}
+
+// Vytvoří Google tabulku s výkazem ve složce „Výkazy“ vedle složky smluv
+function exportujRocniVykaz(token, rok) {
+  overAdmin_(token, 'Koordinátor');
+  const data = [vykazHlavicky_()].concat(sestavRocniVykaz_(rok));
+  const ss = SpreadsheetApp.create('Výkaz práce ' + rok + ' – dobrovolníci');
+  const sh = ss.getSheets()[0];
+  sh.getRange(1, 1, data.length, data[0].length).setValues(data);
+  sh.getRange(1, 1, 1, data[0].length).setFontWeight('bold');
+  sh.setFrozenRows(1);
+  DriveApp.getFileById(ss.getId()).moveTo(slozkaVedle_(nastaveni_(), 'Výkazy'));
+  log_('Exportován roční výkaz', '', String(rok));
+  return { url: ss.getUrl() };
+}
+
+function sestavRocniVykaz_(rok) {
+  const r = Number(rok);
+  const shH = list_(LISTY.HODINY);
+  const hlavH = hlavicky_(shH);
+  const hod = shH.getLastRow() > 1 ? shH.getRange(2, 1, shH.getLastRow() - 1, hlavH.length).getValues() : [];
+  const iDobr = hlavH.indexOf('ID dobrovolníka'), iDatum = hlavH.indexOf('Datum');
+  const iMin = hlavH.indexOf('Minut'), iStav = hlavH.indexOf('Stav');
+  const minutyPodle = {};
+  hod.forEach(row => {
+    if (String(row[iStav]).trim() !== 'Schváleno') return;
+    const d = ymd_(row[iDatum]);
+    if (Number(d.slice(0, 4)) !== r) return;
+    const id = String(row[iDobr]).trim();
+    if (!minutyPodle[id]) minutyPodle[id] = new Array(12).fill(0);
+    minutyPodle[id][Number(d.slice(5, 7)) - 1] += Number(row[iMin]) || 0;
+  });
+  const sh = list_(LISTY.DOBROVOLNICI);
+  const hlav = hlavicky_(sh);
+  const dob = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, hlav.length).getValues() : [];
+  const radky = [];
+  dob.forEach(row => {
+    const z = {};
+    hlav.forEach((h, i) => { z[h] = row[i]; });
+    const minuty = minutyPodle[String(z['ID']).trim()];
+    if (!minuty) return;
+    const orgy = String(z['Organizace'] || '').split(',').map(s => s.trim()).filter(Boolean);
+    const celkem = minuty.reduce((a, b) => a + b, 0);
+    radky.push([
+      [z['Příjmení'], z['Jméno']].filter(String).join(' '),
+      datumCz_(z['Datum narození']),
+      [z['Ulice a č.p.'], [z['PSČ'], z['Obec']].filter(String).join(' ')].filter(String).join(', '),
+      z['E-mail'] || '', z['Telefon'] || '',
+      [z['Zástupce – jméno'], z['Zástupce – kontakt']].filter(String).join(', '),
+      orgy[0] || '', orgy[1] || '', orgy[2] || '',
+      z['Místo působení'] || '',
+      z['Číslo smlouvy'] || '', datumCz_(z['Datum smlouvy'])
+    ].concat(minuty.map(m => Math.round(m / 60 * 100) / 100), [Math.round(celkem / 60 * 100) / 100]));
+  });
+  return radky;
+}
+
+function datumCz_(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, TZ, 'd. M. yyyy');
+  const m = String(v || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? (+m[3]) + '. ' + (+m[2]) + '. ' + m[1] : String(v || '');
+}
+
+function slozkaVedle_(n, nazev) {
+  const smlouvy = slozkaZNastaveni_(n.slozka_smlouvy, 'slozka_smlouvy');
+  let rodic = smlouvy;
+  try { const p = smlouvy.getParents(); if (p.hasNext()) rodic = p.next(); } catch (e) { rodic = smlouvy; }
+  const it = rodic.getFoldersByName(nazev);
+  return it.hasNext() ? it.next() : rodic.createFolder(nazev);
+}
+
 function hhmm_(v) {
   if (v instanceof Date) return Utilities.formatDate(v, TZ, 'HH:mm');
   const m = String(v || '').trim().match(/^(\d{1,2}):(\d{2})/);

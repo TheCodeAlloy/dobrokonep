@@ -45,6 +45,8 @@ const API_ADMIN = {
   zrusSchuzku: function () { return zrusSchuzku.apply(null, arguments); },
   generujDokument: function () { return generujDokument.apply(null, arguments); },
   smazDokument: function () { return smazDokument.apply(null, arguments); },
+  rocniVykaz: function () { return rocniVykaz.apply(null, arguments); },
+  exportujRocniVykaz: function () { return exportujRocniVykaz.apply(null, arguments); },
   vytvorUkazkoveSablony: function () { return vytvorUkazkoveSablony.apply(null, arguments); },
   nactiAdministraci: function () { return nactiAdministraci.apply(null, arguments); },
   ulozBunkuListu: function () { return ulozBunkuListu.apply(null, arguments); },
