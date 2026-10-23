@@ -744,6 +744,7 @@ function promenneDokumentu_(n, z, cislo, misto, skolitel, skolitelPraxe) {
     organizace_email: nebo(org.email),
     organizace_telefon: nebo(org.telefon),
     misto_pusobeni: nebo(z['Místo působení']),
+    misto_vykonu: String(z['Místo působení'] || ''), // u docházkového listu; prázdné = nic se nedoplní
     dobrovolnikem_od: nebo(d(z['Dobrovolníkem od'])),
     cislo_smlouvy: nebo(cislo),
     datum_smlouvy: nebo(d(z['Datum smlouvy'])),
