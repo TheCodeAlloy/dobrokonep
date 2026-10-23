@@ -659,10 +659,11 @@ function generujDokument(token, id, typ, misto, skolitel, skolitelPraxe) {
         ? id + '_' + z['Příjmení'] + '_' + z['Jméno'] + '_priprava_' + dnes
         : id + '_' + z['Příjmení'] + '_' + z['Jméno'] + '_dochazkovy_list_' + dnes;
 
-    // Záznam o přípravě se ukládá jako Dokument Google do jedné společné složky (u dobrovolníka jen zástupce).
-    // Ostatní: kopie šablony zůstane v osobní složce pro případné úpravy.
-    const slozkaPripravy = typ === 'priprava' ? slozkaZNastaveni_(n.slozka_pripravy, 'slozka_pripravy') : null;
-    const kopie = DriveApp.getFileById(sablonaId).makeCopy(nazev, slozkaPripravy || osobni);
+    // Smlouva a záznam o přípravě se ukládají jako Dokumenty Google do jedné společné složky (u dobrovolníka jen zástupce).
+    // Docházkový list: kopie šablony zůstane v osobní složce pro případné úpravy.
+    const spolecnaSlozka = typ === 'priprava' ? slozkaZNastaveni_(n.slozka_pripravy, 'slozka_pripravy')
+      : typ === 'smlouva' ? slozkaZNastaveni_(n.slozka_smlouvy, 'slozka_smlouvy') : null;
+    const kopie = DriveApp.getFileById(sablonaId).makeCopy(nazev, spolecnaSlozka || osobni);
     const doc = DocumentApp.openById(kopie.getId());
     const hodnoty = promenneDokumentu_(n, z, cislo || '', misto || '', skolitel || '', skolitelPraxe || '');
     if (typ === 'smlouva') hodnoty.datum_smlouvy = hodnoty.dnesni_datum; // datum smlouvy = den vytvoření
@@ -672,29 +673,24 @@ function generujDokument(token, id, typ, misto, skolitel, skolitelPraxe) {
     });
     doc.saveAndClose();
 
-    if (typ === 'priprava') {
-      try { osobni.createShortcut(kopie.getId()); } catch (e) { console.warn(e); }
-      zapisDoRadku_(sh, radek, hlav, { 'Záznam o přípravě': kopie.getUrl(), 'Složka': osobni.getUrl(), 'Naposledy upraveno': new Date(), 'Upravil/a': a.email });
-      log_('Vytvořen záznam o přípravě', id, nazev);
-      return { docUrl: kopie.getUrl(), zaznam: zaznamObjekt_(sh, hlav, radek) };
-    }
-
-    const cil = typ === 'smlouva' ? slozkaZNastaveni_(n.slozka_smlouvy, 'slozka_smlouvy') : osobni;
-    const pdf = cil.createFile(kopie.getAs(MimeType.PDF).setName(nazev + '.pdf'));
-    if (typ === 'smlouva') { try { osobni.createShortcut(pdf.getId()); } catch (e) { console.warn(e); } }
-
+    // Všechny dokumenty zůstávají Dokumenty Google (editovatelné před tiskem a pro pozdější elektronický podpis).
+    // U dobrovolníka je v osobní složce vždy aspoň zástupce.
+    try { osobni.createShortcut(kopie.getId()); } catch (e) { console.warn(e); }
     const zmeny = { 'Složka': osobni.getUrl(), 'Naposledy upraveno': new Date(), 'Upravil/a': a.email };
-    if (typ === 'smlouva') {
+    if (typ === 'priprava') {
+      zmeny['Záznam o přípravě'] = kopie.getUrl();
+      log_('Vytvořen záznam o přípravě', id, nazev);
+    } else if (typ === 'smlouva') {
       zmeny['Číslo smlouvy'] = cislo;
-      zmeny['Smlouva (PDF)'] = pdf.getUrl();
+      zmeny['Smlouva (PDF)'] = kopie.getUrl(); // sloupec má historický název; ukládá se odkaz na Dokument Google
       zmeny['Datum smlouvy'] = parsujDatum_(dnes);
+      log_('Vygenerována smlouva', id, nazev);
     } else {
-      zmeny['Docházkový list'] = pdf.getUrl();
+      zmeny['Docházkový list'] = kopie.getUrl();
+      log_('Vygenerován docházkový list', id, nazev);
     }
     zapisDoRadku_(sh, radek, hlav, zmeny);
-    log_(typ === 'smlouva' ? 'Vygenerována smlouva' : 'Vygenerován docházkový list', id, nazev);
-
-    return { pdfUrl: pdf.getUrl(), docUrl: kopie.getUrl(), zaznam: zaznamObjekt_(sh, hlav, radek) };
+    return { docUrl: kopie.getUrl(), zaznam: zaznamObjekt_(sh, hlav, radek) };
   });
 }
 
