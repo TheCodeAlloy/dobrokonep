@@ -252,7 +252,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-22g</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-23b</p>
   </div>
 </div>
 <div class="app" id="app" hidden>
@@ -274,6 +274,7 @@
 <div class="dlg" id="dlg" hidden>
   <div class="dlg-box" role="dialog" aria-modal="true">
     <p id="dlgText"></p>
+    <div id="dlgVyber" hidden></div>
     <label class="check" id="dlgCheckWrap"><input type="checkbox" id="dlgCheck"> <span id="dlgCheckText"></span></label>
     <div class="dlg-btns"><button class="btn ghost" id="dlgNe">Zpět</button><button class="btn" id="dlgAno">Potvrdit</button></div>
   </div>
@@ -331,8 +332,20 @@ function dialog(o) {
     $('#dlgCheckWrap').hidden = !o.zaskrtnout;
     $('#dlgCheck').checked = !!o.vychoziZaskrtnuto;
     $('#dlgCheckText').textContent = o.zaskrtnout || '';
+    $('#dlgVyber').hidden = !o.vyber;
+    $('#dlgVyber').innerHTML = (o.vyber || []).map(v => '<label style="display:block;margin-bottom:12px"><span class="muted small">' + esc(v.popisek) + '</span>' +
+      '<select data-vyber="' + esc(v.klic) + '" style="width:100%">' + v.moznosti.map(m => '<option value="' + esc(m) + '">' + esc(m) + '</option>').join('') + '</select></label>').join('');
+    // Výběr s „kopiruj“ se po změně zdrojového výběru nastaví na stejnou hodnotu (ale jde změnit)
+    (o.vyber || []).filter(v => v.kopiruj).forEach(v => {
+      $('#dlgVyber [data-vyber="' + v.kopiruj + '"]').onchange = e => { $('#dlgVyber [data-vyber="' + v.klic + '"]').value = e.target.value; };
+    });
     $('#dlg').hidden = false;
-    const konec = v => { $('#dlg').hidden = true; $('#dlgAno').onclick = $('#dlgNe').onclick = null; ok({ ok: v, check: $('#dlgCheck').checked }); };
+    const konec = v => {
+      const volby = {};
+      $$('#dlgVyber [data-vyber]').forEach(s => volby[s.dataset.vyber] = s.value);
+      $('#dlg').hidden = true; $('#dlgAno').onclick = $('#dlgNe').onclick = null;
+      ok({ ok: v, check: $('#dlgCheck').checked, volby });
+    };
     $('#dlgAno').onclick = () => konec(true);
     $('#dlgNe').onclick = () => konec(false);
   });
@@ -583,7 +596,8 @@ function vDetail() {
     '<li><span>Smlouva' + (z['Číslo smlouvy'] ? ' <code>' + esc(z['Číslo smlouvy']) + '</code>' : '') + (z['Datum smlouvy'] ? ' <span class="muted small">' + esc(fmtD(z['Datum smlouvy'])) + '</span>' : '') + '</span>' + odkaz(z['Smlouva (PDF)'], 'PDF') + '</li>' +
     '<li><span>Docházkový list</span>' + odkaz(z['Docházkový list'], 'PDF') + '</li></ul>' +
     (edit ? '<div class="btns"><button class="btn" data-gen="smlouva">' + (z['Smlouva (PDF)'] ? 'Vygenerovat smlouvu znovu' : 'Vygenerovat smlouvu') + '</button>' +
-      '<button class="btn ghost" data-gen="dochazka">Vygenerovat docházkový list</button></div>' : '') +
+      '<button class="btn ghost" data-gen="dochazka">Vygenerovat docházkový list</button>' +
+      '<button class="btn ghost" data-gen="priprava">Záznam o přípravě</button></div>' : '') +
     (!D.nastaveni.sablonaSmlouvy || !D.nastaveni.sablonaDochazky ? '<p class="muted small">Šablony dokumentů nastavíte v Administraci → Šablony dokumentů.</p>' : '') +
     '<p class="muted small" style="margin-bottom:0">Podpis na tabletu připravujeme.</p></section>' +
 
@@ -682,11 +696,25 @@ function vDetail() {
       const o = await dialog({ text: 'Smlouva už existuje (' + z['Číslo smlouvy'] + '). Vytvořit novou verzi se stejným číslem? Původní soubor zůstane zachovaný.', potvrdit: 'Vytvořit novou verzi' });
       if (!o.ok) return;
     }
+    let volby = {};
+    if (typ === 'priprava') {
+      const n = D.nastaveni;
+      if (!n.mistaSkoleni.length || !n.skolitele.length) { toast('V Nastavení chybí místa nebo školitelé (mista_skoleni, skolitele_skoleni).', 'err'); return; }
+      const o = await dialog({ text: 'Vyberte místo a školitele. Vytvoří se záznam o přípravě a výcviku v Dokumentech Google.', potvrdit: 'Vytvořit záznam',
+        vyber: [
+          { klic: 'misto', popisek: 'Místo školení', moznosti: n.mistaSkoleni },
+          { klic: 'skolitel', popisek: 'Školitel – vstupní školení', moznosti: n.skolitele },
+          { klic: 'skolitelPraxe', popisek: 'Školitel – praktická část (BOZP)', moznosti: n.skolitele, kopiruj: 'skolitel' }
+        ] });
+      if (!o.ok) return;
+      volby = o.volby;
+    }
     const puvodni = b.textContent; b.disabled = true; b.textContent = 'Generuji…';
     try {
-      const r = await api('generujDokument', z.ID, typ);
+      const r = await api('generujDokument', z.ID, typ, volby.misto || '', volby.skolitel || '', volby.skolitelPraxe || '');
       nahrad(r.zaznam); render();
-      toast(typ === 'smlouva' ? 'Smlouva vygenerována.' : 'Docházkový list vygenerován.', '', { url: r.pdfUrl, text: 'Otevřít PDF' });
+      if (typ === 'priprava') toast('Záznam o přípravě vytvořen.', '', { url: r.docUrl, text: 'Otevřít dokument' });
+      else toast(typ === 'smlouva' ? 'Smlouva vygenerována.' : 'Docházkový list vygenerován.', '', { url: r.pdfUrl, text: 'Otevřít PDF' });
     } catch (e) { toast(e.message, 'err'); b.disabled = false; b.textContent = puvodni; }
   });
 }

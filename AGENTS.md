@@ -109,7 +109,9 @@ Organizace, Šablony e-mailů, Hodiny, Přiřazení, Činnosti, Log změn.
 3. **Bezpečnost:** každý zápis z veřejného formuláře prochází `bunka_()` (ochrana proti vzorcům) a validací.
    HTML výstupy escapuj (`esc` / `esc_`). Nové serverové akce vždy s ověřením role.
 4. **Pořadí souborů v Apps Scriptu:** na nejvyšší úrovni souboru neodkazuj na funkce z jiných souborů
-   (Apps Script načítá soubory postupně). Proto jsou API mapy obalené `function () { return x.apply(null, arguments); }`.
+   (Apps Script načítá soubory postupně, podle abecedy: Api, Dashboard, Hodiny, Kod, Portal, Zalohy). Proto jsou API mapy obalené `function () { return x.apply(null, arguments); }`.
+   Konstanty z `Kod.gs` (např. `LISTY`) proto nepoužívej na nejvyšší úrovni jiných souborů, jen uvnitř funkcí.
+   Hlídá to `testy/poradi-souboru.js` (spouští se v `npm test`), který načítá soubory ve stejném pořadí.
 5. **Mezipaměť serveru:** `MEMO` (v rámci jednoho požadavku) drží `nastaveni_()`, `organizace_()`, `ss_()`.
    Po zápisu do Nastavení/Organizací ji zneplatni (`delete MEMO.nastaveni` apod.). `doPost` ji nuluje.
 6. **Schéma tabulky:** změny sloupců/listů/nastavení/šablon dělej v konstantách v `Kod.gs`/`Hodiny.gs`

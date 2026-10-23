@@ -132,7 +132,11 @@ function vychoziNastaveni_(email) {
     ['delka_schuzky_min', 60, 'Délka schůzky v minutách'],
     ['misto_schuzky_vychozi', '', 'Výchozí místo schůzky (předvyplní se při plánování)'],
     ['sablona_smlouvy', '', 'Dokument Google se šablonou dobrovolnické smlouvy (odkaz nebo ID)'],
-    ['sablona_dochazky', '', 'Dokument Google se šablonou docházkového listu (odkaz nebo ID)']
+    ['sablona_dochazky', '', 'Dokument Google se šablonou docházkového listu (odkaz nebo ID)'],
+    ['sablona_pripravy', '', 'Dokument Google se šablonou záznamu o přípravě a výcviku (odkaz nebo ID)'],
+    ['slozka_pripravy', '', 'Složka pro záznamy o přípravě (Dokumenty Google); u dobrovolníka se vytvoří jen zástupce'],
+    ['mista_skoleni', 'Pardubice, Chrudim', 'Místa školení na výběr při tvorbě záznamu o přípravě (oddělte čárkou)'],
+    ['skolitele_skoleni', 'Mgr. Kateřina Mužíková, DC KONEP; Ing. Lucie Křivková, DC KONEP', 'Školitelé na výběr při tvorbě záznamu o přípravě (oddělte středníkem)']
   ];
 }
 
