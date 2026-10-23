@@ -15,7 +15,8 @@ const POLE_EDITOVATELNA = [
   'Titul', 'Jméno', 'Příjmení', 'Datum narození', 'E-mail', 'Telefon', 'Ulice a č.p.', 'Obec', 'PSČ',
   'Preferovaný kontakt', 'Oblasti zájmu', 'Oblast – jiné', 'Preferované místo', 'Dostupnost',
   'Zkušenosti a dovednosti', 'Zaměstnání / studium', 'Vzdělání', 'Jak se o nás dozvěděl/a', 'Stav', 'Místo působení',
-  'Dobrovolníkem od', 'Poznámky', 'Upozornění'
+  'Dobrovolníkem od', 'Poznámky', 'Upozornění',
+  'Služba do', 'Zástupce – jméno', 'Zástupce – adresa', 'Zástupce – datum narození', 'Zástupce – kontakt'
 ];
 
 // Funkce, ne konstanta: LISTY je definováno v Kod.gs, který se načítá později.
@@ -299,7 +300,7 @@ function nactiData(token) {
     vzdelani: VZDELANI,
     nastaveni: {
       misto_schuzky_vychozi: String(n.misto_schuzky_vychozi || ''),
-      sablonaSmlouvy: !!extrahujId_(n.sablona_smlouvy),
+      sablonaSmlouvy: !!extrahujId_(n.sablona_smlouvy_18) && !!extrahujId_(n.sablona_smlouvy_15_17),
       sablonaDochazky: !!extrahujId_(n.sablona_dochazky),
       sablonaPripravy: !!extrahujId_(n.sablona_pripravy),
       mistaSkoleni: mistaSkoleni_(n),
@@ -617,12 +618,6 @@ function generujDokument(token, id, typ, misto, skolitel, skolitelPraxe) {
   const a = overAdmin_(token, 'Koordinátor');
   if (['smlouva', 'dochazka', 'priprava'].indexOf(typ) < 0) throw new Error('Neznámý typ dokumentu.');
   const n = nastaveni_();
-  const klic = { smlouva: 'sablona_smlouvy', dochazka: 'sablona_dochazky', priprava: 'sablona_pripravy' }[typ];
-  const nazevSablony = { smlouva: 'smlouvy', dochazka: 'docházkového listu', priprava: 'záznamu o přípravě' }[typ];
-  const sablonaId = extrahujId_(n[klic]);
-  if (!sablonaId) {
-    throw new Error('Chybí šablona ' + nazevSablony + '. Nastavte ji v Administraci → Šablony dokumentů.');
-  }
   if (typ === 'priprava' && mistaSkoleni_(n).indexOf(misto) < 0) throw new Error('Vyberte místo školení ze seznamu.');
   if (typ === 'priprava' && skolitele_(n).indexOf(skolitel) < 0) throw new Error('Vyberte školitele ze seznamu.');
   if (typ === 'priprava' && skolitele_(n).indexOf(skolitelPraxe) < 0) throw new Error('Vyberte školitele pro praktickou část.');
@@ -632,6 +627,22 @@ function generujDokument(token, id, typ, misto, skolitel, skolitelPraxe) {
     const hlav = hlavicky_(sh);
     const radek = najdiRadek_(sh, hlav, id);
     const z = zaznamObjekt_(sh, hlav, radek);
+
+    // Smlouva: verze podle věku dobrovolníka k dnešnímu dni (pod 18 let = verze pro 15–17 let)
+    const vek = vekKDatu_(z['Datum narození'], new Date());
+    if (typ === 'smlouva' && vek === null) throw new Error('U dobrovolníka chybí datum narození. Doplňte ho v kartě.');
+    if (typ === 'smlouva' && vek < 18 && !z['Zástupce – jméno']) {
+      throw new Error('Dobrovolník je mladší 18 let. Doplňte v kartě údaje zákonného zástupce.');
+    }
+    const klic = typ === 'smlouva'
+      ? (vek < 18 ? 'sablona_smlouvy_15_17' : 'sablona_smlouvy_18')
+      : { dochazka: 'sablona_dochazky', priprava: 'sablona_pripravy' }[typ];
+    const nazevSablony = {
+      sablona_smlouvy_15_17: 'smlouvy pro 15–17 let', sablona_smlouvy_18: 'smlouvy pro dobrovolníky od 18 let',
+      sablona_dochazky: 'docházkového listu', sablona_pripravy: 'záznamu o přípravě'
+    }[klic];
+    const sablonaId = extrahujId_(n[klic]);
+    if (!sablonaId) throw new Error('Chybí šablona ' + nazevSablony + '. Nastavte ji v Administraci → Šablony dokumentů.');
 
     let osobni = null;
     const idSlozky = extrahujId_(z['Složka']);
@@ -654,6 +665,7 @@ function generujDokument(token, id, typ, misto, skolitel, skolitelPraxe) {
     const kopie = DriveApp.getFileById(sablonaId).makeCopy(nazev, slozkaPripravy || osobni);
     const doc = DocumentApp.openById(kopie.getId());
     const hodnoty = promenneDokumentu_(n, z, cislo || '', misto || '', skolitel || '', skolitelPraxe || '');
+    if (typ === 'smlouva') hodnoty.datum_smlouvy = hodnoty.dnesni_datum; // datum smlouvy = den vytvoření
     [doc.getBody(), doc.getHeader(), doc.getFooter()].forEach(sekce => {
       if (!sekce) return;
       Object.keys(hodnoty).forEach(k => sekce.replaceText('\\{\\{\\s*' + k + '\\s*\\}\\}', hodnoty[k]));
@@ -662,6 +674,7 @@ function generujDokument(token, id, typ, misto, skolitel, skolitelPraxe) {
 
     if (typ === 'priprava') {
       try { osobni.createShortcut(kopie.getId()); } catch (e) { console.warn(e); }
+      zapisDoRadku_(sh, radek, hlav, { 'Záznam o přípravě': kopie.getUrl(), 'Složka': osobni.getUrl(), 'Naposledy upraveno': new Date(), 'Upravil/a': a.email });
       log_('Vytvořen záznam o přípravě', id, nazev);
       return { docUrl: kopie.getUrl(), zaznam: zaznamObjekt_(sh, hlav, radek) };
     }
@@ -688,6 +701,15 @@ function generujDokument(token, id, typ, misto, skolitel, skolitelPraxe) {
 // Místa školení z Nastavení (oddělená čárkou), např. „Pardubice, Chrudim“
 function mistaSkoleni_(n) {
   return String(n.mista_skoleni || '').split(',').map(s => s.trim()).filter(Boolean);
+}
+
+// Věk v letech k danému datu (null, pokud chybí datum narození)
+function vekKDatu_(narozeni, kDatu) {
+  if (!narozeni) return null;
+  const d = new Date(narozeni);
+  let vek = kDatu.getFullYear() - d.getFullYear();
+  if (kDatu.getMonth() < d.getMonth() || (kDatu.getMonth() === d.getMonth() && kDatu.getDate() < d.getDate())) vek--;
+  return vek;
 }
 
 // Školitelé z Nastavení (oddělení středníkem, protože jména obsahují čárky)
@@ -729,6 +751,12 @@ function promenneDokumentu_(n, z, cislo, misto, skolitel, skolitelPraxe) {
     dobrovolnikem_od: nebo(d(z['Dobrovolníkem od'])),
     cislo_smlouvy: nebo(cislo),
     datum_smlouvy: nebo(d(z['Datum smlouvy'])),
+    sluzba_od: nebo(d(z['Dobrovolníkem od'])),
+    sluzba_do: nebo(d(z['Služba do'])),
+    zastupce_jmeno: nebo(z['Zástupce – jméno']),
+    zastupce_adresa: nebo(z['Zástupce – adresa']),
+    zastupce_datum_narozeni: nebo(d(z['Zástupce – datum narození'])),
+    zastupce_kontakt: nebo(z['Zástupce – kontakt']),
     misto_skoleni: nebo(misto),
     skolitel: nebo(skolitel),
     skolitel_praxe: nebo(skolitelPraxe),
@@ -749,7 +777,8 @@ function vytvorUkazkoveSablony(token) {
   DriveApp.getFileById(smlouva.getId()).moveTo(slozka);
   DriveApp.getFileById(dochazka.getId()).moveTo(slozka);
 
-  nastavHodnotu_('sablona_smlouvy', smlouva.getUrl());
+  nastavHodnotu_('sablona_smlouvy_18', smlouva.getUrl());
+  nastavHodnotu_('sablona_smlouvy_15_17', smlouva.getUrl());
   nastavHodnotu_('sablona_dochazky', dochazka.getUrl());
   log_('Vytvořeny ukázkové šablony', '', slozka.getName());
   return { smlouva: smlouva.getUrl(), dochazka: dochazka.getUrl(), slozka: slozka.getUrl() };

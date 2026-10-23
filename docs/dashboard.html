@@ -252,7 +252,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-23b</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-23c</p>
   </div>
 </div>
 <div class="app" id="app" hidden>
@@ -539,6 +539,25 @@ function pole(z, nazev, typ, o) {
   return '<div class="fld' + (o.full ? ' full' : '') + '"><label><span>' + esc(o.label || nazev) + '</span><em class="ind" data-ind="' + esc(nazev) + '"></em></label>' + input + '</div>';
 }
 
+// Věk v letech k dnešku (null, pokud chybí datum)
+function vekKDatu(s) {
+  const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return null;
+  const d = new Date(+m[1], +m[2] - 1, +m[3]), t = new Date();
+  let vek = t.getFullYear() - d.getFullYear();
+  if (t.getMonth() < d.getMonth() || (t.getMonth() === d.getMonth() && t.getDate() < d.getDate())) vek--;
+  return vek;
+}
+// Karta zákonného zástupce: u dobrovolníka do 18 let, nebo když už je něco vyplněno
+function zastupceHtml(z) {
+  return '<section class="card"><h2>Zákonný zástupce</h2><p class="muted small">Vyplňte u dobrovolníka do 18 let. Údaje se použijí do smlouvy.</p><div class="fields">' +
+    pole(z, 'Zástupce – jméno', 'text', { label: 'Jméno a příjmení' }) +
+    pole(z, 'Zástupce – datum narození', 'date') +
+    pole(z, 'Zástupce – adresa', 'text', { full: true, label: 'Trvalé bydliště' }) +
+    pole(z, 'Zástupce – kontakt', 'text', { full: true, label: 'Kontakt (e-mail, telefon)' }) +
+    '</div></section>';
+}
+
 function vDetail() {
   const z = najdi(stav.id);
   if (!z) { obsah.innerHTML = '<div class="card">Záznam nebyl nalezen. <button class="btn ghost" onclick="jdi(\'seznam\')">Zpět na seznam</button></div>'; return; }
@@ -570,7 +589,8 @@ function vDetail() {
 
     '<section class="card"><h2>Stav a zařazení</h2><div class="fields">' +
     pole(z, 'Stav', 'select', { volby: D.stavy, bezPrazdne: true }) +
-    pole(z, 'Dobrovolníkem od', 'date') +
+    pole(z, 'Dobrovolníkem od', 'date', { label: 'Služba od' }) +
+    pole(z, 'Služba do', 'date') +
     mistoHtml +
     pole(z, 'Poznámky', 'textarea', { full: true, rows: 4 }) +
     '</div></section>' +
@@ -594,7 +614,8 @@ function vDetail() {
     '<li><span>Osobní složka</span>' + odkaz(z['Složka'], 'Otevřít složku') + '</li>' +
     '<li><span>Registrační formulář</span>' + odkaz(z['Registrace (PDF)'], 'PDF') + '</li>' +
     '<li><span>Smlouva' + (z['Číslo smlouvy'] ? ' <code>' + esc(z['Číslo smlouvy']) + '</code>' : '') + (z['Datum smlouvy'] ? ' <span class="muted small">' + esc(fmtD(z['Datum smlouvy'])) + '</span>' : '') + '</span>' + odkaz(z['Smlouva (PDF)'], 'PDF') + '</li>' +
-    '<li><span>Docházkový list</span>' + odkaz(z['Docházkový list'], 'PDF') + '</li></ul>' +
+    '<li><span>Docházkový list</span>' + odkaz(z['Docházkový list'], 'PDF') + '</li>' +
+    '<li><span>Záznam o přípravě</span>' + odkaz(z['Záznam o přípravě'], 'Dokument') + '</li></ul>' +
     (edit ? '<div class="btns"><button class="btn" data-gen="smlouva">' + (z['Smlouva (PDF)'] ? 'Vygenerovat smlouvu znovu' : 'Vygenerovat smlouvu') + '</button>' +
       '<button class="btn ghost" data-gen="dochazka">Vygenerovat docházkový list</button>' +
       '<button class="btn ghost" data-gen="priprava">Záznam o přípravě</button></div>' : '') +
@@ -603,6 +624,7 @@ function vDetail() {
 
     '</div><div>' +
 
+    (vekKDatu(z['Datum narození']) !== null && vekKDatu(z['Datum narození']) < 18 || z['Zástupce – jméno'] ? zastupceHtml(z) : '') +
     '<section class="card"><h2>Osobní údaje</h2><div class="fields">' +
     pole(z, 'Titul', 'text') + pole(z, 'Datum narození', 'date') +
     pole(z, 'Jméno', 'text') + pole(z, 'Příjmení', 'text') +
@@ -1468,10 +1490,11 @@ function admSablony() {
 function admDokumenty() {
   const N = ADM.listy.NASTAVENI;
   const hodnota = k => { if (!N) return ''; const r = N.radky.find(x => x.v[0] === k); return r ? r.v[1] : ''; };
-  const sm = odkazDrive(hodnota('sablona_smlouvy'), 'doc'), dc = odkazDrive(hodnota('sablona_dochazky'), 'doc');
+  const sm = odkazDrive(hodnota('sablona_smlouvy_18'), 'doc'), sm15 = odkazDrive(hodnota('sablona_smlouvy_15_17'), 'doc'), dc = odkazDrive(hodnota('sablona_dochazky'), 'doc');
   return '<div class="card">' +
     (N ? '<h2>Aktuální šablony</h2><ul class="doclist">' +
-      '<li><span>Dobrovolnická smlouva</span>' + (sm ? '<a href="' + esc(sm) + '" target="_blank" rel="noopener">Otevřít šablonu</a>' : '<span class="muted">nenastaveno</span>') + '</li>' +
+      '<li><span>Smlouva – dobrovolník od 18 let</span>' + (sm ? '<a href="' + esc(sm) + '" target="_blank" rel="noopener">Otevřít šablonu</a>' : '<span class="muted">nenastaveno</span>') + '</li>' +
+      '<li><span>Smlouva – dobrovolník 15–17 let</span>' + (sm15 ? '<a href="' + esc(sm15) + '" target="_blank" rel="noopener">Otevřít šablonu</a>' : '<span class="muted">nenastaveno</span>') + '</li>' +
       '<li><span>Docházkový list</span>' + (dc ? '<a href="' + esc(dc) + '" target="_blank" rel="noopener">Otevřít šablonu</a>' : '<span class="muted">nenastaveno</span>') + '</li></ul>' +
       (muze('Hlavní admin') ? '<div class="btns"><button class="btn" id="ukazkove">Vytvořit ukázkové šablony</button></div>' +
         '<p class="muted small">Vytvoří dva Dokumenty Google se vzorovým textem do složky „Šablony dokumentů“ vedle složky Smlouvy a nastaví je jako aktivní. Text si pak upravte přímo v dokumentu.</p>' : '')
@@ -1479,7 +1502,7 @@ function admDokumenty() {
     '<h2 style="margin-top:18px">Vlastní šablona z Wordu</h2>' +
     '<ol class="small" style="padding-left:18px"><li>Do dokumentu vložte zástupné znaky z tabulky níže, např. <code>{{cele_jmeno}}</code>.</li>' +
     '<li>Nahrajte ho na Disk, otevřete a zvolte Soubor → Uložit jako Dokumenty Google.</li>' +
-    '<li>Odkaz na tento Dokument Google vložte do Nastavení (<code>sablona_smlouvy</code> nebo <code>sablona_dochazky</code>).</li></ol></div>' +
+    '<li>Odkaz na tento Dokument Google vložte do Nastavení (<code>sablona_smlouvy_18</code>, <code>sablona_smlouvy_15_17</code>, <code>sablona_dochazky</code> nebo <code>sablona_pripravy</code>).</li></ol></div>' +
     '<div class="card"><h2>Zástupné znaky pro dokumenty</h2><table class="phtable">' +
     ADM.zastupne.map(p => '<tr><td><code data-copy="{{' + esc(p[0]) + '}}">{{' + esc(p[0]) + '}}</code></td><td>' + esc(p[1]) + '</td></tr>').join('') + '</table></div>';
 }

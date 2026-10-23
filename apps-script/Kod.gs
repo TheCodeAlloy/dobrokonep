@@ -49,10 +49,12 @@ const SLOUPCE_DOBROVOLNICI = [
   'Stav', 'Termín schůzky', 'Místo schůzky', 'ID události kalendáře',
   'Organizace', 'Místo působení', 'Dobrovolníkem od', 'Poznámky',
   'Číslo smlouvy', 'Smlouva (PDF)', 'Datum smlouvy', 'Docházkový list',
-  'Složka', 'Registrace (PDF)', 'Pozvánka do portálu', 'Upozornění', 'Naposledy upraveno', 'Upravil/a'
+  'Složka', 'Registrace (PDF)', 'Pozvánka do portálu', 'Upozornění', 'Naposledy upraveno', 'Upravil/a',
+  'Služba do', 'Zástupce – jméno', 'Zástupce – adresa', 'Zástupce – datum narození', 'Zástupce – kontakt',
+  'Záznam o přípravě'
 ];
 
-const POLE_DATUM = ['Datum narození', 'Dobrovolníkem od', 'Datum smlouvy'];
+const POLE_DATUM = ['Datum narození', 'Dobrovolníkem od', 'Datum smlouvy', 'Služba do', 'Zástupce – datum narození'];
 const POLE_CAS = ['Časové razítko', 'Termín schůzky', 'Naposledy upraveno', 'Pozvánka do portálu'];
 
 const STAVY = [
@@ -131,7 +133,8 @@ function vychoziNastaveni_(email) {
     ['kalendar_id', '', 'ID kalendáře pro schůzky (prázdné = hlavní kalendář účtu, pod kterým systém běží)'],
     ['delka_schuzky_min', 60, 'Délka schůzky v minutách'],
     ['misto_schuzky_vychozi', '', 'Výchozí místo schůzky (předvyplní se při plánování)'],
-    ['sablona_smlouvy', '', 'Dokument Google se šablonou dobrovolnické smlouvy (odkaz nebo ID)'],
+    ['sablona_smlouvy_18', '', 'Dokument Google se šablonou smlouvy pro dobrovolníky od 18 let (odkaz nebo ID)'],
+    ['sablona_smlouvy_15_17', '', 'Dokument Google se šablonou smlouvy pro dobrovolníky 15–17 let (odkaz nebo ID)'],
     ['sablona_dochazky', '', 'Dokument Google se šablonou docházkového listu (odkaz nebo ID)'],
     ['sablona_pripravy', '', 'Dokument Google se šablonou záznamu o přípravě a výcviku (odkaz nebo ID)'],
     ['slozka_pripravy', '', 'Složka pro záznamy o přípravě (Dokumenty Google); u dobrovolníka se vytvoří jen zástupce'],
