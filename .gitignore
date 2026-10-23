@@ -3,3 +3,4 @@ testy/vystup/
 .clasprc.json
 *.log
 .DS_Store
+.clasp.json

@@ -18,15 +18,18 @@ const POLE_EDITOVATELNA = [
   'Dobrovolníkem od', 'Poznámky', 'Upozornění'
 ];
 
-const EDITOVATELNE_LISTY = {
-  NASTAVENI: { list: LISTY.NASTAVENI, role: 'Hlavní admin', sloupce: [1] },
-  ADMINI: { list: LISTY.ADMINI, role: 'Hlavní admin', sloupce: [0, 1, 2, 3, 4] },
-  SABLONY: { list: LISTY.SABLONY, role: 'Hlavní admin', sloupce: [2, 3] },
-  OBLASTI: { list: LISTY.OBLASTI, role: 'Koordinátor', sloupce: [0, 1] },
-  MISTA: { list: LISTY.MISTA, role: 'Koordinátor', sloupce: [0, 1] },
-  ORGANIZACE: { list: LISTY.ORGANIZACE, role: 'Koordinátor', sloupce: [1, 2, 3, 4, 5, 6, 7, 8] },
-  CINNOSTI: { list: LISTY.CINNOSTI, role: 'Koordinátor', sloupce: [0, 1, 2] }
-};
+// Funkce, ne konstanta: LISTY je definováno v Kod.gs, který se načítá později.
+function editovatelneListy_() {
+  return {
+    NASTAVENI: { list: LISTY.NASTAVENI, role: 'Hlavní admin', sloupce: [1] },
+    ADMINI: { list: LISTY.ADMINI, role: 'Hlavní admin', sloupce: [0, 1, 2, 3, 4] },
+    SABLONY: { list: LISTY.SABLONY, role: 'Hlavní admin', sloupce: [2, 3] },
+    OBLASTI: { list: LISTY.OBLASTI, role: 'Koordinátor', sloupce: [0, 1] },
+    MISTA: { list: LISTY.MISTA, role: 'Koordinátor', sloupce: [0, 1] },
+    ORGANIZACE: { list: LISTY.ORGANIZACE, role: 'Koordinátor', sloupce: [1, 2, 3, 4, 5, 6, 7, 8] },
+    CINNOSTI: { list: LISTY.CINNOSTI, role: 'Koordinátor', sloupce: [0, 1, 2] }
+  };
+}
 
 const ZASTUPNE_DOKUMENTY = [
   ['id', 'ID dobrovolníka'], ['titul', 'Titul'], ['jmeno', 'Jméno'], ['prijmeni', 'Příjmení'], ['cele_jmeno', 'Titul, jméno a příjmení'],
@@ -841,8 +844,9 @@ function vytvorSablonuDochazky_() {
 function nactiAdministraci(token) {
   const a = overAdmin_(token, 'Koordinátor');
   const vysledek = { role: a.role, zastupne: ZASTUPNE_DOKUMENTY, listy: {} };
-  Object.keys(EDITOVATELNE_LISTY).forEach(k => {
-    const cfg = EDITOVATELNE_LISTY[k];
+  const listy = editovatelneListy_();
+  Object.keys(listy).forEach(k => {
+    const cfg = listy[k];
     if (PORADI_ROLI[a.role] < PORADI_ROLI[cfg.role]) return;
     const sh = list_(cfg.list);
     const hlav = hlavicky_(sh);
@@ -858,7 +862,7 @@ function nactiAdministraci(token) {
 }
 
 function ulozBunkuListu(token, klic, radek, sloupec, hodnota, puvodniKlic) {
-  const cfg = EDITOVATELNE_LISTY[klic];
+  const cfg = editovatelneListy_()[klic];
   if (!cfg) throw new Error('Neznámý list.');
   const a = overAdmin_(token, cfg.role);
   radek = Number(radek); sloupec = Number(sloupec);
@@ -907,7 +911,7 @@ function ulozBunkuListu(token, klic, radek, sloupec, hodnota, puvodniKlic) {
 }
 
 function pridejRadekListu(token, klic, d) {
-  const cfg = EDITOVATELNE_LISTY[klic];
+  const cfg = editovatelneListy_()[klic];
   if (!cfg || ['OBLASTI', 'MISTA', 'ORGANIZACE', 'ADMINI', 'CINNOSTI'].indexOf(klic) < 0) throw new Error('Do tohoto listu nelze přidávat.');
   overAdmin_(token, cfg.role);
   d = d || {};
