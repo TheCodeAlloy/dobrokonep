@@ -252,7 +252,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-23g</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-23h</p>
   </div>
 </div>
 <div class="app" id="app" hidden>
@@ -719,7 +719,8 @@ function vDetail() {
   $$('[data-smaz]').forEach(b => b.onclick = async () => {
     const typ = b.dataset.smaz;
     const nazvy = { smlouva: 'smlouvu', dochazka: 'docházkový list', priprava: 'záznam o přípravě' };
-    const o = await dialog({ text: 'Opravdu chcete smazat ' + nazvy[typ] + '? Dokument se přesune do koše na Disku, odkud ho lze do 30 dnů obnovit.', potvrdit: 'Smazat' });
+    const navic = typ === 'smlouva' ? ' U smlouvy se vymaže i číslo a datum smlouvy.' : '';
+    const o = await dialog({ text: 'Opravdu chcete smazat ' + nazvy[typ] + '? Dokument se přesune do koše na Disku, odkud ho lze do 30 dnů obnovit.' + navic, potvrdit: 'Smazat' });
     if (!o.ok) return;
     b.disabled = true;
     try {

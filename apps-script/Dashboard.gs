@@ -695,7 +695,7 @@ function generujDokument(token, id, typ, misto, skolitel, skolitelPraxe) {
 }
 
 // Smazání dokumentu z karty: dokument i jeho zástupce se přesunou do koše na Disku (lze obnovit 30 dní)
-// a v tabulce se vymaže odkaz. Číslo smlouvy zůstává, aby se nepřidělovalo znovu.
+// a v tabulce se vymaže odkaz (u smlouvy i číslo a datum).
 function smazDokument(token, id, typ) {
   const a = overAdmin_(token, 'Koordinátor');
   const sloupec = { smlouva: 'Smlouva (PDF)', dochazka: 'Docházkový list', priprava: 'Záznam o přípravě' }[typ];
@@ -720,6 +720,7 @@ function smazDokument(token, id, typ) {
     }
     const zmeny = { 'Naposledy upraveno': new Date(), 'Upravil/a': a.email };
     zmeny[sloupec] = '';
+    if (typ === 'smlouva') { zmeny['Číslo smlouvy'] = ''; zmeny['Datum smlouvy'] = ''; }
     zapisDoRadku_(sh, radek, hlav, zmeny);
     log_('Smazán dokument (' + sloupec + ')', id, '');
     return { zaznam: zaznamObjekt_(sh, hlav, radek) };
