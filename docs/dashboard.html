@@ -7,20 +7,20 @@
 <title>Dashboard – Dobrovolnické centrum</title>
 <style>
   :root {
-    --primary: #1f5c45; --primary-hover: #174836; --accent: #e8f3ee;
+    --primary: #1f5c45; --primary-hover: #174836; --accent: #e8f3ee; --side-bg: #173f31;
     --text: #1d2420; --muted: #5d6862; --border: #d9e0dc; --bg: #f4f6f5; --card: #fff;
     --error: #b42318; --error-bg: #fdecea; --ok: #1f7a4d; --warn-bg: #fff6e0;
     --radius: 12px; --side: 232px;
   }
   /* Barevná schémata (volí si každý uživatel v levém menu; ukládá se v jeho prohlížeči) */
-  :root[data-schema="modra"] { --primary: #1d4e89; --primary-hover: #163c6b; --accent: #e6eef8; }
-  :root[data-schema="fialova"] { --primary: #5b3a8c; --primary-hover: #472c6e; --accent: #efe9f7; }
-  :root[data-schema="teracota"] { --primary: #a84b2a; --primary-hover: #8a3b1f; --accent: #fbece6; }
-  :root[data-schema="hneda"] { --primary: #6b4a2b; --primary-hover: #533a21; --accent: #f5ede4; }
-  :root[data-schema="bridlicova"] { --primary: #374151; --primary-hover: #283040; --accent: #eceef1; }
-  :root[data-schema="tyrkysova"] { --primary: #0f6e6a; --primary-hover: #0b5552; --accent: #e3f4f2; }
-  :root[data-schema="vinova"] { --primary: #7d2041; --primary-hover: #621833; --accent: #f7e7ed; }
-  :root[data-schema="oranzova"] { --primary: #b35a0a; --primary-hover: #8a4608; --accent: #fdf0e1; }
+  :root[data-schema="modra"] { --primary: #1d4e89; --primary-hover: #163c6b; --accent: #e6eef8; --side-bg: #15365f; }
+  :root[data-schema="fialova"] { --primary: #5b3a8c; --primary-hover: #472c6e; --accent: #efe9f7; --side-bg: #3b2561; }
+  :root[data-schema="teracota"] { --primary: #a84b2a; --primary-hover: #8a3b1f; --accent: #fbece6; --side-bg: #7a3219; }
+  :root[data-schema="hneda"] { --primary: #6b4a2b; --primary-hover: #533a21; --accent: #f5ede4; --side-bg: #46301b; }
+  :root[data-schema="bridlicova"] { --primary: #374151; --primary-hover: #283040; --accent: #eceef1; --side-bg: #232a36; }
+  :root[data-schema="tyrkysova"] { --primary: #0f6e6a; --primary-hover: #0b5552; --accent: #e3f4f2; --side-bg: #0a4b48; }
+  :root[data-schema="vinova"] { --primary: #7d2041; --primary-hover: #621833; --accent: #f7e7ed; --side-bg: #571629; }
+  :root[data-schema="oranzova"] { --primary: #b35a0a; --primary-hover: #8a4608; --accent: #fdf0e1; --side-bg: #7a3f07; }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text);
     font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
@@ -29,7 +29,7 @@
   .app { display: flex; min-height: 100vh; }
 
   /* Postranní menu */
-  .side { width: var(--side); flex: none; background: #173f31; color: #e7efeb; display: flex; flex-direction: column;
+  .side { width: var(--side); flex: none; background: var(--side-bg); color: #e7efeb; display: flex; flex-direction: column;
     position: sticky; top: 0; height: 100vh; }
   .brand { padding: 20px 18px 16px; border-bottom: 1px solid rgba(255,255,255,.08); }
   .brand strong { display: block; font-size: 15px; line-height: 1.3; }
@@ -261,7 +261,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-24a</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-24b</p>
   </div>
 </div>
 <script>
