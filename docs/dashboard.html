@@ -12,6 +12,15 @@
     --error: #b42318; --error-bg: #fdecea; --ok: #1f7a4d; --warn-bg: #fff6e0;
     --radius: 12px; --side: 232px;
   }
+  /* Barevná schémata (volí si každý uživatel v levém menu; ukládá se v jeho prohlížeči) */
+  :root[data-schema="modra"] { --primary: #1d4e89; --primary-hover: #163c6b; --accent: #e6eef8; }
+  :root[data-schema="fialova"] { --primary: #5b3a8c; --primary-hover: #472c6e; --accent: #efe9f7; }
+  :root[data-schema="teracota"] { --primary: #a84b2a; --primary-hover: #8a3b1f; --accent: #fbece6; }
+  :root[data-schema="hneda"] { --primary: #6b4a2b; --primary-hover: #533a21; --accent: #f5ede4; }
+  :root[data-schema="bridlicova"] { --primary: #374151; --primary-hover: #283040; --accent: #eceef1; }
+  :root[data-schema="tyrkysova"] { --primary: #0f6e6a; --primary-hover: #0b5552; --accent: #e3f4f2; }
+  :root[data-schema="vinova"] { --primary: #7d2041; --primary-hover: #621833; --accent: #f7e7ed; }
+  :root[data-schema="oranzova"] { --primary: #b35a0a; --primary-hover: #8a4608; --accent: #fdf0e1; }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text);
     font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
@@ -252,9 +261,23 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-23k</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-24a</p>
   </div>
 </div>
+<script>
+  // Barevné schéma si uživatel vybere sám; uloží se jen v jeho prohlížeči. Nastaví se hned, aby nebylo vidět blikání.
+  (function () {
+    try {
+      const ulozene = localStorage.getItem('dobrokonep-schema');
+      if (ulozene) document.documentElement.setAttribute('data-schema', ulozene);
+    } catch (e) { /* prohlížeč nepovolí úložiště – použije se výchozí */ }
+  })();
+  function nastavSchema(id) {
+    if (id === 'zelena') document.documentElement.removeAttribute('data-schema');
+    else document.documentElement.setAttribute('data-schema', id);
+    try { localStorage.setItem('dobrokonep-schema', id); } catch (e) { /* bez úložiště se volba po obnovení neuloží */ }
+  }
+</script>
 <div class="app" id="app" hidden>
   <aside class="side">
     <div class="brand"><strong class="nazevOrg"></strong><small>Dobrovolnický systém</small></div>
@@ -265,7 +288,16 @@
       <button data-view="admin" id="navAdmin">Administrace</button>
       <button id="odhlasit" type="button">Odhlásit</button>
     </nav>
-    <div class="me"><span id="meText"></span><br><button id="obnovit">Obnovit data</button></div>
+    <div class="me"><span id="meText"></span><br><button id="obnovit">Obnovit data</button>
+      <label class="small muted" style="display:block;margin-top:10px">Barevné schéma
+        <select id="schema" style="width:100%;margin-top:4px">
+          <option value="zelena">Zelená</option><option value="modra">Oceánová modrá</option><option value="fialova">Fialová</option>
+          <option value="teracota">Teracota</option><option value="hneda">Hnědá</option><option value="bridlicova">Břidlicová</option>
+          <option value="tyrkysova">Tyrkysová</option><option value="vinova">Vínová</option><option value="oranzova">Oranžová</option>
+        </select>
+      </label>
+      <a href="napoveda.html" target="_blank" rel="noopener" style="display:block;margin-top:10px">Nápověda</a>
+    </div>
   </aside>
   <main><div class="wrap" id="obsah"><div class="loading">Načítám data…</div></div></main>
 </div>
@@ -429,6 +461,8 @@ $('#nav').addEventListener('click', e => {
   if (b.dataset.view === 'seznam') { filtr.stav = ''; }
   jdi(b.dataset.view);
 });
+$('#schema').value = document.documentElement.getAttribute('data-schema') || 'zelena';
+$('#schema').addEventListener('change', e => nastavSchema(e.target.value));
 $('#obnovit').addEventListener('click', async () => {
   obsah.innerHTML = '<div class="loading">Načítám data…</div>';
   try { await nacti(); render(); toast('Data obnovena'); } catch (e) { toast(e.message, 'err'); }
