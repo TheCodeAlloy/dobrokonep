@@ -24,12 +24,17 @@
     header a { color: #fff; }
     main { max-width: 840px; margin: 0 auto; padding: 16px; }
     h1 { font-size: 24px; margin: 8px 0; }
-    h2 { font-size: 20px; margin: 0 0 8px; color: var(--primary); }
-    .kapitola { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin: 12px 0; }
-    .kapitola p { margin: 6px 0; }
-    .priprava { color: var(--muted); font-size: 14px; }
-    .obsah a { display: block; padding: 4px 0; color: var(--primary); }
+    h2 { font-size: 20px; margin: 0 0 10px; color: var(--primary); }
+    h3 { font-size: 16px; margin: 16px 0 6px; }
+    .kapitola { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin: 14px 0; }
+    .kapitola p, .kapitola li { margin: 6px 0; }
+    .kapitola ol, .kapitola ul { padding-left: 22px; }
     .obsah { background: var(--accent); border-radius: var(--radius); padding: 12px 16px; }
+    .obsah a { display: block; padding: 4px 0; color: var(--primary); }
+    .obrazek { margin: 12px 0; border: 1px dashed var(--border); border-radius: var(--radius); padding: 14px; color: var(--muted); font-size: 14px; background: #fafbfa; }
+    .obrazek img { max-width: 100%; border-radius: 8px; border: 1px solid var(--border); display: block; }
+    .obrazek span { display: block; margin-top: 6px; font-size: 13px; }
+    .poznamka { background: var(--accent); border-radius: 8px; padding: 10px 12px; margin: 10px 0; font-size: 15px; }
   </style>
 </head>
 <body>
@@ -38,7 +43,7 @@
     <h1>Nápověda</h1>
   </header>
   <main>
-    <p>Tato nápověda popisuje, jak s dashboardem pracovat krok za krokem. Obrázky a postupy se doplňují postupně.</p>
+    <p>Tato nápověda popisuje, jak s dashboardem pracovat krok za krokem.</p>
 
     <nav class="obsah" aria-label="Obsah nápovědy">
       <a href="#prihlaseni">1. Přihlášení a první kroky</a>
@@ -52,31 +57,120 @@
 
     <section class="kapitola" id="prihlaseni">
       <h2>1. Přihlášení a první kroky</h2>
-      <p class="priprava">Kapitola se připravuje.</p>
+      <p>Do dashboardu se přihlašujete přes e-mail, který máte v systému jako administrátor.</p>
+      <ol>
+        <li>Otevřete adresu dashboardu v prohlížeči.</li>
+        <li>Zadejte svůj e-mail a klikněte na přihlášení.</li>
+        <li>Přijde vám e-mail s kódem nebo odkazem. Opište kód, nebo klikněte na odkaz.</li>
+        <li>Po přihlášení se otevře přehled.</li>
+      </ol>
+      <div class="obrazek"><img src="napoveda/prihlaseni.png" alt="přihlašovací okno" loading="lazy"><span>Přihlašovací okno</span></div>
+      <h3>Levé menu</h3>
+      <p>Přehled (co čeká na vyřízení), Dobrovolníci (seznam), Hodiny (zápis a výkazy) a Administrace (nastavení, jen pro správce). Dole najdete <strong>Obnovit data</strong>, volbu <strong>Barevné schéma</strong> a odkaz <strong>Nápověda</strong>.</p>
+      <div class="obrazek"><img src="napoveda/prehled.png" alt="levé menu" loading="lazy"><span>Levé menu</span></div>
+      <h3>Barevné schéma</h3><p>V levém menu dole vyberete barevné schéma dashboardu. Volba se uloží ve vašem prohlížeči a platí jen pro vás.</p><div class="obrazek"><img src="napoveda/barevne_schema.png" alt="Barevné schéma" loading="lazy"><span>Barevná schémata</span></div><h3>Odhlášení</h3>
+      <p>Tlačítko <strong>Odhlásit</strong> je v levém menu. Sdílíte-li počítač, vždy se odhlaste.</p>
     </section>
+
     <section class="kapitola" id="dobrovolnici">
       <h2>2. Dobrovolníci</h2>
-      <p class="priprava">Kapitola se připravuje.</p>
+      <h3>Přehled</h3>
+      <p>Na úvodní stránce vidíte dlaždice podle stavu zájemců: nové zájemce, kontaktované, domluvené schůzky a aktivní dobrovolníky. Kliknutím na dlaždici se otevře seznam.</p>
+      <h3>Seznam dobrovolníků</h3>
+      <p>Můžete hledat podle jména a filtrovat podle stavu. Kliknutím na řádek otevřete kartu dobrovolníka.</p>
+      <div class="obrazek"><img src="napoveda/seznam.png" alt="seznam dobrovolníků" loading="lazy"><span>Seznam dobrovolníků</span></div>
+      <h3>Karta dobrovolníka</h3>
+      <p>Karta obsahuje několik částí:</p>
+      <ul>
+        <li><strong>Stav a zařazení</strong> – stav (například Nový zájemce nebo Aktivní dobrovolník), datum začátku a konce služby, místo působení, poznámky a činnosti, které se uvedou ve smlouvě.</li>
+        <li><strong>Osobní údaje</strong> – jméno, datum narození, adresa, e-mail a telefon.</li>
+        <li><strong>Zákonný zástupce</strong> – zobrazí se jen u dobrovolníků mladších 18 let (jméno, adresa, datum narození, e-mail a telefon).</li>
+        <li><strong>Dokumenty</strong> – odkazy na vygenerované dokumenty (viz kapitola 3).</li>
+      </ul>
+      <div class="obrazek"><img src="napoveda/karta.png" alt="karta dobrovolníka" loading="lazy"><span>Karta dobrovolníka</span></div>
+      <h3>Změna stavu</h3>
+      <p>Stav změníte v kartě v rozbalovacím seznamu. Změna se uloží ihned.</p>
     </section>
+
     <section class="kapitola" id="dokumenty">
       <h2>3. Dokumenty</h2>
-      <p class="priprava">Kapitola se připravuje.</p>
+      <p>Dokumenty se vytvářejí z šablon. Tlačítka jsou v kartě dobrovolníka v části <strong>Dokumenty</strong>.</p>
+      <h3>Smlouva</h3>
+      <p>Kliknutím na <strong>Vygenerovat smlouvu</strong> se otevře okno. Doplníte v něm chybějící údaje (například konec služby) a vyberete kontaktní osobu a přijímající organizaci. Údaje, které doplníte, se uloží do karty.</p>
+      <ul>
+        <li>Dobrovolníkům do 18 let se vytvoří smlouva pro 15–17 let, starším pro 18+.</li>
+        <li>U mladších 18 let je nutné vyplnit údaje zákonného zástupce.</li>
+        <li>Dokud nejsou všechna povinná pole vyplněná, okno zůstane otevřené a napíše, co chybí.</li>
+      </ul>
+      <div class="obrazek"><img src="napoveda/okno_smlouva.png" alt="okno před generováním smlouvy" loading="lazy"><span>Okno před generováním smlouvy</span></div>
+      <h3>Docházkový list</h3>
+      <p>Tlačítko <strong>Vygenerovat docházkový list</strong> vytvoří list s údaji dobrovolníka a místem výkonu.</p>
+      <h3>Záznam o přípravě</h3>
+      <p>Tlačítko <strong>Záznam o přípravě</strong> otevře výběr místa školení a školitele (pro vstupní i praktickou část). Dokument se uloží do společné složky a v kartě dobrovolníka bude odkaz.</p>
+      <h3>Úpravy</h3>
+      <p>Všechny dokumenty jsou Dokumenty Google. Můžete je upravit přímo v nich, například před tiskem.</p>
+      <h3>Smazání</h3>
+      <p>U každého dokumentu je tlačítko <strong>Smazat</strong>. Dokument se přesune do koše na Disku, odkud ho lze do 30 dnů obnovit. U smlouvy se vymaže i číslo a datum smlouvy.</p>
+      
     </section>
+
     <section class="kapitola" id="hodiny">
       <h2>4. Hodiny</h2>
-      <p class="priprava">Kapitola se připravuje.</p>
+      <h3>Zápis hodin</h3>
+      <p>V záložce <strong>Hodiny</strong> zapíšete hodiny jednotlivě, nebo jako akci či směnu. Každý zápis se zobrazí jako „Ke schválení“, dokud ho neschválíte.</p>
+      <h3>Schválení</h3>
+      <p>Zápisy schvalujete v seznamu hodin. Schválené hodiny se počítají do výkazů. Schválený zápis už nelze měnit, pokud na to nemáte oprávnění.</p>
+      <h3>Měsíční výkaz</h3>
+      <p>Tlačítko <strong>Měsíční výkaz</strong> otevře tabulku pro jednu organizaci a jeden měsíc. Do políček vepište hodiny.</p>
+      <h3>Roční výkaz</h3>
+      <p>Tlačítko <strong>Roční výkaz</strong> ukáže za zvolený rok všechny dobrovolníky a jejich hodiny po měsících. Tlačítkem <strong>Exportovat jako Google tabulku</strong> vytvoříte tabulku ve složce Výkazy.</p>
+      <div class="obrazek"><img src="napoveda/hodiny.png" alt="seznam hodin" loading="lazy"><span>Seznam hodin</span></div>
+      <div class="obrazek"><img src="napoveda/rocni_vykaz.png" alt="roční výkaz" loading="lazy"><span>Roční výkaz</span></div>
+      <h3>Portál dobrovolníka</h3>
+      <p>Dobrovolníci zapisují své hodiny sami na stránce portálu. Odkaz na ni jim pošlete z karty dobrovolníka.</p>
     </section>
+
     <section class="kapitola" id="schuzky">
       <h2>5. Schůzky a kalendář</h2>
-      <p class="priprava">Kapitola se připravuje.</p>
+      <h3>Domluvení schůzky</h3>
+      <p>V kartě dobrovolníka vyberte datum, čas a místo. Kliknutím na <strong>Naplánovat schůzku</strong> se schůzka uloží do kalendáře. Dobrovolník dostane e-mail s potvrzením (můžete to vypnout zaškrtnutím).</p>
+      <h3>Změna termínu</h3>
+      <p>Změňte datum a čas a klikněte na <strong>Změnit termín</strong>. Dobrovolník dostane e-mail s novým termínem.</p>
+      <h3>Zrušení schůzky</h3>
+      <p>Tlačítkem <strong>Zrušit schůzku</strong> ji odstraníte z kalendáře.</p>
+      
     </section>
+
     <section class="kapitola" id="administrace">
       <h2>6. Administrace</h2>
-      <p class="priprava">Kapitola se připravuje.</p>
+      <p>Tuto část vidí jen správci. Najdete ji v levém menu pod položkou <strong>Administrace</strong>.</p>
+      <h3>Nastavení</h3>
+      <p>Názvy, adresy šablon, složky na Disku, kontaktní osoby a místa školení. Změnu uložíte do pole vedle názvu.</p>
+      <h3>Administrátoři</h3>
+      <p>Seznam lidí, kteří mohou dashboard používat, a jejich role (Jen čtení, Koordinátor, Hlavní admin).</p>
+      <h3>Šablony e-mailů</h3>
+      <p>Texty automatických e-mailů. Můžete je upravit, ale zachovejte složené závorky, například <code>{jmeno}</code>.</p>
+      <h3>Šablony dokumentů</h3>
+      <p>Odkazy na šablony smlouvy (pro 15–17 let a 18+), docházkového listu a záznamu o přípravě. Vložíte sem odkaz na Dokument Google, který jste připravili.</p>
+      <h3>Číselníky</h3>
+      <p>Oblasti zájmu, místa a činnosti, které se nabízejí v jednotlivých formulářích.</p>
+      <div class="obrazek"><img src="napoveda/administrace.png" alt="záložka Administrace" loading="lazy"><span>Záložka Administrace</span></div>
     </section>
+
     <section class="kapitola" id="faq">
       <h2>7. Časté otázky a řešení potíží</h2>
-      <p class="priprava">Kapitola se připravuje.</p>
+      <h3>Po změně se nic nezměnilo.</h3>
+      <p>Stiskněte <strong>Ctrl + F5</strong>, aby se načetla nová verze stránky.</p>
+      <h3>Okno se zavřelo a údaje se neuložily.</h3>
+      <p>Otevřete znovu kartu dobrovolníka a zkuste to znovu. Údaje z okna se uloží až po úspěšném vytvoření dokumentu.</p>
+      <h3>Smlouva nejde vygenerovat.</h3>
+      <p>Okno vám napíše, které údaje chybí. Zkontrolujte, že dobrovolník má vyplněné datum narození, adresu, e-mail, telefon a přiřazenou organizaci.</p>
+      <h3>Chybí dokument v kartě.</h3>
+      <p>Zkontrolujte, že je v Nastavení vyplněná šablona a složka pro daný typ dokumentu.</p>
+      <h3>Přihlášení nefunguje.</h3>
+      <p>Zkontrolujte, že máte v systému zapsaný správný e-mail a že máte roli, která umožňuje přístup do dashboardu.</p>
+      <h3>Kdo mi pomůže?</h3>
+      <p>Napište správci systému.</p>
     </section>
   </main>
   <script>
