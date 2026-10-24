@@ -19,22 +19,23 @@
     :root[data-schema="vinova"] { --primary: #7d2041; --primary-hover: #621833; --accent: #f7e7ed; }
     :root[data-schema="oranzova"] { --primary: #b35a0a; --primary-hover: #8a4608; --accent: #fdf0e1; }
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
     header { background: var(--primary); color: #fff; padding: 16px; }
     header a { color: #fff; }
-    main { max-width: 840px; margin: 0 auto; padding: 16px; }
+    main { max-width: 860px; margin: 0 auto; padding: 16px; }
     h1 { font-size: 24px; margin: 8px 0; }
     h2 { font-size: 20px; margin: 0 0 10px; color: var(--primary); }
-    h3 { font-size: 16px; margin: 16px 0 6px; }
+    h3 { font-size: 16px; margin: 18px 0 6px; }
     .kapitola { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin: 14px 0; }
     .kapitola p, .kapitola li { margin: 6px 0; }
     .kapitola ol, .kapitola ul { padding-left: 22px; }
     .obsah { background: var(--accent); border-radius: var(--radius); padding: 12px 16px; }
     .obsah a { display: block; padding: 4px 0; color: var(--primary); }
-    .obrazek { margin: 12px 0; border: 1px dashed var(--border); border-radius: var(--radius); padding: 14px; color: var(--muted); font-size: 14px; background: #fafbfa; }
+    .obrazek { margin: 12px 0; border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; background: #fafbfa; }
     .obrazek img { max-width: 100%; border-radius: 8px; border: 1px solid var(--border); display: block; }
-    .obrazek span { display: block; margin-top: 6px; font-size: 13px; }
-    .poznamka { background: var(--accent); border-radius: 8px; padding: 10px 12px; margin: 10px 0; font-size: 15px; }
+    .obrazek span { display: block; margin-top: 6px; font-size: 13px; color: var(--muted); }
+    .tip { background: var(--accent); border-radius: 8px; padding: 10px 12px; margin: 10px 0; font-size: 15px; }
+    .pozor { background: #fff6e0; border-radius: 8px; padding: 10px 12px; margin: 10px 0; font-size: 15px; }
   </style>
 </head>
 <body>
@@ -43,7 +44,7 @@
     <h1>Nápověda</h1>
   </header>
   <main>
-    <p>Tato nápověda popisuje, jak s dashboardem pracovat krok za krokem.</p>
+    <p>Tato nápověda popisuje, jak s dashboardem pracovat krok za krokem. Každý postup je rozepsaný tak, abyste ho mohli projít bez předchozí zkušenosti. Pokud se něco nezobrazí tak, jak je popsáno, zkuste nejdřív stisknout <strong>Ctrl + F5</strong>.</p>
 
     <nav class="obsah" aria-label="Obsah nápovědy">
       <a href="#prihlaseni">1. Přihlášení a první kroky</a>
@@ -57,120 +58,319 @@
 
     <section class="kapitola" id="prihlaseni">
       <h2>1. Přihlášení a první kroky</h2>
-      <p>Do dashboardu se přihlašujete přes e-mail, který máte v systému jako administrátor.</p>
+      <p>Do dashboardu se přihlašujete svým e-mailem, který máte v systému zapsaný jako administrátor. Heslo se nepoužívá. Místo něj dostanete na e-mail jednorázový kód nebo odkaz.</p>
+
+      <h3>Postup přihlášení</h3>
       <ol>
-        <li>Otevřete adresu dashboardu v prohlížeči.</li>
-        <li>Zadejte svůj e-mail a klikněte na přihlášení.</li>
-        <li>Přijde vám e-mail s kódem nebo odkazem. Opište kód, nebo klikněte na odkaz.</li>
-        <li>Po přihlášení se otevře přehled.</li>
+        <li>Otevřete adresu dashboardu v prohlížeči (počítač, tablet nebo telefon).</li>
+        <li>Do políčka pro e-mail napište svou adresu a potvrďte tlačítkem pro odeslání.</li>
+        <li>Během několika minut přijde na váš e-mail zpráva od systému. Obsahuje <strong>kód</strong>, nebo <strong>odkaz</strong>. Obojí platí jen krátce, proto je použijte hned.</li>
+        <li>Kód opište do políčka na stránce, nebo klikněte na odkaz v e-mailu.</li>
+        <li>Po úspěšném přihlášení se otevře přehled. Přihlášení zůstane zapamatované ve vašem prohlížeči, dokud se neodhlásíte nebo vyprší jeho platnost.</li>
       </ol>
-      <div class="obrazek"><img src="napoveda/prihlaseni.png" alt="přihlašovací okno" loading="lazy"><span>Přihlašovací okno</span></div>
+      <div class="obrazek"><img src="napoveda/prihlaseni.png" alt="Přihlašovací okno" loading="lazy"><span>Přihlašovací okno</span></div>
+      <div class="pozor"><strong>Nedostali jste e-mail?</strong> Zkontrolujte složku nevyžádané pošty. Pokud v ní nic není, zkontrolujte, že používáte e-mail, který máte v systému zapsaný. Pokud ano a zpráva stále nepřichází, napište správci systému.</div>
+
       <h3>Levé menu</h3>
-      <p>Přehled (co čeká na vyřízení), Dobrovolníci (seznam), Hodiny (zápis a výkazy) a Administrace (nastavení, jen pro správce). Dole najdete <strong>Obnovit data</strong>, volbu <strong>Barevné schéma</strong> a odkaz <strong>Nápověda</strong>.</p>
-      <div class="obrazek"><img src="napoveda/prehled.png" alt="levé menu" loading="lazy"><span>Levé menu</span></div>
-      <h3>Barevné schéma</h3><p>V levém menu dole vyberete barevné schéma dashboardu. Volba se uloží ve vašem prohlížeči a platí jen pro vás.</p><div class="obrazek"><img src="napoveda/barevne_schema.png" alt="Barevné schéma" loading="lazy"><span>Barevná schémata</span></div><h3>Odhlášení</h3>
-      <p>Tlačítko <strong>Odhlásit</strong> je v levém menu. Sdílíte-li počítač, vždy se odhlaste.</p>
+      <p>Po přihlášení vidíte vlevo hlavní menu. Obsahuje tyto položky:</p>
+      <ul>
+        <li><strong>Přehled</strong> – úvodní stránka s dlaždicemi, které ukazují, co čeká na vyřízení.</li>
+        <li><strong>Dobrovolníci</strong> – seznam všech dobrovolníků a zájemců.</li>
+        <li><strong>Hodiny</strong> – zápis hodin, schvalování a výkazy.</li>
+        <li><strong>Administrace</strong> – nastavení systému. Tuto položku vidí jen správci.</li>
+        <li><strong>Odhlásit</strong> – ukončí přihlášení na tomto zařízení.</li>
+      </ul>
+      <p>Ve spodní části menu najdete tlačítko <strong>Obnovit data</strong> (načte nejnovější údaje ze systému), volbu <strong>Barevné schéma</strong> a odkaz <strong>Nápověda</strong>.</p>
+      <div class="obrazek"><img src="napoveda/prehled.png" alt="Levé menu a přehled" loading="lazy"><span>Levé menu a přehled</span></div>
+
+      <h3>Barevné schéma</h3>
+      <p>Vzhled dashboardu si můžete přizpůsobit. V levém menu dole otevřete rozbalovací seznam <strong>Barevné schéma</strong> a vyberete barvu, která vám vyhovuje. Změna se projeví hned v celém menu i tlačítkách. Vaše volba se uloží jen ve vašem prohlížeči, ostatní uživatelé ji neuvidí.</p>
+      <div class="obrazek"><img src="napoveda/barevne_schema.png" alt="Výběr barevného schématu" loading="lazy"><span>Barevná schémata</span></div>
+
+      <h3>Odhlášení</h3>
+      <p>Když skončíte, klikněte na <strong>Odhlásit</strong> v levém menu. Pokud sdílíte počítač s jinými lidmi, vždy se odhlaste.</p>
     </section>
 
     <section class="kapitola" id="dobrovolnici">
       <h2>2. Dobrovolníci</h2>
+      <p>Tato část je hlavní místo, kde pracujete s lidmi. Najdete tu zájemce, aktivní dobrovolníky a jejich údaje, dokumenty i schůzky.</p>
+
       <h3>Přehled</h3>
-      <p>Na úvodní stránce vidíte dlaždice podle stavu zájemců: nové zájemce, kontaktované, domluvené schůzky a aktivní dobrovolníky. Kliknutím na dlaždici se otevře seznam.</p>
-      <h3>Seznam dobrovolníků</h3>
-      <p>Můžete hledat podle jména a filtrovat podle stavu. Kliknutím na řádek otevřete kartu dobrovolníka.</p>
-      <div class="obrazek"><img src="napoveda/seznam.png" alt="seznam dobrovolníků" loading="lazy"><span>Seznam dobrovolníků</span></div>
-      <h3>Karta dobrovolníka</h3>
-      <p>Karta obsahuje několik částí:</p>
+      <p>Úvodní stránka <strong>Přehled</strong> ukazuje dlaždice podle stavu. Každá dlaždice má nadpis, počet lidí a seznam jmen. Typické dlaždice jsou:</p>
       <ul>
-        <li><strong>Stav a zařazení</strong> – stav (například Nový zájemce nebo Aktivní dobrovolník), datum začátku a konce služby, místo působení, poznámky a činnosti, které se uvedou ve smlouvě.</li>
-        <li><strong>Osobní údaje</strong> – jméno, datum narození, adresa, e-mail a telefon.</li>
-        <li><strong>Zákonný zástupce</strong> – zobrazí se jen u dobrovolníků mladších 18 let (jméno, adresa, datum narození, e-mail a telefon).</li>
-        <li><strong>Dokumenty</strong> – odkazy na vygenerované dokumenty (viz kapitola 3).</li>
+        <li><strong>Noví zájemci</strong> – lidé, kteří se přihlásili formulářem a ještě nebyli kontaktováni.</li>
+        <li><strong>Kontaktovaní</strong> – s těmito lidmi jste již mluvili, ale schůzka nebyla domluvena.</li>
+        <li><strong>Domluvené schůzky</strong> – termín je domluvený. Pokud je termín už v minulosti, systém to upozorní, abyste změnili stav.</li>
+        <li><strong>Aktivní dobrovolníci</strong> – lidé, kteří už pomáhají.</li>
+        <li><strong>Upozornění</strong> – záznamy, u kterých je potřeba něco zkontrolovat.</li>
       </ul>
-      <div class="obrazek"><img src="napoveda/karta.png" alt="karta dobrovolníka" loading="lazy"><span>Karta dobrovolníka</span></div>
-      <h3>Změna stavu</h3>
-      <p>Stav změníte v kartě v rozbalovacím seznamu. Změna se uloží ihned.</p>
+      <p>Kliknutím na dlaždici nebo na jméno v ní se otevře karta dobrovolníka.</p>
+
+      <h3>Seznam dobrovolníků</h3>
+      <ol>
+        <li>V levém menu klikněte na <strong>Dobrovolníci</strong>.</li>
+        <li>Do políčka pro hledání napište jméno, příjmení nebo část e-mailu. Seznam se hned zúží.</li>
+        <li>Pokud chcete vidět jen určité lidi, vyberte stav v rozbalovacím seznamu (například jen aktivní dobrovolníky).</li>
+        <li>Kliknutím na řádek otevřete kartu dobrovolníka.</li>
+      </ol>
+      <div class="obrazek"><img src="napoveda/seznam.png" alt="Seznam dobrovolníků" loading="lazy"><span>Seznam dobrovolníků</span></div>
+
+      <h3>Karta dobrovolníka</h3>
+      <p>Karta je přehled o jednom člověku. Rozdělena je do několika částí:</p>
+      <ul>
+        <li><strong>Stav a zařazení</strong> – stav (například Nový zájemce nebo Aktivní dobrovolník), datum začátku služby (Služba od), konec služby (Služba do), místo působení, poznámky a <strong>Činnosti v článku III smlouvy</strong>. Tyto činnosti se vypíšou do smlouvy, každou na nový řádek.</li>
+        <li><strong>Organizace a hodiny</strong> – organizace, ke kterým je dobrovolník přiřazený, a jeho odpracované hodiny.</li>
+        <li><strong>Portál dobrovolníka</strong> – stav přístupu dobrovolníka na jeho vlastní stránku pro zápis hodin.</li>
+        <li><strong>Schůzka</strong> – termín a místo příští schůzky (viz kapitola 5).</li>
+        <li><strong>Dokumenty</strong> – odkazy na smlouvu, docházkový list a záznam o přípravě (viz kapitola 3).</li>
+        <li><strong>Osobní údaje</strong> – jméno, datum narození, adresa, e-mail, telefon a další informace.</li>
+        <li><strong>Zákonný zástupce</strong> – zobrazí se jen u dobrovolníků mladších 18 let. Obsahuje jméno, adresu, datum narození, e-mail a telefon zástupce.</li>
+        <li><strong>Zájem o dobrovolnictví</strong> – oblasti zájmu, dostupnost a zkušenosti.</li>
+        <li><strong>Systémové údaje</strong> – kdy se dobrovolník zaregistroval, kdy byl záznam naposledy upraven a kým.</li>
+      </ul>
+      <div class="obrazek"><img src="napoveda/karta.png" alt="Karta dobrovolníka" loading="lazy"><span>Karta dobrovolníka</span></div>
+
+      <h3>Jak upravit údaje dobrovolníka</h3>
+      <ol>
+        <li>Otevřete kartu dobrovolníka.</li>
+        <li>Klikněte do políčka, které chcete změnit, a napište novou hodnotu.</li>
+        <li>Až dopíšete, klikněte mimo políčko nebo stiskněte Tab. Změna se uloží automaticky a vedle políčka se krátce objeví potvrzení <em>Uloženo</em>.</li>
+      </ol>
+      <p class="tip">Nemusíte mít strach, že něco přepíšete omylem. Každá změna se zapíše do historie v systémovém záznamu a je dohledatelná.</p>
+
+      <h3>Změna stavu dobrovolníka</h3>
+      <p>Stav změníte v rozbalovacím seznamu nahoře v části <strong>Stav a zařazení</strong>. Vyberte nový stav a změna se uloží hned. Stav určuje, kde se člověk v přehledu objeví. Například když dobrovolník začne pomáhat, změňte stav na <em>Aktivní dobrovolník</em>.</p>
+
+      <h3>Pozor na údaje, které se používají ve smlouvě</h3>
+      <p>Pro smlouvu je potřeba mít vyplněné datum narození, trvalé bydliště (ulici, obec a PSČ), e-mail, telefon a konec služby. U dobrovolníka mladšího 18 let navíc údaje zákonného zástupce. Pokud něco chybí, systém při generování smlouvy na to upozorní (viz kapitola 3).</p>
     </section>
 
     <section class="kapitola" id="dokumenty">
       <h2>3. Dokumenty</h2>
-      <p>Dokumenty se vytvářejí z šablon. Tlačítka jsou v kartě dobrovolníka v části <strong>Dokumenty</strong>.</p>
-      <h3>Smlouva</h3>
-      <p>Kliknutím na <strong>Vygenerovat smlouvu</strong> se otevře okno. Doplníte v něm chybějící údaje (například konec služby) a vyberete kontaktní osobu a přijímající organizaci. Údaje, které doplníte, se uloží do karty.</p>
-      <ul>
-        <li>Dobrovolníkům do 18 let se vytvoří smlouva pro 15–17 let, starším pro 18+.</li>
-        <li>U mladších 18 let je nutné vyplnit údaje zákonného zástupce.</li>
-        <li>Dokud nejsou všechna povinná pole vyplněná, okno zůstane otevřené a napíše, co chybí.</li>
-      </ul>
-      <div class="obrazek"><img src="napoveda/okno_smlouva.png" alt="okno před generováním smlouvy" loading="lazy"><span>Okno před generováním smlouvy</span></div>
+      <p>Dokumenty se vytvářejí automaticky z připravených šablon. Vyplní se údaje z karty dobrovolníka a výsledek se uloží jako <strong>Dokument Google</strong>. Ten můžete ještě upravit, například před tiskem nebo podepsáním.</p>
+
+      <h3>Kde najdete tlačítka</h3>
+      <p>Otevřete kartu dobrovolníka a sjeďte dolů k části <strong>Dokumenty</strong>. Tam jsou tlačítka pro vytvoření dokumentů a odkazy na už hotové dokumenty.</p>
+      <div class="obrazek"><img src="napoveda/karta.png" alt="Tlačítka pro generování dokumentů" loading="lazy"><span>Část Dokumenty v kartě dobrovolníka</span></div>
+
+      <h3>Smlouva o výkonu dobrovolnické služby</h3>
+      <ol>
+        <li>V kartě dobrovolníka klikněte na <strong>Vygenerovat smlouvu</strong>.</li>
+        <li>Otevře se okno <em>Doplňte údaje do smlouvy</em>. Obsahuje tato pole:
+          <ul>
+            <li><strong>Kontaktní osoba ve smlouvě</strong> – rozbalovací seznam. Vyberte osobu, která se má ve smlouvě uvést jako kontakt (jméno, telefon a e-mail).</li>
+            <li><strong>Přijímající organizace</strong> – rozbalovací seznam organizací, ke kterým je dobrovolník přiřazený. Předvyplněná je první z nich. Pokud je dobrovolník u více organizací, vyberte tu správnou.</li>
+            <li><strong>Služba do</strong> – datum konce služby. Pokud je v kartě vyplněné, zobrazí se předvyplněné.</li>
+            <li>Chybějící údaje o dobrovolníkovi (datum narození, ulice, PSČ, obec, e-mail, telefon) – zobrazí se jen ty, které v kartě chybí.</li>
+            <li>U dobrovolníka mladšího 18 let navíc pole pro zákonného zástupce.</li>
+            <li><strong>Činnosti v článku III</strong> – předvyplněné texty z karty. Každá činnost je na novém řádku. Můžete je upravit nebo doplnit.</li>
+          </ul>
+        </li>
+        <li>Doplňte všechna pole, která jsou prázdná.</li>
+        <li>Klikněte na <strong>Vytvořit smlouvu</strong>.</li>
+        <li>Pokud něco chybí, okno zůstane otevřené a červeně napíše, co doplnit. Vaše dosavadní údaje zůstanou vyplněné.</li>
+        <li>Po úspěchu se vytvoří dokument a v kartě se objeví odkaz. Zároveň se údaje, které jste doplnili, uloží do karty.</li>
+      </ol>
+      <div class="obrazek"><img src="napoveda/okno_smlouva.png" alt="Okno před generováním smlouvy" loading="lazy"><span>Okno před generováním smlouvy</span></div>
+      <p class="tip"><strong>Která smlouva se vytvoří?</strong> Systém podle data narození automaticky vybere šablonu. Dobrovolníci do 18 let dostanou verzi pro 15–17 let, starší dobrovolníci verzi pro 18+.</p>
+      <p class="pozor"><strong>Dokud je okno otevřené, nic se nevytvoří.</strong> Pokud zavřete okno tlačítkem <em>Zpět</em>, nic se neuloží. Údaje doplněné do okna se uloží až po úspěšném vytvoření smlouvy.</p>
+
       <h3>Docházkový list</h3>
-      <p>Tlačítko <strong>Vygenerovat docházkový list</strong> vytvoří list s údaji dobrovolníka a místem výkonu.</p>
-      <h3>Záznam o přípravě</h3>
-      <p>Tlačítko <strong>Záznam o přípravě</strong> otevře výběr místa školení a školitele (pro vstupní i praktickou část). Dokument se uloží do společné složky a v kartě dobrovolníka bude odkaz.</p>
-      <h3>Úpravy</h3>
-      <p>Všechny dokumenty jsou Dokumenty Google. Můžete je upravit přímo v nich, například před tiskem.</p>
-      <h3>Smazání</h3>
-      <p>U každého dokumentu je tlačítko <strong>Smazat</strong>. Dokument se přesune do koše na Disku, odkud ho lze do 30 dnů obnovit. U smlouvy se vymaže i číslo a datum smlouvy.</p>
-      
+      <ol>
+        <li>V kartě dobrovolníka klikněte na <strong>Vygenerovat docházkový list</strong>.</li>
+        <li>Dokument se hned vytvoří a obsahuje údaje dobrovolníka, datum smlouvy, organizaci a místo výkonu z karty.</li>
+        <li>Odkaz se objeví v části Dokumenty.</li>
+      </ol>
+      <p class="tip">Docházkový list je zatím prázdný, bez záznamů hodin. Hodiny do něj doplňujete ručně nebo podle potřeby.</p>
+
+      <h3>Záznam o přípravě a výcviku</h3>
+      <ol>
+        <li>V kartě dobrovolníka klikněte na <strong>Záznam o přípravě</strong>.</li>
+        <li>Otevře se okno s výběrem:
+          <ul>
+            <li><strong>Místo školení</strong> – například Pardubice nebo Chrudim.</li>
+            <li><strong>Školitel – vstupní školení</strong> – osoba, která vedla vstupní školení.</li>
+            <li><strong>Školitel – praktická část (BOZP)</strong> – předvyplněný stejný školitel jako v první části. Můžete ho změnit.</li>
+          </ul>
+        </li>
+        <li>Vyberte hodnoty a klikněte na <strong>Vytvořit záznam</strong>.</li>
+        <li>Dokument se uloží do společné složky <em>Záznamy o přípravě</em>. U dobrovolníka se ve složce objeví jen zástupce, aby se dokumenty nekopírovaly.</li>
+      </ol>
+
+      <h3>Úpravy dokumentů</h3>
+      <p>Všechny dokumenty jsou Dokumenty Google. Otevřete je odkazem v kartě a upravujete je stejně jako jiný dokument. Můžete například doplnit podpis, upravit formulaci nebo změnit formátování. Před tiskem si text zkontrolujte, protože úpravy se neobnoví, pokud dokument vygenerujete znovu.</p>
+
+      <h3>Smazání dokumentu</h3>
+      <ol>
+        <li>V části Dokumenty u dokumentu, který chcete smazat, klikněte na <strong>Smazat</strong>.</li>
+        <li>Potvrďte dotaz <em>Opravdu chcete smazat …?</em></li>
+        <li>Dokument se přesune do koše na Disku. Odkaz v kartě zmizí.</li>
+      </ol>
+      <p class="pozor"><strong>U smlouvy se smaže i číslo a datum smlouvy.</strong> Pokud smlouvu budete vytvářet znovu, systém přidělí nové číslo. Dokument v koši můžete obnovit do 30 dnů. Potom ho Google smaže úplně.</p>
     </section>
 
     <section class="kapitola" id="hodiny">
       <h2>4. Hodiny</h2>
-      <h3>Zápis hodin</h3>
-      <p>V záložce <strong>Hodiny</strong> zapíšete hodiny jednotlivě, nebo jako akci či směnu. Každý zápis se zobrazí jako „Ke schválení“, dokud ho neschválíte.</p>
-      <h3>Schválení</h3>
-      <p>Zápisy schvalujete v seznamu hodin. Schválené hodiny se počítají do výkazů. Schválený zápis už nelze měnit, pokud na to nemáte oprávnění.</p>
+      <p>V záložce <strong>Hodiny</strong> zapisujete odpracované hodiny dobrovolníků, schvalujete je a vytváříte výkazy. Hodiny se počítají až po schválení.</p>
+
+      <h3>Zápis hodin jednotlivě</h3>
+      <ol>
+        <li>V levém menu klikněte na <strong>Hodiny</strong>.</li>
+        <li>Klikněte na <strong>+ Zapsat hodiny</strong>.</li>
+        <li>Vyberte dobrovolníka, organizaci, datum a čas začátku a konce. Systém spočítá počet hodin.</li>
+        <li>Vyberte činnost z nabídky a případně napište poznámku.</li>
+        <li>Klikněte na uložení. Zápis se zobrazí jako <em>Ke schválení</em>.</li>
+      </ol>
+
+      <h3>Zápis akce nebo směny</h3>
+      <p>Když pomáhá více lidí najednou (například akce nebo společná směna), použijte tlačítko <strong>+ Akce / směna</strong>. Zapíšete jednu akci a přidáte do ní všechny dobrovolníky. Každý pak dostane svůj zápis hodin se stejným časem.</p>
+
+      <h3>Schválení hodin</h3>
+      <ol>
+        <li>V seznamu hodin vyberte filtr <strong>Stav</strong> na hodnotu <em>Ke schválení</em>. Uvidíte jen zápisy, které čekají na kontrolu.</li>
+        <li>Zkontrolujte jednotlivé řádky. Pokud je zápis správný, označte ho zaškrtnutím políčka vlevo. Můžete označit více řádků najednou.</li>
+        <li>Ve hromadné liště nad seznamem zvolte <em>Schválit</em>. Zápis přejde do stavu <em>Schváleno</em>.</li>
+        <li>Zápis, který je chybný, můžete označit jako <em>Zamítnuto</em>. Dobrovolník ho pak uvidí a může ho opravit.</li>
+      </ol>
+      <div class="obrazek"><img src="napoveda/hodiny.png" alt="Seznam hodin" loading="lazy"><span>Seznam hodin</span></div>
+      <p class="pozor"><strong>Schválený zápis už nelze měnit</strong>, pokud na to nemáte oprávnění. Starší hodiny po uzávěrce může změnit jen hlavní správce. Chcete-li zápis opravit, nejdřív se obraťte na správce.</p>
+
       <h3>Měsíční výkaz</h3>
-      <p>Tlačítko <strong>Měsíční výkaz</strong> otevře tabulku pro jednu organizaci a jeden měsíc. Do políček vepište hodiny.</p>
+      <p>Měsíční výkaz je tabulka pro jednu organizaci a jeden měsíc. Hodí se, když dobrovolníci posílají hodiny souhrnně, nebo když je potřeba zapsat více dní najednou.</p>
+      <ol>
+        <li>V záložce Hodiny klikněte na <strong>Měsíční výkaz</strong>.</li>
+        <li>Vyberte organizaci a měsíc.</li>
+        <li>Vyberte činnost, případně napište poznámku, která se použije pro všechny zápisy.</li>
+        <li>Do políček u jednotlivých dobrovolníků a dnů vepište hodiny. Můžete psát například <em>2</em>, <em>1,5</em>, <em>1:30</em> nebo <em>45m</em>.</li>
+        <li>Změny se uloží automaticky. Uloží se jen políčka, která jste vyplnili.</li>
+      </ol>
+      <div class="obrazek"><img src="napoveda/hodiny.png" alt="Měsíční výkaz" loading="lazy"><span>Měsíční výkaz</span></div>
+
       <h3>Roční výkaz</h3>
-      <p>Tlačítko <strong>Roční výkaz</strong> ukáže za zvolený rok všechny dobrovolníky a jejich hodiny po měsících. Tlačítkem <strong>Exportovat jako Google tabulku</strong> vytvoříte tabulku ve složce Výkazy.</p>
-      <div class="obrazek"><img src="napoveda/hodiny.png" alt="seznam hodin" loading="lazy"><span>Seznam hodin</span></div>
-      <div class="obrazek"><img src="napoveda/rocni_vykaz.png" alt="roční výkaz" loading="lazy"><span>Roční výkaz</span></div>
+      <p>Roční výkaz ukáže za zvolený rok všechny dobrovolníky s hodinami a jejich součty po měsících. Použijete ho například na konci roku pro statistiky nebo vyúčtování.</p>
+      <ol>
+        <li>V záložce Hodiny klikněte na <strong>Roční výkaz</strong>.</li>
+        <li>Vyberte rok v rozbalovacím seznamu nahoře. Tabulka se hned přepočítá.</li>
+        <li>Tabulka obsahuje údaje o dobrovolníkovi (jméno, datum narození, adresa, kontakty, zástupce, organizace, číslo a datum smlouvy), hodiny po měsících a celkový součet.</li>
+        <li>Pokud chcete výkaz uložit nebo poslat dál, klikněte na <strong>Exportovat jako Google tabulku</strong>. Vytvoří se nová tabulka ve složce <em>Výkazy</em>. Odkaz na ni se zobrazí v hlášení.</li>
+      </ol>
+      <div class="obrazek"><img src="napoveda/rocni_vykaz.png" alt="Roční výkaz" loading="lazy"><span>Roční výkaz</span></div>
+      <p class="tip">Do ročního výkazu se počítají jen <strong>schválené</strong> hodiny. Zápisy, které jsou ještě ke schválení, se do součtu nezapočítají.</p>
+
       <h3>Portál dobrovolníka</h3>
-      <p>Dobrovolníci zapisují své hodiny sami na stránce portálu. Odkaz na ni jim pošlete z karty dobrovolníka.</p>
+      <p>Dobrovolníci mohou zapisovat hodiny sami na vlastní stránce portálu. Přihlašují se stejně jako správci, svým e-mailem. Zápisy, které dobrovolník sám zadá, čekají na schválení.</p>
+      <ol>
+        <li>Otevřete kartu dobrovolníka a zkontrolujte, že má vyplněný e-mail.</li>
+        <li>V části Portál dobrovolníka pošlete pozvánku nebo odkaz na přihlášení.</li>
+        <li>Dobrovolník si odkaz otevře, zadá svůj e-mail a potvrdí přihlášení kódem.</li>
+      </ol>
+      <p class="pozor"><strong>Bez vyplněného e-mailu portál nefunguje.</strong> Pokud dobrovolník nemá e-mail, zapisujte mu hodiny sami.</p>
     </section>
 
     <section class="kapitola" id="schuzky">
       <h2>5. Schůzky a kalendář</h2>
-      <h3>Domluvení schůzky</h3>
-      <p>V kartě dobrovolníka vyberte datum, čas a místo. Kliknutím na <strong>Naplánovat schůzku</strong> se schůzka uloží do kalendáře. Dobrovolník dostane e-mail s potvrzením (můžete to vypnout zaškrtnutím).</p>
+      <p>Schůzky plánujete přímo v kartě dobrovolníka. Schůzka se zapíše do kalendáře a dobrovolník dostane e-mail s potvrzením.</p>
+
+      <h3>Naplánování schůzky</h3>
+      <ol>
+        <li>Otevřete kartu dobrovolníka a najděte část <strong>Schůzka</strong>.</li>
+        <li>Vyberte datum a čas v políčku <em>Datum a čas</em>.</li>
+        <li>Napište místo, kde se schůzka bude konat. Pokud je v Nastavení vyplněné výchozí místo, objeví se předvyplněné.</li>
+        <li>Nechte zaškrtnuté políčko <em>Poslat dobrovolníkovi e-mail s potvrzením termínu</em>, pokud má dobrovolník dostat e-mail. Pokud ho nechcete posílat, odškrtněte ho.</li>
+        <li>Klikněte na <strong>Naplánovat schůzku</strong>.</li>
+      </ol>
+      <div class="obrazek"><img src="napoveda/karta.png" alt="Část Schůzka v kartě dobrovolníka" loading="lazy"><span>Část Schůzka v kartě dobrovolníka</span></div>
+
       <h3>Změna termínu</h3>
-      <p>Změňte datum a čas a klikněte na <strong>Změnit termín</strong>. Dobrovolník dostane e-mail s novým termínem.</p>
+      <ol>
+        <li>Upravte datum, čas nebo místo v části Schůzka.</li>
+        <li>Klikněte na <strong>Změnit termín</strong>.</li>
+        <li>Dobrovolník dostane e-mail s novým termínem (pokud máte políčko zaškrtnuté).</li>
+      </ol>
+
       <h3>Zrušení schůzky</h3>
-      <p>Tlačítkem <strong>Zrušit schůzku</strong> ji odstraníte z kalendáře.</p>
-      
+      <ol>
+        <li>Klikněte na <strong>Zrušit schůzku</strong>.</li>
+        <li>Schůzka se odstraní z kalendáře.</li>
+      </ol>
+      <p class="tip">Po schůzce změňte stav dobrovolníka podle výsledku, například na <em>Schůzka proběhla</em>. Dlaždice v přehledu pak ukážou správné informace.</p>
     </section>
 
     <section class="kapitola" id="administrace">
       <h2>6. Administrace</h2>
-      <p>Tuto část vidí jen správci. Najdete ji v levém menu pod položkou <strong>Administrace</strong>.</p>
+      <p>Tuto část vidí jen správci. Najdete ji v levém menu pod položkou <strong>Administrace</strong>. Změny zde ovlivní celý systém, proto je dělejte opatrně.</p>
+      <div class="obrazek"><img src="napoveda/administrace.png" alt="Záložka Administrace" loading="lazy"><span>Záložka Administrace</span></div>
+
       <h3>Nastavení</h3>
-      <p>Názvy, adresy šablon, složky na Disku, kontaktní osoby a místa školení. Změnu uložíte do pole vedle názvu.</p>
+      <p>Obsahuje údaje, které systém používá v e-mailech, dokumentech a formuláři: název organizace, adresy šablon, složky na Disku, místa školení, školitele a kontaktní osoby, výchozí činnosti do smlouvy a další hodnoty.</p>
+      <ol>
+        <li>Najděte řádek s údajem, který chcete změnit.</li>
+        <li>Upravte hodnotu v políčku a uložte ji.</li>
+      </ol>
+      <p class="tip">U seznamů oddělujte položky čárkou, u kontaktních osob a školitelů středníkem, protože jména obsahují čárky.</p>
+
       <h3>Administrátoři</h3>
-      <p>Seznam lidí, kteří mohou dashboard používat, a jejich role (Jen čtení, Koordinátor, Hlavní admin).</p>
+      <p>Seznam lidí, kteří mohou dashboard používat. U každého je role, která určuje, co smí dělat:</p>
+      <ul>
+        <li><strong>Jen čtení</strong> – může se dívat, ale nic neupravuje.</li>
+        <li><strong>Koordinátor</strong> – pracuje s dobrovolníky, hodinami a dokumenty.</li>
+        <li><strong>Hlavní admin</strong> – má plný přístup včetně Administrace.</li>
+      </ul>
+      <p>Nového administrátora přidáte zadáním jeho e-mailu a role. Pokud člověk odejde, můžete jeho přístup vypnout.</p>
+
       <h3>Šablony e-mailů</h3>
-      <p>Texty automatických e-mailů. Můžete je upravit, ale zachovejte složené závorky, například <code>{jmeno}</code>.</p>
+      <p>Obsahují texty automatických e-mailů, které systém posílá (například potvrzení registrace nebo pozvánku do portálu). U každé šablony vidíte předmět a text.</p>
+      <ol>
+        <li>Klikněte na šablonu, kterou chcete upravit.</li>
+        <li>Upravte předmět nebo text.</li>
+        <li>Zachovejte složené závorky, například <code>{jmeno}</code>. Systém do nich doplní jméno dobrovolníka. Pokud je smažete nebo změníte, e-mail se nedoplní správně.</li>
+      </ol>
+
       <h3>Šablony dokumentů</h3>
-      <p>Odkazy na šablony smlouvy (pro 15–17 let a 18+), docházkového listu a záznamu o přípravě. Vložíte sem odkaz na Dokument Google, který jste připravili.</p>
+      <p>Zde nastavíte odkazy na šablony, ze kterých se vytvářejí dokumenty. Najdete tu tři druhy:</p>
+      <ul>
+        <li><strong>Smlouva pro 15–17 let</strong> a <strong>Smlouva pro 18+</strong> – dvě verze smlouvy, mezi kterými systém vybírá podle věku.</li>
+        <li><strong>Docházkový list</strong></li>
+        <li><strong>Záznam o přípravě</strong></li>
+      </ul>
+      <p>Postup pro nastavení šablony:</p>
+      <ol>
+        <li>Připravenou šablonu otevřete jako Dokument Google.</li>
+        <li>Zkopírujte celou adresu z prohlížeče.</li>
+        <li>V Administraci u příslušné šablony vložte adresu a uložte ji.</li>
+      </ol>
+      <p class="pozor"><strong>Šablonu neupravujte tak, že změníte nebo smažete zástupné znaky</strong> ve složených závorkách, například <code>{{cele_jmeno}}</code>. Systém do nich doplňuje údaje z karty dobrovolníka. Text kolem nich můžete libovolně měnit.</p>
+
       <h3>Číselníky</h3>
-      <p>Oblasti zájmu, místa a činnosti, které se nabízejí v jednotlivých formulářích.</p>
-      <div class="obrazek"><img src="napoveda/administrace.png" alt="záložka Administrace" loading="lazy"><span>Záložka Administrace</span></div>
+      <p>Seznamy hodnot, které se nabízejí ve formulářích: oblasti zájmu, místa působení a činnosti. Přidání nové položky ji zpřístupní ve všech místech, kde se používá. Pokud položku přestanete používat, můžete ji vypnout místo smazání, aby zůstala v historii.</p>
     </section>
 
     <section class="kapitola" id="faq">
       <h2>7. Časté otázky a řešení potíží</h2>
+
       <h3>Po změně se nic nezměnilo.</h3>
-      <p>Stiskněte <strong>Ctrl + F5</strong>, aby se načetla nová verze stránky.</p>
+      <p>Prohlížeč může zobrazovat starou verzi stránky. Stiskněte <strong>Ctrl + F5</strong>, který načte stránku znovu bez paměti. Na počítači stiskněte Ctrl a F5 současně. Na tabletu nebo telefonu zavřete kartu prohlížeče a otevřete ji znovu.</p>
+
       <h3>Okno se zavřelo a údaje se neuložily.</h3>
-      <p>Otevřete znovu kartu dobrovolníka a zkuste to znovu. Údaje z okna se uloží až po úspěšném vytvoření dokumentu.</p>
+      <p>Otevřete znovu kartu dobrovolníka a zkuste akci znovu. Údaje z okna pro smlouvu se uloží až po úspěšném vytvoření dokumentu. Pokud okno zavřete tlačítkem <em>Zpět</em>, je potřeba je vyplnit znovu.</p>
+
       <h3>Smlouva nejde vygenerovat.</h3>
-      <p>Okno vám napíše, které údaje chybí. Zkontrolujte, že dobrovolník má vyplněné datum narození, adresu, e-mail, telefon a přiřazenou organizaci.</p>
+      <p>Okno vám napíše, které údaje chybí. Zkontrolujte, že dobrovolník má vyplněné datum narození, ulici, PSČ, obec, e-mail, telefon, konec služby a přiřazenou organizaci. U dobrovolníka do 18 let také údaje zákonného zástupce.</p>
+
       <h3>Chybí dokument v kartě.</h3>
-      <p>Zkontrolujte, že je v Nastavení vyplněná šablona a složka pro daný typ dokumentu.</p>
+      <p>Zkontrolujte, že je v Administraci vyplněná šablona pro daný typ dokumentu. Pokud šablona chybí, systém vytvoření dokumentu odmítne a napíše, kterou šablonu nastavit.</p>
+
+      <h3>Dokument se nesmí otevřít.</h3>
+      <p>Dokument mohl být přesunut nebo smazán. Pokud je v koši na Disku, obnovte ho odtud. Pokud je v koši déle než 30 dnů, Google ho smazal a je potřeba dokument vytvořit znovu.</p>
+
       <h3>Přihlášení nefunguje.</h3>
-      <p>Zkontrolujte, že máte v systému zapsaný správný e-mail a že máte roli, která umožňuje přístup do dashboardu.</p>
+      <p>Zkontrolujte, že máte v systému zapsaný správný e-mail a že máte roli, která umožňuje přístup do dashboardu. Pokud e-mail nepřichází, podívejte se do nevyžádané pošty. Kód i odkaz mají krátkou platnost, proto vyžádejte nový.</p>
+
+      <h3>Hodiny se nepočítají do výkazu.</h3>
+      <p>Výkazy počítají jen schválené hodiny. Zkontrolujte, že zápis má stav <em>Schváleno</em> a že datum patří do zvoleného roku nebo měsíce.</p>
+
       <h3>Kdo mi pomůže?</h3>
-      <p>Napište správci systému.</p>
+      <p>Pokud se problém nedá vyřešit podle této nápovědy, napište správci systému. Uveďte, co jste dělali, jaká zpráva se zobrazila a v jakém prohlížeči pracujete. Pomůže také screenshot.</p>
     </section>
   </main>
   <script>
