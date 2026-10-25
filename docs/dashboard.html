@@ -265,7 +265,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-25a</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-25b</p>
   </div>
 </div>
 <script>
@@ -374,7 +374,9 @@ function dialog(o) {
       (o.pole || []).map(p => '<label style="display:block;margin-bottom:12px"><span class="muted small">' + esc(p.popisek) + '</span>' +
       (p.typ === 'textarea'
         ? '<textarea data-udaj="' + esc(p.klic) + '" rows="5" style="width:100%">' + esc(p.hodnota || '') + '</textarea></label>'
-        : '<input type="' + esc(p.typ) + '" data-udaj="' + esc(p.klic) + '" value="' + esc(p.hodnota || '') + '" style="width:100%"></label>')).join('');
+        : p.typ === 'date'
+          ? '<input type="text" data-typ="date" placeholder="den. měsíc. rok, např. 31. 8. 2027" data-udaj="' + esc(p.klic) + '" value="' + esc(fmtD(p.hodnota) || p.hodnota || '') + '" style="width:100%">'
+          : '<input type="' + esc(p.typ) + '" data-udaj="' + esc(p.klic) + '" value="' + esc(p.hodnota || '') + '" style="width:100%">') + '</label>').join('');
     // Výběr s „kopiruj“ se po změně zdrojového výběru nastaví na stejnou hodnotu (ale jde změnit)
     (o.vyber || []).filter(v => v.kopiruj).forEach(v => {
       $('#dlgVyber [data-vyber="' + v.kopiruj + '"]').onchange = e => { $('#dlgVyber [data-vyber="' + v.klic + '"]').value = e.target.value; };
@@ -384,13 +386,24 @@ function dialog(o) {
       const volby = {};
       $$('#dlgVyber [data-vyber]').forEach(s => volby[s.dataset.vyber] = s.value);
       const udaje = {};
-      $$('#dlgVyber [data-udaj]').forEach(i => udaje[i.dataset.udaj] = i.value);
+      $$('#dlgVyber [data-udaj]').forEach(i => udaje[i.dataset.udaj] = i.dataset.typ === 'date' ? (parsujDatumCz(i.value) ?? i.value.trim()) : i.value);
       $('#dlg').hidden = true; $('#dlgAno').onclick = $('#dlgNe').onclick = null;
       ok({ ok: v, check: $('#dlgCheck').checked, volby, udaje });
     };
     $('#dlgAno').onclick = () => konec(true);
     $('#dlgNe').onclick = () => konec(false);
   });
+}
+// Datum z textu: „31. 8. 2027“, „31.8.2027“ nebo „2027-08-31“ → „2027-08-31“; prázdné → ''; neplatné → null
+function parsujDatumCz(s) {
+  const t = String(s || '').trim();
+  if (!t) return '';
+  let m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/) || t.match(/^(\d{1,2})\D+(\d{1,2})\D+(\d{4})\.?$/);
+  if (!m) return null;
+  const [y, mo, d] = t.match(/^\d{4}-/) ? [+m[1], +m[2], +m[3]] : [+m[3], +m[2], +m[1]];
+  const dt = new Date(y, mo - 1, d);
+  if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return null;
+  return y + '-' + String(mo).padStart(2, '0') + '-' + String(d).padStart(2, '0');
 }
 function fmtD(s) {
   const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -598,6 +611,8 @@ function vekKDatu(s) {
 }
 // Co ještě chybí pro smlouvu (hodnoty z okna mají přednost před kartou); prázdný text = vše vyplněno
 function chybaSmlouvy(z, u) {
+  const datumy = ['Služba do', 'Datum narození', 'Zástupce – datum narození'];
+  if (datumy.some(k => u[k] && !/^\d{4}-\d{2}-\d{2}$/.test(u[k]))) return 'Datum zadejte ve tvaru 31. 8. 2027.';
   const hod = k => String(u[k] !== undefined ? u[k] : (z[k] || '')).trim();
   const vek = vekKDatu(hod('Datum narození'));
   const chybi = [];
