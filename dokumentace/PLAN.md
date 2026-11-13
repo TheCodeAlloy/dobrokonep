@@ -20,6 +20,15 @@ Otevřené otázky (zeptat se uživatele):
 3. Smí upravovat/mazat už schválené hodiny?
 4. Upozornění e-mailem na nové zápisy dobrovolníků – hned, nebo týdenní souhrn?
 
+## Přestavba hodin (běží po fázích A–D)
+Podrobný schválený plán: `PLAN-HODINY.md`.
+
+## Otevřené úkoly na později (ze zadání přestavby hodin)
+- **Export dat** (Excel / Google tabulka): hodiny, dobrovolníci, měsíční výkazy.
+- **Co přesně organizace vidí o dobrovolníkovi** (jen jméno a kontakt, nebo i další údaje) – rozhodnout před
+  zprovozněním portálu organizace (fáze D).
+- **Samostatná registrace dobrovolníka** (bez formuláře přes KONEP / bez pozvánky od organizace).
+
 ## Později
 - **Statistiky** (různé přehledy – upřesnit s uživatelem): počty zájemců/aktivních, hodiny podle období,
   organizací, činností, míst; export pro výkazy a dotace.

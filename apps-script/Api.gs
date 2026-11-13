@@ -59,7 +59,6 @@ const API_ADMIN = {
   nactiHodiny: function () { return nactiHodiny.apply(null, arguments); },
   ulozHodiny: function () { return ulozHodiny.apply(null, arguments); },
   ulozAkci: function () { return ulozAkci.apply(null, arguments); },
-  ulozVykaz: function () { return ulozVykaz.apply(null, arguments); },
   zmenStavHodin: function () { return zmenStavHodin.apply(null, arguments); },
   smazHodiny: function () { return smazHodiny.apply(null, arguments); },
   pridejPrirazeni: function () { return pridejPrirazeni.apply(null, arguments); },

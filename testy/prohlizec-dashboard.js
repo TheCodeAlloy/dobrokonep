@@ -45,7 +45,10 @@ const { chromium } = require('playwright');
   console.log('přiřazení Marie:', (await p.textContent('#orgSeznam')).replace(/\s+/g,' ').slice(0,80));
   await p.click('#dZapsat'); await W();
   await p.fill('#zDatum','2026-10-20'); await p.dispatchEvent('#zDatum','change'); await W(100);
-  await p.fill('#zOd','08:00'); await p.fill('#zDo','10:35'); await p.dispatchEvent('#zDo','input');
+  await p.selectOption('#zOdH','8'); await p.selectOption('#zDoH','7');
+  await p.click('#zUlozit'); console.log('do před od:', await p.textContent('#zChyba'));
+  await p.selectOption('#zDoH','24'); console.log('24:00 → minuty zamčené na 00:', await p.$eval('#zDoM', e => e.disabled + ' ' + e.value));
+  await p.selectOption('#zDoH','10'); await p.selectOption('#zDoM','35');
   console.log('výpočet:', await p.textContent('#zVysl'));
   await p.click('#zCin label:nth-child(2)');
   await p.screenshot({path:__dirname+'/vystup/u2_zapis.png'});
@@ -57,12 +60,12 @@ const { chromium } = require('playwright');
   await p.evaluate(() => jdi('detail',{id:'DC-2026-0001'})); await W(600);
   console.log('Jan přepínač:', (await p.textContent('#souhrnOrg').catch(()=> 'není')).replace(/\s+/g,' '));
   await p.screenshot({path:__dirname+'/vystup/u3_detail.png', fullPage:true});
-  // akce
-  await p.evaluate(() => jdi('hodiny')); await W(500);
+  // akce (testovací data jsou z října 2026, proto pevný měsíc – test nezávisí na dnešním datu)
+  await p.evaluate(() => { H.filtr = { mesic: '2026-10', org: '', dobrovolnik: '', stav: '' }; jdi('hodiny'); }); await W(500);
   await p.click('#hAkce'); await W();
   await p.fill('#aDatum','2026-10-15'); await p.dispatchEvent('#aDatum','change'); await W(100);
   console.log('akce seznam:', (await p.textContent('#aSeznam')).replace(/\s+/g,' '));
-  await p.click('#aRezim >> text=Jen délka'); await p.selectOption('#aH','3'); await p.selectOption('#aM','30');
+  await p.selectOption('#aOdH','14'); await p.selectOption('#aDoH','17'); await p.selectOption('#aDoM','30');
   await p.click('#aVse'); await p.click('#aCin label:first-child');
   await p.screenshot({path:__dirname+'/vystup/u4_akce.png'});
   await p.click('#aUlozit'); await W(600);
@@ -74,19 +77,7 @@ const { chromium } = require('playwright');
   // hromadné smazání 1
   await p.click('.hSel >> nth=0'); await W(100);
   console.log('bulk:', await p.textContent('#hHromadne'));
-  // výkaz
   console.log('výběr po schválení:', await p.textContent('#hSouhrn'));
-  await p.click('#hVykaz'); await W(600);
-  await p.fill('.bunka[data-z="DC-2026-0001"][data-d="2"]','2');
-  await p.fill('.bunka[data-z="DC-2026-0001"][data-d="3"]','1:30');
-  await p.fill('.bunka[data-z="DC-2026-0002"][data-d="2"]','abc');
-  console.log('výkaz celkem:', await p.textContent('#vCelkem'));
-  await p.screenshot({path:__dirname+'/vystup/u6_vykaz.png', fullPage:true});
-  await p.click('#vUlozit'); await W(200);
-  console.log('výkaz chyba:', await p.textContent('#vChyba'));
-  await p.fill('.bunka[data-z="DC-2026-0002"][data-d="2"]','45m');
-  await p.click('#vUlozit'); await W(800);
-  console.log('Petr 5.10 políčko existuje?', await p.$('.bunka[data-z="DC-2026-0003"][data-d="5"]') ? 'ano (CHYBA)' : 'ne (správně, přiřazen od 10.)');
   // admin činnosti
   await p.evaluate(() => { stav.tab='CINNOSTI'; jdi('admin'); }); await W(600);
   await p.screenshot({path:__dirname+'/vystup/u7_cinnosti.png'});

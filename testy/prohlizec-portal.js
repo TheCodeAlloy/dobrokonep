@@ -13,8 +13,8 @@ const hd = hlavicky_(sh['Dobrovolníci']); const row = o => hd.map(h => o[h] ?? 
 sh['Dobrovolníci'].appendRow(row({ID:'DC-2026-0001','Jméno':'Jan','Příjmení':'Novák','E-mail':'jan@x.cz','Stav':'Aktivní dobrovolník','Časové razítko':new Date(2026,8,1)}));
 pridejPrirazeni('ADMIN','DC-2026-0001','ORG-001','','');
 pridejPrirazeni('ADMIN','DC-2026-0001','ORG-002','2026-10-01','');
-ulozHodiny('ADMIN',{dobrovolnik:'DC-2026-0001', orgId:'ORG-001', datum:'2025-11-12', minut:120, cinnost:'Pomoc na akci'});
-ulozHodiny('ADMIN',{dobrovolnik:'DC-2026-0001', orgId:'ORG-002', datum:'2026-09-03', minut:90, cinnost:'Doprovod / návštěva'}); // admin zpětně před přiřazením
+ulozHodiny('ADMIN',{dobrovolnik:'DC-2026-0001', orgId:'ORG-001', datum:'2025-11-12', od:'08:00', do:'10:00', cinnost:'Pomoc na akci'});
+ulozHodiny('ADMIN',{dobrovolnik:'DC-2026-0001', orgId:'ORG-002', datum:'2026-09-03', od:'08:00', do:'09:30', cinnost:'Doprovod / návštěva'}); // admin zpětně před přiřazením
 const { chromium } = require('playwright');
 (async () => {
   const b = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH, args: ['--headless=new'] } : {});
@@ -35,8 +35,14 @@ const { chromium } = require('playwright');
   // 2) zápis
   await p.click('#bNovy'); await W();
   await p.click('#fDny >> text=Včera');
+  // víc organizací → žádná není předvybraná a bez výběru se zápis neuloží
+  console.log('předvybraná organizace:', await p.$$eval('#fOrg input:checked', l => l.length));
+  await p.selectOption('#fOdH','15'); await p.selectOption('#fDoH','17'); await p.selectOption('#fDoM','15');
+  await p.click('#fUlozit'); console.log('bez organizace:', await p.textContent('#fChyba'));
+  await p.setViewportSize({width:360,height:800}); await p.screenshot({path:__dirname+'/vystup/p2_form_360.png'});
+  console.log('vodorovný posun na 360 px:', await p.evaluate(() => document.documentElement.scrollWidth > window.innerWidth));
+  await p.setViewportSize({width:1280,height:900});
   await p.click('#fOrg >> text=Charita Pardubice');
-  await p.fill('#fOd','15:00'); await p.fill('#fDo','17:15'); await p.dispatchEvent('#fDo','input');
   console.log('výpočet:', await p.textContent('#fVysl'));
   await p.click('#fCin >> text=Pomoc na akci');
   await p.screenshot({path:__dirname+'/vystup/p2_form.png', fullPage:true});
@@ -45,12 +51,11 @@ const { chromium } = require('playwright');
   // 3) zopakovat poslední
   await p.click('#bZnovu'); await W();
   await p.click('#fDny >> text=Dnes');
-  console.log('opakování předvyplněno:', await p.inputValue('#fOd'), await p.inputValue('#fDo'), await p.isChecked('input[name="cin"][value="Pomoc na akci"]'));
+  console.log('opakování předvyplněno:', await p.inputValue('#fOdH'), await p.inputValue('#fDoH'), await p.isChecked('input[name="cin"][value="Pomoc na akci"]'));
   await p.click('#fUlozit'); await W(600);
   // 4) úprava čekajícího zápisu
   await p.click('#seznam button.zapis >> nth=0'); await W();
-  await p.click('#fCas ~ * >> nth=0').catch(()=>{});
-  await p.click('text=Jen délka'); await p.click('#fRychle >> text=3 h');
+  await p.selectOption('#fOdH','9'); await p.selectOption('#fDoH','12');
   await p.click('#fUlozit'); await W(600);
   console.log('po úpravě:', (await p.textContent('#seznam')).replace(/\s+/g,' ').slice(0,160));
   // 5) zápis před 70 dny – nejde vybrat (min), zkusíme podvrhnout

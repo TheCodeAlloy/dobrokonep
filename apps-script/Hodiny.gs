@@ -3,7 +3,7 @@
  * --------------------------------------------------------------
  * - přiřazení dobrovolníků k organizacím (dobrovolník může mít víc organizací)
  * - katalog činností (pro všechny organizace nebo pro konkrétní organizaci)
- * - zápis hodin v dashboardu: jednotlivě, za akci (více dobrovolníků), měsíční výkaz
+ * - zápis hodin v dashboardu: jednotlivě nebo za akci (více dobrovolníků); vždy od–do
  * - schvalování, mazání, uzávěrka měsíců
  *
  * Čas se ukládá v minutách (sloupec „Minut“), zaokrouhleno na 5 minut.
@@ -202,12 +202,21 @@ function hhmm_(v) {
   return m ? m[1].padStart(2, '0') + ':' + m[2] : '';
 }
 
+// Čas HH:MM → minuty od půlnoci; povolené jsou jen hodiny 0–24, minuty po 5 (24:00 je konec dne). Jinak null.
+function minutyDne_(t) {
+  const m = String(t == null ? '' : t).trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  const h = +m[1], mi = +m[2];
+  if (h > 24 || mi > 55 || mi % 5 !== 0 || (h === 24 && mi !== 0)) return null;
+  return h * 60 + mi;
+}
+
+// Délka v minutách z času od–do téhož dne (24:00 povoleno); chybně zadaný čas = výjimka s českou zprávou
 function minutyZCasu_(od, doo) {
-  const a = String(od).match(/^(\d{2}):(\d{2})$/), b = String(doo).match(/^(\d{2}):(\d{2})$/);
-  if (!a || !b) return 0;
-  let m = (+b[1] * 60 + +b[2]) - (+a[1] * 60 + +a[2]);
-  if (m <= 0) m += 24 * 60; // přes půlnoc
-  return m;
+  const a = minutyDne_(od), b = minutyDne_(doo);
+  if (a == null || b == null) throw new Error('Zadejte čas od i do (hodiny 0–24, minuty po 5).');
+  if (b <= a) throw new Error('Čas „do“ musí být později než „od“ téhož dne (konec dne zadejte jako 24:00).');
+  return b - a;
 }
 
 function zaokrouhli5_(m) { return Math.round(Number(m) / 5) * 5; }
@@ -400,7 +409,7 @@ function pripravZapis_(z, pr, orgs, n, a, prisne) {
   const dobrovolnik = String(z.dobrovolnik || '').trim();
   const org = orgs.find(o => o.id === String(z.orgId || ''));
   if (!dobrovolnik) throw new Error('Vyberte dobrovolníka.');
-  if (!org) throw new Error('Vyberte organizaci.');
+  if (!org) throw new Error('Vyberte, pro kterou organizaci hodiny zapisujete.');
   const datum = String(z.datum || '').trim();
   const dD = parsujDatum_(datum);
   if (!dD) throw new Error('Zadejte datum.');
@@ -413,15 +422,10 @@ function pripravZapis_(z, pr, orgs, n, a, prisne) {
   } else if (!pr.some(p => p.dobrovolnik === dobrovolnik && p.orgId === org.id)) {
     throw new Error('Dobrovolník ' + dobrovolnik + ' není přiřazený k organizaci ' + org.nazev + '. Přiřaďte ho v jeho detailu.');
   }
-  let od = String(z.od || '').trim(), doo = String(z.do || '').trim(), minut;
-  if (od || doo) {
-    if (!/^\d{2}:\d{2}$/.test(od) || !/^\d{2}:\d{2}$/.test(doo)) throw new Error('Zadejte čas od i do.');
-    minut = minutyZCasu_(od, doo);
-  } else {
-    minut = Number(z.minut);
-  }
-  minut = zaokrouhli5_(minut);
-  if (!(minut >= 5 && minut <= 24 * 60)) throw new Error('Délka musí být mezi 5 minutami a 24 hodinami.');
+  // čas se zadává vždy jako od–do (volba „jen délka“ zrušena); hodiny vzniknou výpočtem
+  let od = String(z.od || '').trim(), doo = String(z.do || '').trim();
+  const minut = minutyZCasu_(od, doo);
+  od = ('0' + od).slice(-5); doo = ('0' + doo).slice(-5);
   const cinnost = String(z.cinnost || '').trim().slice(0, 200);
   if (!cinnost) throw new Error('Vyberte nebo napište činnost.');
   return {
@@ -504,35 +508,6 @@ function ulozAkci(token, d) {
     const radky = ids.map(id => novyZaznamHodin_(pripravZapis_(Object.assign({}, d, { dobrovolnik: id }), pr, orgs, n, a), a, 'Akce', idAkce));
     zapisRadkyHodin_(radky);
     log_('Zápis hodin – akce', '', idAkce + ': ' + radky.length + ' dobrovolníků, ' + String(d.datum));
-    return { ok: true, pocet: radky.length };
-  });
-}
-
-// Měsíční výkaz: položky [{dobrovolnik, den, minut}]
-function ulozVykaz(token, d) {
-  const a = overAdmin_(token, 'Koordinátor');
-  const n = nastaveni_();
-  d = d || {};
-  const mesic = String(d.mesic || '');
-  if (!/^\d{4}-\d{2}$/.test(mesic)) throw new Error('Vyberte měsíc.');
-  const polozky = [].concat(d.polozky || []).filter(x => Number(x.minut) > 0);
-  if (!polozky.length) throw new Error('Výkaz neobsahuje žádné hodiny.');
-  return sZamkem_(() => {
-    const pr = prirazeni_(), orgs = organizace_();
-    const idAkce = novyKlic_('VY');
-    const radky = polozky.map(x => {
-      const datum = mesic + '-' + String(Number(x.den)).padStart(2, '0');
-      try {
-        return novyZaznamHodin_(pripravZapis_({
-          dobrovolnik: x.dobrovolnik, orgId: d.orgId, datum: datum, minut: x.minut,
-          cinnost: d.cinnost, poznamka: d.poznamka
-        }, pr, orgs, n, a), a, 'Měsíční výkaz', idAkce);
-      } catch (e) {
-        throw new Error(x.dobrovolnik + ', ' + Number(x.den) + '. den: ' + e.message);
-      }
-    });
-    zapisRadkyHodin_(radky);
-    log_('Zápis hodin – měsíční výkaz', '', idAkce + ': ' + radky.length + ' zápisů, ' + mesic);
     return { ok: true, pocet: radky.length };
   });
 }

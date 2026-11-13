@@ -159,6 +159,11 @@
   #cinPop .prazdno { color: var(--muted); margin: 8px 0; }
   #cinPop .pozn { margin: 10px 0 0; padding-top: 8px; border-top: 1px solid var(--border); font: italic 12.5px Georgia, 'Times New Roman', serif; color: var(--muted); }
   .cinBtn { padding: 6px 10px; font-size: 13px; white-space: nowrap; }
+  .cas2 { display: flex; flex-direction: column; gap: 8px; }
+  .cas-r { display: flex; align-items: center; gap: 10px; }
+  .cas-r > span:first-child { width: 24px; }
+  .cv { display: inline-flex; align-items: center; gap: 3px; }
+  .cv select { width: auto; min-width: 62px; }
   table.adm td.ro { color: var(--muted); font-size: 13px; padding-top: 14px; }
   .saved { border-color: var(--ok) !important; box-shadow: 0 0 0 2px rgba(31,122,77,.15); }
   .bad { border-color: var(--error) !important; background: var(--error-bg) !important; }
@@ -288,7 +293,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-13g</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-14a</p>
   </div>
 </div>
 <script>
@@ -499,8 +504,8 @@ async function jdi(view, extra) {
   if (zastarale || Date.now() - posledniNacteni > 60000) obnovNaPozadi();
 }
 function render() {
-  $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.view === stav.view || (stav.view === 'detail' && b.dataset.view === 'seznam') || ((stav.view === 'vykaz' || stav.view === 'rocni') && b.dataset.view === 'hodiny')));
-  ({ prehled: vPrehled, seznam: vSeznam, detail: vDetail, hodiny: vHodiny, vykaz: vVykaz, rocni: vRocni, admin: vAdmin }[stav.view] || vPrehled)();
+  $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.view === stav.view || (stav.view === 'detail' && b.dataset.view === 'seznam') || (stav.view === 'rocni' && b.dataset.view === 'hodiny')));
+  ({ prehled: vPrehled, seznam: vSeznam, detail: vDetail, hodiny: vHodiny, rocni: vRocni, admin: vAdmin }[stav.view] || vPrehled)();
 }
 $('#nav').addEventListener('click', e => {
   const b = e.target.closest('button[data-view]');
@@ -965,11 +970,10 @@ function parsujDelku(s) {
   return m > 0 && m <= 1440 ? m : null;
 }
 function minutOdDo(od, doo) {
-  const a = String(od).match(/^(\d{2}):(\d{2})/), b = String(doo).match(/^(\d{2}):(\d{2})/);
+  const a = String(od).match(/^(\d{1,2}):(\d{2})/), b = String(doo).match(/^(\d{1,2}):(\d{2})/);
   if (!a || !b) return 0;
-  let m = (+b[1] * 60 + +b[2]) - (+a[1] * 60 + +a[2]);
-  if (m <= 0) m += 1440;
-  return Math.round(m / 5) * 5;
+  const m = (+b[1] * 60 + +b[2]) - (+a[1] * 60 + +a[2]);
+  return m > 0 ? m : 0;   // „do“ musí být později než „od“ téhož dne
 }
 const orgPodleId = id => (D.organizaceVse || []).find(o => o.id === id) || { id: id, nazev: id };
 function platnePrir(p, datum) {
@@ -1015,43 +1019,46 @@ function zavriModal() { $('#modal').hidden = true; document.body.style.overflow 
 $('#modal').addEventListener('click', e => { if (e.target.id === 'modal') zavriModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#modal').hidden) zavriModal(); });
 
-// Společné části formulářů: čas (od–do / délka) a činnost
+// Společné části formulářů: čas od–do (hodiny 0–24, minuty po 5) a činnost
+function htmlCasVyber(id, hodnota, popisek) {
+  const m = String(hodnota || '').match(/^(\d{1,2}):(\d{2})/);
+  const h = m ? +m[1] : '', mi = m ? +m[2] : 0;
+  let hOpt = '<option value="">—</option>', mOpt = '';
+  for (let i = 0; i <= 24; i++) hOpt += '<option value="' + i + '"' + (i === h ? ' selected' : '') + '>' + i + '</option>';
+  for (let i = 0; i < 60; i += 5) mOpt += '<option value="' + i + '"' + (i === mi ? ' selected' : '') + '>' + String(i).padStart(2, '0') + '</option>';
+  return '<span class="cv"><select id="' + id + 'H" aria-label="' + popisek + ' – hodiny">' + hOpt + '</select><b>:</b><select id="' + id + 'M" aria-label="' + popisek + ' – minuty">' + mOpt + '</select></span>';
+}
 function htmlCas(pref, z) {
   z = z || {};
-  const rezim = z.od || z.do ? 'cas' : (z.minut ? 'delka' : 'cas');
-  const h = z.minut ? Math.floor(z.minut / 60) : 1, mi = z.minut ? z.minut % 60 : 0;
-  let hOpt = '', mOpt = '';
-  for (let i = 0; i <= 24; i++) hOpt += '<option' + (i === h ? ' selected' : '') + '>' + i + '</option>';
-  for (let i = 0; i < 60; i += 5) mOpt += '<option value="' + i + '"' + (i === mi ? ' selected' : '') + '>' + String(i).padStart(2, '0') + '</option>';
   return '<div class="fld full"><label><span>Odpracovaný čas</span><em class="ind" id="' + pref + 'Vysl"></em></label>' +
-    '<div class="seg" id="' + pref + 'Rezim"><label><input type="radio" name="' + pref + 'rz" value="cas"' + (rezim === 'cas' ? ' checked' : '') + '><span>Od – do</span></label>' +
-    '<label><input type="radio" name="' + pref + 'rz" value="delka"' + (rezim === 'delka' ? ' checked' : '') + '><span>Jen délka</span></label></div>' +
-    '<div class="row2" id="' + pref + 'Cas"' + (rezim === 'cas' ? '' : ' hidden') + '>' +
-    '<input type="time" step="300" id="' + pref + 'Od" value="' + esc(z.od || '') + '" aria-label="Od"><span>–</span>' +
-    '<input type="time" step="300" id="' + pref + 'Do" value="' + esc(z.do || '') + '" aria-label="Do"></div>' +
-    '<div class="row2" id="' + pref + 'Delka"' + (rezim === 'delka' ? '' : ' hidden') + '>' +
-    '<select id="' + pref + 'H" aria-label="Hodiny">' + hOpt + '</select><span>h</span>' +
-    '<select id="' + pref + 'M" aria-label="Minuty">' + mOpt + '</select><span>min</span></div></div>';
+    '<div class="cas2"><div class="cas-r"><span class="muted small">od</span>' + htmlCasVyber(pref + 'Od', z.od, 'Od') +
+    '</div><div class="cas-r"><span class="muted small">do</span>' + htmlCasVyber(pref + 'Do', z.do, 'Do') + '</div></div>' +
+    (z.minut && !z.od ? '<p class="muted small" style="margin:6px 0 0">Původní zápis má jen délku (' + esc(fmtMin(z.minut)) + '). Doplňte prosím čas od–do.</p>' : '') + '</div>';
+}
+// přečte čas z výběrů; vrací { od, do, minut, chyba }
+function cas(el, pref) {
+  const cti = id => {
+    const h = $('#' + id + 'H', el).value;
+    if (h === '') return '';
+    return String(h).padStart(2, '0') + ':' + String($('#' + id + 'M', el).value).padStart(2, '0');
+  };
+  const od = cti(pref + 'Od'), doo = cti(pref + 'Do');
+  const minut = od && doo ? minutOdDo(od, doo) : 0;
+  const chyba = !od || !doo ? 'Zadejte čas od i do.' : !minut ? 'Čas „do“ musí být později než „od“ téhož dne (konec dne je 24:00).' : '';
+  return { od: od, do: doo, minut: minut, chyba: chyba };
 }
 function napojCas(el, pref) {
   const prepocet = () => {
-    const rz = $('input[name="' + pref + 'rz"]:checked', el).value;
-    $('#' + pref + 'Cas', el).hidden = rz !== 'cas';
-    $('#' + pref + 'Delka', el).hidden = rz !== 'delka';
-    const m = cas(el, pref).minut;
-    $('#' + pref + 'Vysl', el).textContent = m ? '= ' + fmtMin(m) : '';
+    ['Od', 'Do'].forEach(k => {   // 24:00 je jen celá hodina
+      const h = $('#' + pref + k + 'H', el), m = $('#' + pref + k + 'M', el);
+      if (h.value === '24') m.value = '0';
+      m.disabled = h.value === '24';
+    });
+    const c = cas(el, pref);
+    $('#' + pref + 'Vysl', el).textContent = c.minut ? '= ' + fmtMin(c.minut) : '';
   };
-  $$('input[name="' + pref + 'rz"], #' + pref + 'Od, #' + pref + 'Do, #' + pref + 'H, #' + pref + 'M', el).forEach(x => x.addEventListener('change', prepocet));
-  $$('#' + pref + 'Od, #' + pref + 'Do', el).forEach(x => x.addEventListener('input', prepocet));
+  $$('#' + pref + 'OdH, #' + pref + 'OdM, #' + pref + 'DoH, #' + pref + 'DoM', el).forEach(x => x.addEventListener('change', prepocet));
   prepocet();
-}
-function cas(el, pref) {
-  const rz = $('input[name="' + pref + 'rz"]:checked', el).value;
-  if (rz === 'cas') {
-    const od = $('#' + pref + 'Od', el).value, doo = $('#' + pref + 'Do', el).value;
-    return { od: od, do: doo, minut: od && doo ? minutOdDo(od, doo) : 0 };
-  }
-  return { od: '', do: '', minut: Number($('#' + pref + 'H', el).value) * 60 + Number($('#' + pref + 'M', el).value) };
 }
 function htmlCinnost(pref, orgNazev, hodnota) {
   const c = cinnostiPro(orgNazev);
@@ -1097,7 +1104,10 @@ function formZapis(z, poUlozeni) {
     const orgs = orgDobrovolnika($('#zDobr', el).value, $('#zDatum', el).value || dnesISO());
     const s = $('#zOrg', el);
     if (orgPuv && !orgs.some(o => o.id === orgPuv)) orgs.push(orgPodleId(orgPuv));
-    s.innerHTML = orgs.length ? orgs.map(o => '<option value="' + esc(o.id) + '"' + (o.id === orgPuv ? ' selected' : '') + '>' + esc(o.nazev) + '</option>').join('')
+    // jedna organizace = předvyplněná; víc organizací = prázdný výběr, který je nutné zvolit
+    if (orgs.length === 1 && !orgPuv) orgPuv = orgs[0].id;
+    s.innerHTML = orgs.length ? (orgs.length > 1 && !orgPuv ? '<option value="">— vyberte organizaci —</option>' : '') +
+      orgs.map(o => '<option value="' + esc(o.id) + '"' + (o.id === orgPuv ? ' selected' : '') + '>' + esc(o.nazev) + '</option>').join('')
       : '<option value="">— není přiřazen —</option>';
     obnovCin();
   };
@@ -1119,8 +1129,10 @@ function formZapis(z, poUlozeni) {
       od: c.od, do: c.do, minut: c.minut, cinnost: cinnost(el, 'z'), poznamka: $('#zPozn', el).value
     };
     const ch = $('#zChyba', el);
-    const chyba = !data.dobrovolnik ? 'Vyberte dobrovolníka.' : !data.orgId ? 'Dobrovolník není k tomuto datu přiřazený k žádné organizaci.' :
-      !data.datum ? 'Zadejte datum.' : !data.minut ? 'Zadejte odpracovaný čas.' : !data.cinnost ? 'Vyberte činnost.' : '';
+    const nemaOrg = !orgDobrovolnika(data.dobrovolnik, data.datum || dnesISO()).length;
+    const chyba = !data.dobrovolnik ? 'Vyberte dobrovolníka.' :
+      !data.orgId ? (nemaOrg ? 'Dobrovolník není k tomuto datu přiřazený k žádné organizaci.' : 'Vyberte, pro kterou organizaci hodiny zapisujete.') :
+      !data.datum ? 'Zadejte datum.' : c.chyba ? c.chyba : !data.cinnost ? 'Vyberte činnost.' : '';
     if (chyba) { ch.textContent = chyba; ch.hidden = false; return; }
     // okno se zavře hned, ukládá se na pozadí; při chybě se otevře znovu s vyplněnými údaji
     zavriModal(); toast('Ukládám…');
@@ -1180,7 +1192,7 @@ function formAkce(poUlozeni, pv) {
     const data = { orgId: $('#aOrg', el).value, datum: $('#aDatum', el).value, od: c.od, do: c.do, minut: c.minut,
       cinnost: cinnost(el, 'a'), poznamka: $('#aPozn', el).value, dobrovolnici: Array.from(vybrani) };
     const ch = $('#aChyba', el);
-    const chyba = !data.datum ? 'Zadejte datum.' : !data.minut ? 'Zadejte odpracovaný čas.' : !data.cinnost ? 'Vyberte činnost.' :
+    const chyba = !data.datum ? 'Zadejte datum.' : c.chyba ? c.chyba : !data.cinnost ? 'Vyberte činnost.' :
       !data.dobrovolnici.length ? 'Zaškrtněte přítomné dobrovolníky.' : '';
     if (chyba) { ch.textContent = chyba; ch.hidden = false; return; }
     zavriModal(); toast('Ukládám akci…');
@@ -1203,7 +1215,7 @@ async function vHodiny() {
   const lide = dobrovolniciSPrirazenim();
   obsah.innerHTML =
     '<div class="hhead"><div><h1>Dobrovolnické hodiny</h1><p class="sub" id="hSouhrn">Načítám…</p></div>' +
-    (edit ? '<div class="btns"><button class="btn" id="hNovy">+ Zapsat hodiny</button><button class="btn ghost" id="hAkce">+ Akce / směna</button><button class="btn ghost" id="hVykaz">Měsíční výkaz</button><button class="btn ghost" id="hRocni">Roční výkaz</button></div>' : '') + '</div>' +
+    (edit ? '<div class="btns"><button class="btn" id="hNovy">+ Zapsat hodiny</button><button class="btn ghost" id="hAkce">+ Akce / směna</button><button class="btn ghost" id="hRocni">Roční výkaz</button></div>' : '') + '</div>' +
     '<div class="toolbar">' +
     '<input type="month" id="hMesic" value="' + esc(f.mesic) + '" title="Měsíc (prázdné = celé období)">' +
     '<select id="hOrg"><option value="">Všechny organizace</option>' + orgs.map(o => '<option value="' + esc(o.id) + '"' + (o.id === f.org ? ' selected' : '') + '>' + esc(o.nazev) + '</option>').join('') + '</select>' +
@@ -1219,7 +1231,6 @@ async function vHodiny() {
   if (edit) {
     $('#hNovy').onclick = () => formZapis({ dobrovolnik: f.dobrovolnik }, nactiTabHodin);
     $('#hAkce').onclick = () => formAkce(nactiTabHodin);
-    $('#hVykaz').onclick = () => jdi('vykaz', { org: f.org, mesic: f.mesic || tentoMesic() });
     $('#hRocni').onclick = () => jdi('rocni', { rok: new Date().getFullYear() });
   }
   nactiTabHodin();
@@ -1363,103 +1374,6 @@ async function nactiRocni() {
   } catch (e) { el.innerHTML = '<p class="warn">' + esc(e.message) + '</p>'; }
 }
 
-async function vVykaz() {
-  obsah.onclick = null; obsah.onkeydown = null;
-  const orgs = (D.organizaceVse || []).filter(o => o.aktivni && (D.prirazeni || []).some(p => p.orgId === o.id));
-  if (!orgs.length) { obsah.innerHTML = '<h1>Měsíční výkaz</h1><div class="card">Nejdřív přiřaďte dobrovolníky k organizacím.</div>'; return; }
-  if (!stav.org || !orgs.some(o => o.id === stav.org)) stav.org = orgs[0].id;
-  if (!stav.mesic) stav.mesic = tentoMesic();
-  obsah.innerHTML =
-    '<div class="dhead"><button class="back" id="vZpet">← Hodiny</button><div><h1>Měsíční výkaz</h1>' +
-    '<p class="sub" style="margin:0">Vepište hodiny do políček (např. 2 · 1,5 · 1:30 · 45m). Uloží se jen nově vyplněná políčka.</p></div></div>' +
-    '<div class="card"><div class="fields">' +
-    '<div class="fld"><label><span>Organizace</span></label><select id="vOrg">' + orgs.map(o => '<option value="' + esc(o.id) + '"' + (o.id === stav.org ? ' selected' : '') + '>' + esc(o.nazev) + '</option>').join('') + '</select></div>' +
-    '<div class="fld"><label><span>Měsíc</span></label><input type="month" id="vMesic" max="' + tentoMesic() + '" value="' + esc(stav.mesic) + '"></div>' +
-    '<div class="fld full" id="vCinWrap"></div>' +
-    '<div class="fld full"><label><span>Poznámka (pro všechny zápisy)</span></label><input type="text" id="vPozn" maxlength="1000"></div>' +
-    '</div></div><div id="vMrizka"><div class="loading">Načítám…</div></div>';
-  $('#vZpet').onclick = () => jdi('hodiny');
-  const prekresli = () => { stav.org = $('#vOrg').value; stav.mesic = $('#vMesic').value || tentoMesic(); kresliVykaz(); };
-  $('#vOrg').addEventListener('change', prekresli);
-  $('#vMesic').addEventListener('change', prekresli);
-  kresliVykaz();
-}
-
-async function kresliVykaz() {
-  const org = stav.org, mesic = stav.mesic;
-  $('#vCinWrap').innerHTML = htmlCinnost('v', orgPodleId(org).nazev, cinnost(obsah, 'v') || (cinnostiPro(orgPodleId(org).nazev)[0] || ''));
-  napojCinnost(obsah, 'v');
-  const o = obdobi(mesic);
-  const lide = dobrovolniciOrg(org, o.od, o.do);
-  const el = $('#vMrizka');
-  if (!lide.length) { el.innerHTML = '<div class="card muted">K této organizaci není v tomto měsíci nikdo přiřazený.</div>'; return; }
-  el.innerHTML = '<div class="loading">Načítám…</div>';
-  let existujici = [];
-  try { existujici = (await api('nactiHodiny', { od: o.od, do: o.do, org: org })).zaznamy; } catch (e) { toast(e.message, 'err'); }
-  const dnu = Number(o.do.slice(8)), dnes = dnesISO();
-  const zkratky = ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'];
-  const [r, m] = mesic.split('-').map(Number);
-  let hlav = '<th class="jm">Dobrovolník</th>';
-  for (let d = 1; d <= dnu; d++) {
-    const wd = new Date(r, m - 1, d).getDay();
-    hlav += '<th class="' + (wd === 0 || wd === 6 ? 'vk' : '') + '">' + d + '<br><small>' + zkratky[wd] + '</small></th>';
-  }
-  hlav += '<th>Nově</th><th>Již zapsáno</th>';
-  const radky = lide.map(z => {
-    let tr = '<td class="jm"><strong>' + esc((z['Příjmení'] || '') + ' ' + (z['Jméno'] || '')) + '</strong><div class="id">' + esc(z.ID) + '</div></td>';
-    for (let d = 1; d <= dnu; d++) {
-      const datum = mesic + '-' + String(d).padStart(2, '0');
-      const wd = new Date(r, m - 1, d).getDay();
-      const ok = datum <= dnes;
-      const uz = existujici.filter(x => x.dobrovolnik === z.ID && x.datum === datum).reduce((s, x) => s + x.minut, 0);
-      tr += '<td class="' + (wd === 0 || wd === 6 ? 'vk' : '') + '">' +
-        (ok ? '<input class="bunka" data-z="' + esc(z.ID) + '" data-d="' + d + '" inputmode="decimal" aria-label="' + esc(z.ID + ' ' + d + '.') + '"' + (uz ? ' placeholder="' + esc(fmtKratce(uz)) + '" title="Už zapsáno ' + esc(fmtMin(uz)) + '"' : '') + '>' : '<span class="nelze">·</span>') + '</td>';
-    }
-    const celkem = existujici.filter(x => x.dobrovolnik === z.ID).reduce((s, x) => s + x.minut, 0);
-    tr += '<td class="sum" data-sum="' + esc(z.ID) + '">–</td><td class="sum">' + (celkem ? esc(fmtMin(celkem)) : '–') + '</td>';
-    return '<tr>' + tr + '</tr>';
-  }).join('');
-  el.innerHTML = '<div class="vykaz-wrap"><table class="vykaz"><thead><tr>' + hlav + '</tr></thead><tbody>' + radky + '</tbody></table></div>' +
-    '<p class="muted small">Šedé hodnoty v políčkách = už zapsáno v systému. Budoucí dny vyplnit nejde.</p>' +
-    '<p class="mchyba" id="vChyba" hidden></p>' +
-    '<div class="btns"><button class="btn" id="vUlozit">Uložit výkaz</button><span class="muted small" id="vCelkem"></span></div>';
-  const prepocet = () => {
-    let vse = 0, chyby = 0;
-    lide.forEach(z => {
-      let s = 0;
-      $$('.bunka[data-z="' + CSS.escape(z.ID) + '"]', el).forEach(i => {
-        const v = parsujDelku(i.value);
-        i.classList.toggle('bad', v === null);
-        if (v === null) chyby++; else s += v;
-      });
-      $('[data-sum="' + CSS.escape(z.ID) + '"]', el).textContent = s ? fmtMin(s) : '–';
-      vse += s;
-    });
-    $('#vCelkem', el).textContent = vse ? 'Celkem nově ' + fmtMin(vse) + (chyby ? ' · neplatná políčka: ' + chyby : '') : (chyby ? 'Neplatná políčka: ' + chyby : '');
-  };
-  el.oninput = e => { if (e.target.classList.contains('bunka')) prepocet(); };
-  $('#vUlozit', el).onclick = async () => {
-    const polozky = [];
-    let spatne = 0;
-    $$('.bunka', el).forEach(i => {
-      const v = parsujDelku(i.value);
-      if (v === null) spatne++;
-      else if (v > 0) polozky.push({ dobrovolnik: i.dataset.z, den: Number(i.dataset.d), minut: v });
-    });
-    const ch = $('#vChyba', el);
-    const c = cinnost(obsah, 'v');
-    const chyba = spatne ? 'Opravte červeně označená políčka.' : !polozky.length ? 'Výkaz neobsahuje žádné nové hodiny.' : !c ? 'Vyberte činnost.' : '';
-    if (chyba) { ch.textContent = chyba; ch.hidden = false; return; }
-    ch.hidden = true;
-    const b = $('#vUlozit', el); b.disabled = true; b.textContent = 'Ukládám…';
-    try {
-      const r = await api('ulozVykaz', { orgId: org, mesic: mesic, cinnost: c, poznamka: $('#vPozn').value, polozky: polozky });
-      poZmeneHodin();
-      toast('Výkaz uložen: ' + r.pocet + ' ' + sklon(r.pocet, 'zápis', 'zápisy', 'zápisů'));
-      kresliVykaz();
-    } catch (e) { ch.textContent = e.message; ch.hidden = false; b.disabled = false; b.textContent = 'Uložit výkaz'; }
-  };
-}
 function fmtKratce(m) { const h = Math.floor(m / 60), r = m % 60; return r ? h + ':' + String(r).padStart(2, '0') : String(h); }
 
 // ---------- Detail dobrovolníka: portál dobrovolníka ----------

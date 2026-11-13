@@ -18,7 +18,7 @@ sh['Dobrovolníci'].appendRow(row({ID:'DC-2026-0002','Jméno':'Eva','Příjmení
 pridejPrirazeni(adminTok,'DC-2026-0001','ORG-001','','');
 pridejPrirazeni(adminTok,'DC-2026-0001','ORG-002','2026-10-15','');
 // admin zpětně – i před datem přiřazení k ORG-002
-console.log('admin zpětně:', api('ulozHodiny', adminTok, {dobrovolnik:'DC-2026-0001', orgId:'ORG-002', datum:'2025-03-01', minut:60, cinnost:'X'}).ok);
+console.log('admin zpětně:', api('ulozHodiny', adminTok, {dobrovolnik:'DC-2026-0001', orgId:'ORG-002', datum:'2025-03-01', od:'08:00', do:'09:00', cinnost:'X'}).ok);
 // kód
 console.log('kód pro nového zájemce (bez přístupu):', api('dPosliKod','', 'eva@x.cz').ok, 'mailů:', MAILS.length);
 console.log('kód:', api('dPosliKod','', 'JAN@x.cz').ok, MAILS.length);
@@ -33,13 +33,13 @@ let d = api('dMojeData', T).data;
 console.log('moje data:', d.dobrovolnik.jmeno, d.organizace.map(o=>o.nazev+'('+o.cinnosti.length+')'), 'hodin:', d.hodiny.length, 'zpětně', d.zpetneDni);
 const dnes = d.dnes;
 const minus = n => { const x=new Date(); x.setDate(x.getDate()-n); return x.toISOString().slice(0,10); };
-for (const [popis, z] of [['před přiřazením ORG-002', {orgId:'ORG-002', datum:'2026-10-01', minut:60, cinnost:'A'}], ['>60 dní', {orgId:'ORG-001', datum:minus(70), minut:60, cinnost:'A'}], ['budoucnost', {orgId:'ORG-001', datum:'2099-01-01', minut:60, cinnost:'A'}], ['cizí dobrovolník', {orgId:'ORG-001', datum:dnes, minut:60, cinnost:'A', dobrovolnik:'DC-2026-0002'}]]) {
+for (const [popis, z] of [['před přiřazením ORG-002', {orgId:'ORG-002', datum:'2026-10-01', od:'08:00', do:'09:00', cinnost:'A'}], ['>60 dní', {orgId:'ORG-001', datum:minus(70), od:'08:00', do:'09:00', cinnost:'A'}], ['budoucnost', {orgId:'ORG-001', datum:'2099-01-01', od:'08:00', do:'09:00', cinnost:'A'}], ['cizí dobrovolník', {orgId:'ORG-001', datum:dnes, od:'08:00', do:'09:00', cinnost:'A', dobrovolnik:'DC-2026-0002'}]]) {
   const x = api('dZapisHodiny', T, z); console.log(popis+':', x.ok ? 'PROŠLO' + (popis==='cizí dobrovolník' ? ' (zapsáno pod '+x.data.hodiny[0].id+' vlastní ID ok)' : ' CHYBA') : x.chyba);
 }
 d = api('dZapisHodiny', T, {orgId:'ORG-001', datum:minus(3), od:'09:00', do:'11:30', cinnost:'Pomoc na akci'}).data;
 const moje = d.hodiny.find(h=>h.cinnost==='Pomoc na akci');
 console.log('zápis:', moje.minut, moje.stav, moje.zdroj, '| vlastník', radkyHodin_().radky.find(x=>x.id===moje.id).dobrovolnik);
-d = api('dZapisHodiny', T, Object.assign({}, moje, {minut:0, od:'09:00', do:'12:00'})).data;
+d = api('dZapisHodiny', T, Object.assign({}, moje, {od:'09:00', do:'12:00'})).data;
 console.log('úprava:', d.hodiny.find(h=>h.id===moje.id).minut);
 // admin schválí → dobrovolník nemůže měnit
 api('zmenStavHodin', adminTok, [moje.id], 'Schváleno');
