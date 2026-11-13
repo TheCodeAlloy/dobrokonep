@@ -268,7 +268,7 @@ function nastavTabulku() {
     ['ID', 'Název', 'Kontaktní osoba', 'E-mail', 'Telefon', 'Adresa', 'Oblast', 'Aktivní', 'Poznámky',
       'Funkce / pozice', 'Kontaktní osoba 2', 'Funkce / pozice 2', 'E-mail 2', 'Telefon 2',
       'Kontaktní osoba 3', 'Funkce / pozice 3', 'E-mail 3', 'Telefon 3',
-      'IČ', 'Město', 'Ulice', 'PSČ']);
+      'IČ', 'Město', 'Ulice', 'PSČ', 'Titul', 'Titul 2', 'Titul 3']);
   shOrg.getRange('H2:H').setDataValidation(seznamValidace_(['ANO', 'NE']));
 
   const shS = zajistiList_(ss, LISTY.SABLONY, ['Klíč', 'Popis', 'Předmět', 'Text']);

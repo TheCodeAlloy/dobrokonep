@@ -28,7 +28,7 @@ function editovatelneListy_() {
     SABLONY: { list: LISTY.SABLONY, role: 'Hlavní admin', sloupce: [2, 3] },
     OBLASTI: { list: LISTY.OBLASTI, role: 'Koordinátor', sloupce: [0, 1] },
     MISTA: { list: LISTY.MISTA, role: 'Koordinátor', sloupce: [0, 1] },
-    ORGANIZACE: { list: LISTY.ORGANIZACE, role: 'Koordinátor', sloupce: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21] },
+    ORGANIZACE: { list: LISTY.ORGANIZACE, role: 'Koordinátor', sloupce: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24] },
     CINNOSTI: { list: LISTY.CINNOSTI, role: 'Koordinátor', sloupce: [0, 1, 2] }
   };
 }
@@ -39,7 +39,7 @@ const ZASTUPNE_DOKUMENTY = [
   ['ulice', 'Ulice a č.p.'], ['obec', 'Obec'], ['psc', 'PSČ'], ['adresa', 'Celá adresa'],
   ['zamestnani', 'Zaměstnání / studium'], ['vzdelani', 'Nejvyšší dokončené vzdělání'],
   ['oblasti_zajmu', 'Oblasti zájmu'], ['organizace', 'Přijímající organizace'],
-  ['organizace_adresa', 'Celá adresa organizace'], ['organizace_ic', 'IČ organizace'], ['organizace_ulice', 'Ulice organizace'], ['organizace_mesto', 'Město organizace'], ['organizace_psc', 'PSČ organizace'], ['organizace_kontakt', 'Kontaktní osoba organizace (osoba 1)'], ['organizace_funkce', 'Funkce / pozice kontaktní osoby 1'],
+  ['organizace_adresa', 'Celá adresa organizace'], ['organizace_ic', 'IČ organizace'], ['organizace_ulice', 'Ulice organizace'], ['organizace_mesto', 'Město organizace'], ['organizace_psc', 'PSČ organizace'], ['organizace_kontakt', 'Kontaktní osoba organizace (osoba 1)'], ['organizace_funkce', 'Funkce / pozice kontaktní osoby 1'], ['organizace_titul', 'Titul kontaktní osoby 1'],
   ['organizace_email', 'E-mail organizace'], ['organizace_telefon', 'Telefon organizace'],
   ['misto_pusobeni', 'Místo působení'], ['dobrovolnikem_od', 'Dobrovolníkem od'],
   ['cislo_smlouvy', 'Číslo smlouvy'], ['dnesni_datum', 'Dnešní datum'], ['nazev_organizace', 'Název vašeho centra']
@@ -345,12 +345,12 @@ function organizace_() {
       ic: nacti(r, 'IČ'), mesto: nacti(r, 'Město'), ulice: nacti(r, 'Ulice'), psc: nacti(r, 'PSČ'),
       adresa: [nacti(r, 'Ulice'), [nacti(r, 'PSČ'), nacti(r, 'Město')].filter(String).join(' ')].filter(String).join(', ') || String(r[5]),
       aktivni: String(r[7]).trim().toUpperCase() !== 'NE',
-      funkce: nacti(r, 'Funkce / pozice'),
+      funkce: nacti(r, 'Funkce / pozice'), titul: nacti(r, 'Titul'),
       // kontaktní osoby 1–3 (1 = původní sloupce Kontaktní osoba / E-mail / Telefon)
       kontakty: [
-        { jmeno: String(r[2]), funkce: nacti(r, 'Funkce / pozice'), email: String(r[3]), telefon: String(r[4]) },
-        { jmeno: nacti(r, 'Kontaktní osoba 2'), funkce: nacti(r, 'Funkce / pozice 2'), email: nacti(r, 'E-mail 2'), telefon: nacti(r, 'Telefon 2') },
-        { jmeno: nacti(r, 'Kontaktní osoba 3'), funkce: nacti(r, 'Funkce / pozice 3'), email: nacti(r, 'E-mail 3'), telefon: nacti(r, 'Telefon 3') }
+        { titul: nacti(r, 'Titul'), jmeno: String(r[2]), funkce: nacti(r, 'Funkce / pozice'), email: String(r[3]), telefon: String(r[4]) },
+        { titul: nacti(r, 'Titul 2'), jmeno: nacti(r, 'Kontaktní osoba 2'), funkce: nacti(r, 'Funkce / pozice 2'), email: nacti(r, 'E-mail 2'), telefon: nacti(r, 'Telefon 2') },
+        { titul: nacti(r, 'Titul 3'), jmeno: nacti(r, 'Kontaktní osoba 3'), funkce: nacti(r, 'Funkce / pozice 3'), email: nacti(r, 'E-mail 3'), telefon: nacti(r, 'Telefon 3') }
       ]
     }));
 }
@@ -897,6 +897,7 @@ function promenneDokumentu_(n, z, cislo, misto, skolitel, skolitelPraxe, kontakt
     organizace_psc: nebo(org.psc),
     organizace_kontakt: nebo(org.kontakt),
     organizace_funkce: nebo(org.funkce),
+    organizace_titul: nebo(org.titul),
     organizace_email: nebo(org.email),
     organizace_telefon: nebo(org.telefon),
     misto_pusobeni: nebo(z['Místo působení']),
@@ -1085,6 +1086,7 @@ function ulozBunkuListu(token, klic, radek, sloupec, hodnota, puvodniKlic) {
   if (cfg.sloupce.indexOf(sloupec) < 0) throw new Error('Tento údaj nelze upravovat.');
 
   let v = String(hodnota == null ? '' : hodnota).trim().slice(0, 5000);
+  if (klic === 'ORGANIZACE') v = v.replace(/\s*[\r\n]+\s*/g, ' ');
   const anoNe = (klic === 'OBLASTI' || klic === 'MISTA') && sloupec === 1 || klic === 'CINNOSTI' && sloupec === 2 ||
     klic === 'ORGANIZACE' && sloupec === 7 || klic === 'ADMINI' && (sloupec === 3 || sloupec === 4);
   if (anoNe && ['ANO', 'NE'].indexOf(v) < 0) throw new Error('Povolené hodnoty jsou ANO / NE.');
@@ -1196,7 +1198,7 @@ function pridejRadekListu(token, klic, d) {
       const dal = (h, v) => { const i = hlav.indexOf(h); if (i >= 0) radek[i] = bunka_(v); };
       dal('ID', id); dal('Název', nazev); dal('Kontaktní osoba', t(d.kontakt)); dal('E-mail', email); dal('Telefon', t(d.telefon, 40));
       dal('Oblast', t(d.oblast)); dal('Aktivní', 'ANO'); dal('Poznámky', t(d.poznamky, 1000)); dal('Funkce / pozice', t(d.funkce));
-      dal('IČ', ic); dal('Město', t(d.mesto)); dal('Ulice', t(d.ulice)); dal('PSČ', t(d.psc, 20));
+      dal('Titul', t(d.titul, 40)); dal('IČ', ic); dal('Město', t(d.mesto)); dal('Ulice', t(d.ulice)); dal('PSČ', t(d.psc, 20));
     } else {
       const email = t(d.email, 200).toLowerCase();
       if (!platnyEmail_(email)) throw new Error('Zadejte platný e-mail.');
