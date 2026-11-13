@@ -273,7 +273,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-13b</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-13c</p>
   </div>
 </div>
 <script>
@@ -1584,15 +1584,16 @@ const KONF = {
   MISTA: { nazev: 'Místa', sloupce: { 0: 'text', 1: ['ANO', 'NE'] }, pridat: [['nazev', 'Nové místo', 'text']],
     napoveda: 'Místa se nabízejí ve formuláři i v detailu dobrovolníka (místo působení).' },
   ORGANIZACE: { nazev: 'Organizace', sloupce: { 1: 'text', 2: 'text', 3: 'email', 4: 'tel', 5: 'text', 6: 'text', 7: ['ANO', 'NE'], 8: 'text',
-      9: 'text', 10: 'text', 11: 'text', 12: 'email', 13: 'tel', 14: 'text', 15: 'text', 16: 'email', 17: 'tel' },
+      0: 'text', 9: 'text', 10: 'text', 11: 'text', 12: 'email', 13: 'tel', 14: 'text', 15: 'text', 16: 'email', 17: 'tel', 18: 'text', 19: 'text', 20: 'text', 21: 'text' },
     // pořadí zobrazení: [sloupec v tabulce, popisek, skupina]; skupiny 1–3 jsou kontaktní osoby (obarvené)
-    zobraz: [[0, 'ID', 0], [1, 'Název', 0],
+    zobraz: [[0, 'ID', 0], [1, 'Název', 0], [18, 'IČ', 0], [19, 'Město', 0], [20, 'Ulice', 0], [21, 'PSČ', 0],
       [2, 'Kontaktní osoba 1 – jméno a příjmení', 1], [9, 'Kontaktní osoba 1 – funkce / pozice', 1], [3, 'Kontaktní osoba 1 – e-mail', 1], [4, 'Kontaktní osoba 1 – telefon', 1],
       [10, 'Kontaktní osoba 2 – jméno a příjmení', 2], [11, 'Kontaktní osoba 2 – funkce / pozice', 2], [12, 'Kontaktní osoba 2 – e-mail', 2], [13, 'Kontaktní osoba 2 – telefon', 2],
       [14, 'Kontaktní osoba 3 – jméno a příjmení', 3], [15, 'Kontaktní osoba 3 – funkce / pozice', 3], [16, 'Kontaktní osoba 3 – e-mail', 3], [17, 'Kontaktní osoba 3 – telefon', 3],
-      [5, 'Adresa', 0], [6, 'Oblast', 0], [7, 'Aktivní', 0], [8, 'Poznámky', 0]],
-    pridat: [['nazev', 'Název', 'text'], ['kontakt', 'Kontaktní osoba 1 – jméno a příjmení', 'text'], ['funkce', 'Funkce / pozice', 'text'], ['email', 'E-mail', 'email'], ['telefon', 'Telefon', 'tel'], ['adresa', 'Adresa', 'text']],
-    napoveda: 'Přijímající organizace, ke kterým přiřazujete dobrovolníky. Můžete u nich vést až tři kontaktní osoby (barevně odlišené). Adresa a kontaktní osoba 1 se doplňují do smlouvy. Další osoby doplníte přímo v tabulce.' }
+      [7, 'Aktivní', 0], [8, 'Poznámky', 0]],
+    pridat: [['id', 'ID (předvyplněno, lze změnit)', 'text'], ['nazev', 'Název', 'text'], ['ic', 'IČ', 'text'], ['mesto', 'Město', 'text'], ['ulice', 'Ulice', 'text'], ['psc', 'PSČ', 'text'],
+      ['kontakt', 'Kontaktní osoba 1 – jméno a příjmení', 'text'], ['funkce', 'Funkce / pozice', 'text'], ['email', 'E-mail', 'email'], ['telefon', 'Telefon', 'tel']],
+    napoveda: 'Přijímající organizace, ke kterým přiřazujete dobrovolníky. Můžete u nich vést až tři kontaktní osoby (barevně odlišené). ID si můžete přepsat na vlastní zkratku (změní se i u hodin a přiřazení). Adresa a kontaktní osoba 1 se doplňují do smlouvy. Další osoby doplníte přímo v tabulce.' }
 };
 const ZASTUPNE_EMAIL = {
   uvitani: ['jmeno', 'prijmeni', 'id', 'nazev_organizace'],
@@ -1709,6 +1710,12 @@ function admDokumenty() {
     ADM.zastupne.map(p => '<tr><td><code data-copy="{{' + esc(p[0]) + '}}">{{' + esc(p[0]) + '}}</code></td><td>' + esc(p[1]) + '</td></tr>').join('') + '</table></div>';
 }
 
+function dalsiIdOrg(L) {
+  let max = 0;
+  L.radky.forEach(r => { const m = String(r.v[0]).match(/^ORG-(\d+)$/); if (m) max = Math.max(max, +m[1]); });
+  return 'ORG-' + String(max + 1).padStart(3, '0');
+}
+
 function admTabulka(klic) {
   const L = ADM.listy[klic], K = KONF[klic];
   if (!L) return '<div class="card muted">Nemáte oprávnění.</div>';
@@ -1724,7 +1731,7 @@ function admTabulka(klic) {
       }).join('') + '</tr>').join('') + '</tbody></table></div>' : '<p class="muted">Zatím prázdné.</p>') +
     '<form class="addrow" id="pridat">' + K.pridat.map(p => '<div class="f"><label>' + esc(p[1]) + '</label>' +
       (Array.isArray(p[2]) ? '<select name="' + p[0] + '">' + p[2].map(o => '<option>' + esc(o) + '</option>').join('') + '</select>'
-        : '<input name="' + p[0] + '" type="' + p[2] + '"' + (p[0] === 'nazev' || p[0] === 'email' && klic === 'ADMINI' ? ' required' : '') + '>') + '</div>').join('') +
+        : '<input name="' + p[0] + '" type="' + p[2] + '"' + (p[0] === 'id' && klic === 'ORGANIZACE' ? ' value="' + esc(dalsiIdOrg(L)) + '"' : '') + (p[0] === 'nazev' || p[0] === 'email' && klic === 'ADMINI' ? ' required' : '') + '>') + '</div>').join('') +
     '<button class="btn" type="submit">Přidat</button></form></div>';
 }
 

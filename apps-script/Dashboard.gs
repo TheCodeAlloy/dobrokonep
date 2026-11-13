@@ -28,7 +28,7 @@ function editovatelneListy_() {
     SABLONY: { list: LISTY.SABLONY, role: 'Hlavní admin', sloupce: [2, 3] },
     OBLASTI: { list: LISTY.OBLASTI, role: 'Koordinátor', sloupce: [0, 1] },
     MISTA: { list: LISTY.MISTA, role: 'Koordinátor', sloupce: [0, 1] },
-    ORGANIZACE: { list: LISTY.ORGANIZACE, role: 'Koordinátor', sloupce: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17] },
+    ORGANIZACE: { list: LISTY.ORGANIZACE, role: 'Koordinátor', sloupce: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21] },
     CINNOSTI: { list: LISTY.CINNOSTI, role: 'Koordinátor', sloupce: [0, 1, 2] }
   };
 }
@@ -39,7 +39,7 @@ const ZASTUPNE_DOKUMENTY = [
   ['ulice', 'Ulice a č.p.'], ['obec', 'Obec'], ['psc', 'PSČ'], ['adresa', 'Celá adresa'],
   ['zamestnani', 'Zaměstnání / studium'], ['vzdelani', 'Nejvyšší dokončené vzdělání'],
   ['oblasti_zajmu', 'Oblasti zájmu'], ['organizace', 'Přijímající organizace'],
-  ['organizace_adresa', 'Adresa organizace'], ['organizace_kontakt', 'Kontaktní osoba organizace (osoba 1)'], ['organizace_funkce', 'Funkce / pozice kontaktní osoby 1'],
+  ['organizace_adresa', 'Celá adresa organizace'], ['organizace_ic', 'IČ organizace'], ['organizace_ulice', 'Ulice organizace'], ['organizace_mesto', 'Město organizace'], ['organizace_psc', 'PSČ organizace'], ['organizace_kontakt', 'Kontaktní osoba organizace (osoba 1)'], ['organizace_funkce', 'Funkce / pozice kontaktní osoby 1'],
   ['organizace_email', 'E-mail organizace'], ['organizace_telefon', 'Telefon organizace'],
   ['misto_pusobeni', 'Místo působení'], ['dobrovolnikem_od', 'Dobrovolníkem od'],
   ['cislo_smlouvy', 'Číslo smlouvy'], ['dnesni_datum', 'Dnešní datum'], ['nazev_organizace', 'Název vašeho centra']
@@ -341,7 +341,9 @@ function organizace_() {
     .filter(r => String(r[1]).trim())
     .map(r => ({
       id: String(r[0]), nazev: String(r[1]).trim(), kontakt: String(r[2]), email: String(r[3]),
-      telefon: String(r[4]), adresa: String(r[5]), oblast: String(r[6]),
+      telefon: String(r[4]), oblast: String(r[6]),
+      ic: nacti(r, 'IČ'), mesto: nacti(r, 'Město'), ulice: nacti(r, 'Ulice'), psc: nacti(r, 'PSČ'),
+      adresa: [nacti(r, 'Ulice'), [nacti(r, 'PSČ'), nacti(r, 'Město')].filter(String).join(' ')].filter(String).join(', ') || String(r[5]),
       aktivni: String(r[7]).trim().toUpperCase() !== 'NE',
       funkce: nacti(r, 'Funkce / pozice'),
       // kontaktní osoby 1–3 (1 = původní sloupce Kontaktní osoba / E-mail / Telefon)
@@ -889,6 +891,10 @@ function promenneDokumentu_(n, z, cislo, misto, skolitel, skolitelPraxe, kontakt
     oblasti_zajmu: nebo([z['Oblasti zájmu'], z['Oblast – jiné']].filter(String).join(' – ')),
     organizace: nebo(z['Organizace']),
     organizace_adresa: nebo(org.adresa),
+    organizace_ic: nebo(org.ic),
+    organizace_ulice: nebo(org.ulice),
+    organizace_mesto: nebo(org.mesto),
+    organizace_psc: nebo(org.psc),
     organizace_kontakt: nebo(org.kontakt),
     organizace_funkce: nebo(org.funkce),
     organizace_email: nebo(org.email),
@@ -1085,6 +1091,14 @@ function ulozBunkuListu(token, klic, radek, sloupec, hodnota, puvodniKlic) {
   if (klic === 'ADMINI' && sloupec === 0) { v = v.toLowerCase(); if (!platnyEmail_(v)) throw new Error('Neplatný e-mail.'); }
   if (klic === 'ADMINI' && sloupec === 2 && ROLE.indexOf(v) < 0) throw new Error('Neznámá role.');
   if (klic === 'ORGANIZACE' && [3, 12, 16].indexOf(sloupec) >= 0 && v && !platnyEmail_(v)) throw new Error('Neplatný e-mail.');
+  if (klic === 'ORGANIZACE' && sloupec === 18 && v) {
+    v = v.replace(/\s+/g, '');
+    if (!/^\d{8}$/.test(v)) throw new Error('IČ má mít 8 číslic.');
+  }
+  if (klic === 'ORGANIZACE' && sloupec === 0) {
+    if (!v) throw new Error('ID organizace nesmí být prázdné.');
+    if (v.length > 30 || /\s/.test(v)) throw new Error('ID organizace: nejvýše 30 znaků, bez mezer (např. KONEP nebo ORG-001).');
+  }
   if (klic === 'ORGANIZACE' && sloupec === 1 && !v) throw new Error('Název organizace nesmí být prázdný.');
   if ((klic === 'OBLASTI' || klic === 'MISTA') && sloupec === 0 && !v) throw new Error('Název nesmí být prázdný.');
   if (klic === 'CINNOSTI' && sloupec === 1 && !v) throw new Error('Název činnosti nesmí být prázdný.');
@@ -1107,6 +1121,12 @@ function ulozBunkuListu(token, klic, radek, sloupec, hodnota, puvodniKlic) {
       }
     }
     const stara = vsechny[radek - 1][sloupec];
+    if (klic === 'ORGANIZACE' && sloupec === 0 && String(stara).trim() !== v) {
+      if (vsechny.some((r, i) => i > 0 && i !== radek - 1 && String(r[0]).trim().toLowerCase() === v.toLowerCase())) {
+        throw new Error('Toto ID už má jiná organizace.');
+      }
+      prejmenujIdOrganizace_(String(stara).trim(), v);
+    }
     let zapis = bunka_(v);
     if (klic === 'NASTAVENI' && v !== '' && !isNaN(Number(v)) && /^(minimalni_vek|delka_schuzky_min|hodiny_zpetne_dni|platnost_odkazu_dni|delka_prihlaseni_hod)$/.test(String(puvodniKlic))) {
       zapis = Number(v);
@@ -1117,6 +1137,21 @@ function ulozBunkuListu(token, klic, radek, sloupec, hodnota, puvodniKlic) {
     log_('Administrace: ' + cfg.list, String(puvodniKlic),
       hlavicky_(sh)[sloupec] + ': ' + (sablonaText ? '(upraven text šablony)' : textem_(stara) + ' → ' + textem_(v)));
     return { ok: true, klic: sloupec === 0 ? v : String(puvodniKlic), kdo: a.email };
+  });
+}
+
+// Změna ID organizace: přepíše ho i v Hodinách a Přiřazeních, aby zůstaly navázané
+function prejmenujIdOrganizace_(stare, nove) {
+  [LISTY.HODINY, LISTY.PRIRAZENI].forEach(nazev => {
+    const sh = list_(nazev);
+    if (sh.getLastRow() < 2) return;
+    const i = hlavicky_(sh).indexOf('ID organizace');
+    if (i < 0) return;
+    const rng = sh.getRange(2, i + 1, sh.getLastRow() - 1, 1);
+    const v = rng.getValues();
+    let zmena = false;
+    v.forEach(r => { if (String(r[0]).trim() === stare) { r[0] = nove; zmena = true; } });
+    if (zmena) rng.setValues(v);
   });
 }
 
@@ -1152,10 +1187,16 @@ function pridejRadekListu(token, klic, d) {
       if (email && !platnyEmail_(email)) throw new Error('Neplatný e-mail organizace.');
       let max = 0;
       prvni.forEach(r => { const m = String(r[0]).match(/^ORG-(\d+)$/); if (m) max = Math.max(max, +m[1]); });
-      radek = ['ORG-' + String(max + 1).padStart(3, '0'), nazev, t(d.kontakt), email, t(d.telefon, 40),
-        t(d.adresa), t(d.oblast), 'ANO', t(d.poznamky, 1000), t(d.funkce)].map(bunka_);
+      const id = t(d.id, 30).replace(/\s+/g, '') || 'ORG-' + String(max + 1).padStart(3, '0');
+      if (prvni.some(r => String(r[0]).trim().toLowerCase() === id.toLowerCase())) throw new Error('Toto ID už má jiná organizace.');
+      const ic = t(d.ic, 20).replace(/\s+/g, '');
+      if (ic && !/^\d{8}$/.test(ic)) throw new Error('IČ má mít 8 číslic.');
       const hlav = hlavicky_(sh);
-      while (radek.length < hlav.length) radek.push('');
+      radek = hlav.map(() => '');
+      const dal = (h, v) => { const i = hlav.indexOf(h); if (i >= 0) radek[i] = bunka_(v); };
+      dal('ID', id); dal('Název', nazev); dal('Kontaktní osoba', t(d.kontakt)); dal('E-mail', email); dal('Telefon', t(d.telefon, 40));
+      dal('Oblast', t(d.oblast)); dal('Aktivní', 'ANO'); dal('Poznámky', t(d.poznamky, 1000)); dal('Funkce / pozice', t(d.funkce));
+      dal('IČ', ic); dal('Město', t(d.mesto)); dal('Ulice', t(d.ulice)); dal('PSČ', t(d.psc, 20));
     } else {
       const email = t(d.email, 200).toLowerCase();
       if (!platnyEmail_(email)) throw new Error('Zadejte platný e-mail.');

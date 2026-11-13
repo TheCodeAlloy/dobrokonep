@@ -267,7 +267,8 @@ function nastavTabulku() {
   const shOrg = zajistiList_(ss, LISTY.ORGANIZACE,
     ['ID', 'Název', 'Kontaktní osoba', 'E-mail', 'Telefon', 'Adresa', 'Oblast', 'Aktivní', 'Poznámky',
       'Funkce / pozice', 'Kontaktní osoba 2', 'Funkce / pozice 2', 'E-mail 2', 'Telefon 2',
-      'Kontaktní osoba 3', 'Funkce / pozice 3', 'E-mail 3', 'Telefon 3']);
+      'Kontaktní osoba 3', 'Funkce / pozice 3', 'E-mail 3', 'Telefon 3',
+      'IČ', 'Město', 'Ulice', 'PSČ']);
   shOrg.getRange('H2:H').setDataValidation(seznamValidace_(['ANO', 'NE']));
 
   const shS = zajistiList_(ss, LISTY.SABLONY, ['Klíč', 'Popis', 'Předmět', 'Text']);
@@ -316,6 +317,20 @@ function migrace_(ss) {
       }
       if (text !== puvodni) shS.getRange(i + 2, 4).setValue(text);
     });
+  }
+  // Organizace: dřívější jediný sloupec Adresa se jednorázově přesune do sloupce Ulice
+  const shO = ss.getSheetByName(LISTY.ORGANIZACE);
+  if (shO && shO.getLastRow() > 1) {
+    const ho = hlavicky_(shO);
+    const iA = ho.indexOf('Adresa'), iU = ho.indexOf('Ulice'), iM = ho.indexOf('Město'), iP = ho.indexOf('PSČ');
+    if (iA >= 0 && iU >= 0 && iM >= 0 && iP >= 0) {
+      const v = shO.getRange(2, 1, shO.getLastRow() - 1, ho.length).getValues();
+      v.forEach((r, i) => {
+        if (String(r[iA]).trim() && !String(r[iU]).trim() && !String(r[iM]).trim() && !String(r[iP]).trim()) {
+          shO.getRange(i + 2, iU + 1).setValue(r[iA]);
+        }
+      });
+    }
   }
   const shN = ss.getSheetByName(LISTY.NASTAVENI);
   if (shN && shN.getLastRow() > 1) {
