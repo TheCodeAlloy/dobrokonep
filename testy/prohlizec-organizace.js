@@ -53,6 +53,24 @@ const { chromium } = require('playwright');
   await p.evaluate(() => { document.querySelector('.scroll').scrollLeft = 0; });
   console.log('výška buňky názvu:', await nz.evaluate(e => e.offsetHeight), 'šířka:', await nz.evaluate(e => e.offsetWidth));
   await p.screenshot({path:__dirname+'/vystup/u11_organizace.png'});
+  // mapa činností
+  await p.click('#tabs button[data-tab=CINNOSTI]'); await W(500);
+  console.log('mapa – záhlaví:', (await p.$$eval('table.mapa thead th', t => t.map(x => x.textContent.trim()))).join(' | '));
+  const rad = await p.$$eval('table.mapa tbody tr', t => t.length);
+  console.log('mapa – řádků činností:', rad);
+  const r1 = 'table.mapa tbody tr:first-child';
+  const sedeVse = await p.$$eval(r1 + ' td.o', t => t.every(x => x.classList.contains('sede')));
+  console.log('první činnost má zaškrtnuto „Všechny“ → ostatní zešedlé:', sedeVse);
+  await p.screenshot({path:__dirname+'/vystup/u12_cinnosti_a.png'});
+  await p.click(r1 + ' td.vse input'); await W(400);   // odškrtnout „Všechny“
+  const odsedlo = await p.$$eval(r1 + ' td.o', t => t.every(x => !x.classList.contains('sede')));
+  const dis = await p.$$eval(r1 + ' td.o input', t => t.some(x => x.disabled));
+  console.log('po odškrtnutí „Všechny“ jsou ostatní použitelné:', odsedlo && !dis);
+  await p.click(r1 + ' td.o:nth-child(3) input'); await W(400);
+  console.log('v tabulce Činnosti:', JSON.stringify(cinnosti_().filter(c => c.org !== 'Všechny organizace').slice(0, 3)));
+  await p.click(r1 + ' td.vse input'); await W(400);    // znovu zaškrtnout „Všechny“
+  console.log('výběr organizace zůstal i po zašedlení:', await p.$eval(r1 + ' td.o:nth-child(3) input', x => x.checked));
+  await p.screenshot({path:__dirname+'/vystup/u12_cinnosti_b.png'});
   const necekane = errs.filter(e => !/Neplatný e-mail/.test(e)); console.log('chyby:', necekane); if (necekane.length) process.exitCode = 1;
   await b.close();
 })();

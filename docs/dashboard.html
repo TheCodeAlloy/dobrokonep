@@ -146,6 +146,13 @@
   table.adm .g1 input, table.adm .g2 input, table.adm .g3 input { background: rgba(255,255,255,.7); }
   table.adm textarea.t2 { font: inherit; font-size: 13px; line-height: 1.3; padding: 6px 8px; min-height: 0; resize: none; overflow: hidden; display: block; }
   table.adm td { min-width: 0; }
+  table.mapa th.vse, table.mapa td.vse { text-align: center; background: color-mix(in srgb, var(--primary) 10%, #fff); min-width: 90px; }
+  table.mapa th.org { text-align: center; min-width: 54px; cursor: help; }
+  table.mapa td { text-align: center; vertical-align: middle; }
+  table.mapa td:first-child { text-align: left; min-width: 260px; }
+  table.mapa td.o.sede input { opacity: .1; pointer-events: none; }
+  table.mapa input[type=checkbox] { width: 20px; height: 20px; cursor: pointer; }
+  table.mapa .cinSmaz { padding: 2px 10px; font-size: 18px; line-height: 1.2; }
   table.adm td.ro { color: var(--muted); font-size: 13px; padding-top: 14px; }
   .saved { border-color: var(--ok) !important; box-shadow: 0 0 0 2px rgba(31,122,77,.15); }
   .bad { border-color: var(--error) !important; background: var(--error-bg) !important; }
@@ -275,7 +282,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-13e</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-13f</p>
   </div>
 </div>
 <script>
@@ -1591,7 +1598,7 @@ const KONF = {
       ['Titul', 'Kontaktní osoba 1 – titul', 1, 62], ['Kontaktní osoba', 'Kontaktní osoba 1 – jméno a příjmení', 1, 140], ['Funkce / pozice', 'Kontaktní osoba 1 – funkce / pozice', 1, 130], ['E-mail', 'Kontaktní osoba 1 – e-mail', 1, 150], ['Telefon', 'Kontaktní osoba 1 – telefon', 1, 110],
       ['Titul 2', 'Kontaktní osoba 2 – titul', 2, 62], ['Kontaktní osoba 2', 'Kontaktní osoba 2 – jméno a příjmení', 2, 140], ['Funkce / pozice 2', 'Kontaktní osoba 2 – funkce / pozice', 2, 130], ['E-mail 2', 'Kontaktní osoba 2 – e-mail', 2, 150], ['Telefon 2', 'Kontaktní osoba 2 – telefon', 2, 110],
       ['Titul 3', 'Kontaktní osoba 3 – titul', 3, 62], ['Kontaktní osoba 3', 'Kontaktní osoba 3 – jméno a příjmení', 3, 140], ['Funkce / pozice 3', 'Kontaktní osoba 3 – funkce / pozice', 3, 130], ['E-mail 3', 'Kontaktní osoba 3 – e-mail', 3, 150], ['Telefon 3', 'Kontaktní osoba 3 – telefon', 3, 110],
-      ['Aktivní', 'Aktivní', 0, 80], ['Poznámky', 'Poznámky', 0, 160]],
+      ['Aktivní', 'Aktivní', 0, 110], ['Poznámky', 'Poznámky', 0, 160]],
     typy: { 'Aktivní': ['ANO', 'NE'] },
     pridat: [['id', 'ID (předvyplněno, lze změnit)', 'text'], ['nazev', 'Název', 'text'], ['ic', 'IČ', 'text'], ['mesto', 'Město', 'text'], ['ulice', 'Ulice', 'text'], ['psc', 'PSČ', 'text'],
       ['titul', 'Titul', 'text'], ['kontakt', 'Kontaktní osoba 1 – jméno a příjmení', 'text'], ['funkce', 'Funkce / pozice', 'text'], ['email', 'E-mail', 'email'], ['telefon', 'Telefon', 'tel']],
@@ -1652,8 +1659,90 @@ function admZalozka() {
   if (t === 'NASTAVENI') el.innerHTML = admNastaveni();
   else if (t === 'SABLONY') el.innerHTML = admSablony();
   else if (t === 'DOKUMENTY') el.innerHTML = admDokumenty();
+  else if (t === 'CINNOSTI') { el.innerHTML = admCinnosti(); admCinnostiUdalosti(el); return; }
   else el.innerHTML = admTabulka(t);
   admUdalosti(el);
+}
+
+// ---------- Mapa činností (činnost × organizace) ----------
+function cinOrganizace() {
+  const L = ADM.listy.ORGANIZACE;
+  if (!L) return (D.organizaceVse || []).filter(o => o.aktivni).map(o => ({ id: o.id, nazev: o.nazev }));
+  const h = n => L.hlavicky.indexOf(n);
+  return L.radky.filter(r => String(r.v[h('Název')]).trim() && String(r.v[h('Aktivní')]).trim().toUpperCase() !== 'NE')
+    .map(r => ({ id: r.v[h('ID')], nazev: String(r.v[h('Název')]).trim() }))
+    .sort((a, b) => a.id.localeCompare(b.id, 'cs', { sensitivity: 'base' }));
+}
+function cinZapnuto(radky, org, cin) {
+  return radky.some(r => String(r.v[0]).trim() === org && String(r.v[1]).trim() === cin && String(r.v[2]).trim().toUpperCase() !== 'NE');
+}
+function admCinnosti() {
+  const L = ADM.listy.CINNOSTI;
+  if (!L) return '<div class="card muted">Nemáte oprávnění.</div>';
+  const orgs = cinOrganizace();
+  const nazvy = [];
+  L.radky.forEach(r => { const c = String(r.v[1]).trim(); if (c && nazvy.indexOf(c) < 0) nazvy.push(c); });
+  nazvy.sort((a, b) => a.localeCompare(b, 'cs', { sensitivity: 'base' }));
+  const VSE = 'Všechny organizace';
+  return '<div class="card adm"><p class="muted small" style="margin-top:0">Zaškrtněte, u kterých organizací se činnost nabízí při zápisu hodin. „Všechny organizace“ platí pro každou organizaci; zaškrtnuté organizace pak zešednou, ale jejich výběr zůstane zachovaný a po odškrtnutí „Všechny“ se vrátí. Činnost, kterou už nechcete nabízet, odstraníte křížkem – dříve zapsané hodiny zůstanou.</p>' +
+    (nazvy.length ? '<div class="scroll"><table class="adm mapa"><thead><tr><th>Činnost</th><th class="vse">Všechny organizace</th>' +
+      orgs.map(o => '<th class="org" title="' + esc(o.nazev) + '">' + esc(o.id) + '</th>').join('') + '<th></th></tr></thead><tbody>' +
+      nazvy.map(c => {
+        const vse = cinZapnuto(L.radky, VSE, c);
+        return '<tr data-c="' + esc(c) + '"><td><input type="text" class="cinNazev" value="' + esc(c) + '" data-puv="' + esc(c) + '"></td>' +
+          '<td class="vse"><input type="checkbox" data-org="' + esc(VSE) + '"' + (vse ? ' checked' : '') + '></td>' +
+          orgs.map(o => '<td class="o' + (vse ? ' sede' : '') + '"><input type="checkbox" data-org="' + esc(o.nazev) + '"' + (cinZapnuto(L.radky, o.nazev, c) ? ' checked' : '') + (vse ? ' disabled' : '') + '></td>').join('') +
+          '<td><button class="btn ghost danger cinSmaz" type="button" title="Odstranit činnost" aria-label="Odstranit činnost">×</button></td></tr>';
+      }).join('') + '</tbody></table></div>' : '<p class="muted">Zatím žádné činnosti.</p>') +
+    '<form class="addrow" id="pridatCin"><div class="f"><label>Nová činnost</label><input name="nazev" type="text" required></div><button class="btn" type="submit">Přidat</button></form></div>';
+}
+function admCinnostiUdalosti(el) {
+  const L = ADM.listy.CINNOSTI;
+  const kor = el.firstElementChild; // nový prvek při každém vykreslení, takže se posluchače nehromadí
+  if (!kor) return;
+  kor.addEventListener('change', async e => {
+    const t = e.target;
+    const tr = t.closest('tr[data-c]'); if (!tr) return;
+    const cin = tr.dataset.c;
+    if (t.classList.contains('cinNazev')) {
+      const nove = t.value.trim(), puv = t.dataset.puv;
+      if (nove === puv) return;
+      try {
+        await api('prejmenujCinnost', puv, nove);
+        L.radky.forEach(r => { if (String(r.v[1]).trim() === puv) r.v[1] = nove; });
+        zastarale = true; admZalozka(); toast('Činnost přejmenována');
+      } catch (err) { t.value = puv; toast(err.message, 'err'); }
+      return;
+    }
+    if (t.type !== 'checkbox') return;
+    const org = t.dataset.org, zap = t.checked;
+    try {
+      await api('nastavCinnost', cin, org, zap);
+      const nalez = L.radky.filter(r => String(r.v[0]).trim() === org && String(r.v[1]).trim() === cin);
+      nalez.forEach(r => r.v[2] = zap ? 'ANO' : 'NE');
+      if (!nalez.length && zap) L.radky.push({ r: 0, v: [org, cin, 'ANO'] });
+      zastarale = true;
+      if (org === 'Všechny organizace') admZalozka();
+    } catch (err) { t.checked = !zap; toast(err.message, 'err'); }
+  });
+  kor.addEventListener('click', async e => {
+    const b = e.target.closest('.cinSmaz'); if (!b) return;
+    const cin = b.closest('tr[data-c]').dataset.c;
+    const o = await dialog({ text: 'Odstranit činnost „' + cin + '“ ze seznamu nabízených? Dříve zapsané hodiny zůstanou beze změny.', potvrdit: 'Odstranit' });
+    if (!o.ok) return;
+    try {
+      await api('smazCinnost', cin);
+      L.radky = L.radky.filter(r => String(r.v[1]).trim() !== cin);
+      zastarale = true; admZalozka(); toast('Činnost odstraněna');
+    } catch (err) { toast(err.message, 'err'); }
+  });
+  const f = $('#pridatCin', el);
+  if (f) f.addEventListener('submit', async e => {
+    e.preventDefault();
+    const b = $('button[type=submit]', f); b.disabled = true;
+    try { ADM = await api('pridejCinnost', f.nazev.value); zastarale = true; admZalozka(); toast('Činnost přidána (nabízí se u všech organizací)'); }
+    catch (err) { toast(err.message, 'err'); b.disabled = false; }
+  });
 }
 
 function admVstup(klic, r, c, k, typ, hodnota, attrs) {

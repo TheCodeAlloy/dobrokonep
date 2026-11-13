@@ -1145,6 +1145,75 @@ function ulozBunkuListu(token, klic, radek, sloupec, hodnota, puvodniKlic) {
   });
 }
 
+// ===== MAPA ČINNOSTÍ (činnost × organizace) =====
+// List Činnosti: Organizace (název nebo „Všechny organizace“) | Činnost | Aktivní (ANO = zaškrtnuto).
+// Odškrtnutí jen přepne Aktivní na NE, takže se dřívější výběr dá vrátit.
+
+function cinnostiRadky_(sh) {
+  return sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, 3).getValues() : [];
+}
+
+function nastavCinnost(token, cinnost, org, zapnuto) {
+  overAdmin_(token, 'Koordinátor');
+  cinnost = String(cinnost || '').trim(); org = String(org || '').trim();
+  if (!cinnost) throw new Error('Chybí činnost.');
+  if (org !== VSECHNY_ORGANIZACE && !organizace_().some(o => o.nazev === org)) throw new Error('Neznámá organizace.');
+  return sZamkem_(() => {
+    const sh = list_(LISTY.CINNOSTI);
+    const v = cinnostiRadky_(sh);
+    let nalezeno = false;
+    v.forEach((r, i) => {
+      if (String(r[0]).trim() === org && String(r[1]).trim() === cinnost) {
+        sh.getRange(i + 2, 3).setValue(zapnuto ? 'ANO' : 'NE');
+        nalezeno = true;
+      }
+    });
+    if (!nalezeno && zapnuto) sh.appendRow([bunka_(org), bunka_(cinnost), 'ANO']);
+    log_('Činnosti: ' + (zapnuto ? 'zapnuto' : 'vypnuto'), '', cinnost + ' → ' + org);
+    return { ok: true };
+  });
+}
+
+function pridejCinnost(token, nazev) {
+  overAdmin_(token, 'Koordinátor');
+  nazev = String(nazev || '').trim().slice(0, 200);
+  if (!nazev) throw new Error('Zadejte název činnosti.');
+  sZamkem_(() => {
+    const sh = list_(LISTY.CINNOSTI);
+    if (cinnostiRadky_(sh).some(r => String(r[1]).trim().toLowerCase() === nazev.toLowerCase())) throw new Error('Tato činnost už v seznamu je.');
+    sh.appendRow([VSECHNY_ORGANIZACE, bunka_(nazev), 'ANO']);
+    log_('Činnosti: přidána', '', nazev);
+  });
+  return nactiAdministraci(token);
+}
+
+function prejmenujCinnost(token, stare, nove) {
+  overAdmin_(token, 'Koordinátor');
+  stare = String(stare || '').trim(); nove = String(nove || '').trim().slice(0, 200);
+  if (!nove) throw new Error('Název činnosti nesmí být prázdný.');
+  sZamkem_(() => {
+    const sh = list_(LISTY.CINNOSTI);
+    const v = cinnostiRadky_(sh);
+    if (stare.toLowerCase() !== nove.toLowerCase() && v.some(r => String(r[1]).trim().toLowerCase() === nove.toLowerCase())) throw new Error('Tato činnost už v seznamu je.');
+    v.forEach((r, i) => { if (String(r[1]).trim() === stare) sh.getRange(i + 2, 2).setValue(bunka_(nove)); });
+    log_('Činnosti: přejmenována', '', stare + ' → ' + nove);
+  });
+  return { ok: true };
+}
+
+// Odstraní činnost ze seznamu nabízených (dříve zapsané hodiny zůstanou beze změny, mají činnost uloženou jako text)
+function smazCinnost(token, cinnost) {
+  overAdmin_(token, 'Koordinátor');
+  cinnost = String(cinnost || '').trim();
+  sZamkem_(() => {
+    const sh = list_(LISTY.CINNOSTI);
+    const v = cinnostiRadky_(sh);
+    for (let i = v.length - 1; i >= 0; i--) if (String(v[i][1]).trim() === cinnost) sh.deleteRow(i + 2);
+    log_('Činnosti: odstraněna', '', cinnost);
+  });
+  return { ok: true };
+}
+
 // Změna ID organizace: přepíše ho i v Hodinách a Přiřazeních, aby zůstaly navázané
 function prejmenujIdOrganizace_(stare, nove) {
   [LISTY.HODINY, LISTY.PRIRAZENI].forEach(nazev => {
