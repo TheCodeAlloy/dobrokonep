@@ -47,7 +47,7 @@ docs/hodiny.html     ──┘  (JSON)        │     ├─ Tabulka Google (dat
 | Soubor | Obsah |
 |---|---|
 | `Kod.gs` | konstanty (LISTY, sloupce, stavy, výchozí nastavení a šablony e-mailů), `nastavTabulku()` (idempotentní nastavení/migrace tabulky), registrace z formuláře, PDF, e-maily, pomocné funkce (`ss_`, `list_`, `nastaveni_`, `zapisDoRadku_`, `bunka_`, `log_`…), menu v tabulce |
-| `Dashboard.gs` | přihlášení administrátorů (kód, odkaz, Google, osobní odkaz z notifikace), `nactiData`, úpravy dobrovolníka, schůzky + kalendář, výmaz (GDPR), generování smlouvy/docházky z šablon Google Docs, administrace číselníků |
+| `Dashboard.gs` | přihlášení administrátorů (kód, odkaz, Google, osobní odkaz z notifikace), `nactiData`, úpravy dobrovolníka, schůzky + kalendář (osobní i online se stálým odkazem `odkaz_online_schuzky`; HTML e-mail s tlačítkem `posliEmailSchuzky_`, zástupný znak `{odkaz_schuzky}`), výmaz (GDPR), generování smlouvy/docházky z šablon Google Docs, administrace číselníků |
 | `Hodiny.gs` | přiřazení dobrovolník↔organizace, katalog činností, zápis hodin (jednotlivě, akce, měsíční výkaz), schvalování, mazání, uzávěrka |
 | `Portal.gs` | portál dobrovolníka: přihlášení (kód, odkaz, pozvánka, Google), relace, vlastní hodiny |
 | `Zalohy.gs` | denní zálohy tabulky (5 denních + 30 týdenních), spouštěč |
@@ -79,6 +79,7 @@ Organizace, Šablony e-mailů, Hodiny, Přiřazení, Činnosti, Log změn.
 - **Přiřazení** – `SLOUPCE_PRIRAZENI`: dobrovolník ↔ organizace s obdobím Od–Do (prázdné = bez omezení).
 - **Činnosti** – Organizace (název nebo „Všechny organizace“), Činnost, Aktivní.
 - **Nastavení** – klíč/hodnota/popis; výchozí řádky ve `vychoziNastaveni_()`; čtení `nastaveni_()`.
+- **Online schůzky** – stálý odkaz (Meet/Zoom/Teams) je v Nastavení `odkaz_online_schuzky` (nikdy v kódu, repozitář je veřejný). U dobrovolníka sloupec `Online schůzka` (ANO/NE). V dashboardu tlačítko „Připojit se k online schůzce“ v menu a v kartě Schůzka.
 - **Šablony e-mailů** – klíč/popis/předmět/text se zástupnými znaky `{jmeno}` apod. (`dosad_`).
 - Datumy: `parsujDatum_('RRRR-MM-DD')` vytváří Date v poledne (kvůli časovým pásmům). Časová zóna `Europe/Prague`.
 

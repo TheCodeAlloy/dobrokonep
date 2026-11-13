@@ -38,6 +38,9 @@
   .nav button { text-align: left; background: none; border: 0; color: #cfe0d8; padding: 10px 12px; border-radius: 8px; cursor: pointer; }
   .nav button:hover { background: rgba(255,255,255,.06); color: #fff; }
   .nav button.on { background: rgba(255,255,255,.12); color: #fff; font-weight: 600; }
+  .nav .navOnline { display: block; text-align: center; background: #c4524e; color: #fff; text-decoration: none; font-weight: 600; padding: 10px 12px; border-radius: 8px; margin: 6px 0; }
+  .nav .navOnline[hidden] { display: none; }
+  .nav .navOnline:hover { background: #b0443f; }
   .nav .soon { font-size: 11px; color: #9fbcaf; margin-left: 4px; }
   .me { margin-top: auto; padding: 14px 18px; border-top: 1px solid rgba(255,255,255,.08); font-size: 12px; color: #9fbcaf; word-break: break-all; }
   .me button { margin-top: 8px; background: none; border: 1px solid rgba(255,255,255,.2); color: #e7efeb; border-radius: 6px; padding: 5px 10px; cursor: pointer; font-size: 12px; }
@@ -265,7 +268,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-10-25c</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-13a</p>
   </div>
 </div>
 <script>
@@ -290,6 +293,7 @@
       <button data-view="seznam">Dobrovolníci</button>
       <button data-view="hodiny">Hodiny</button>
       <button data-view="admin" id="navAdmin">Administrace</button>
+      <a id="navOnline" class="navOnline" href="#" target="_blank" rel="noopener" hidden>Připojit se k online schůzce</a>
       <button id="odhlasit" type="button">Odhlásit</button>
     </nav>
     <div class="me"><span id="meText"></span><br><button id="obnovit">Obnovit data</button>
@@ -449,7 +453,12 @@ function odkazDrive(v, typ) {
 // dotáhnou na pozadí a obrazovka se tiše aktualizuje.
 const CACHE = new Map();
 let posledniNacteni = 0, obnovaBezi = false;
-async function nacti() { D = await api('nactiData'); zastarale = false; posledniNacteni = Date.now(); }
+function ukazOnlineTlacitko() {
+  const a = $('#navOnline'), o = D && D.nastaveni && D.nastaveni.odkazOnline;
+  if (o) a.href = o;
+  a.hidden = !o;
+}
+async function nacti() { D = await api('nactiData'); zastarale = false; posledniNacteni = Date.now(); ukazOnlineTlacitko(); }
 const nicSeNeedituje = () => $('#modal').hidden && $('#dlg').hidden &&
   !(document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName));
 async function obnovNaPozadi() {
@@ -702,10 +711,14 @@ function vDetail() {
     '<section class="card"><h2>Schůzka</h2>' +
     (ma ? '<p class="info">Domluveno: <strong>' + esc(fmtTermin(z['Termín schůzky'])) + '</strong>' + (z['Místo schůzky'] ? ' · ' + esc(z['Místo schůzky']) : '') + '</p>'
         : '<p class="muted">Zatím bez termínu.</p>') +
+    (ma && z['Online schůzka'] === 'ANO' && D.nastaveni.odkazOnline
+      ? '<p><a class="btn" href="' + esc(D.nastaveni.odkazOnline) + '" target="_blank" rel="noopener">Připojit se k online schůzce</a></p>' : '') +
     '<div class="fields">' +
     '<div class="fld"><label><span>Datum a čas</span></label><input type="datetime-local" id="sTermin" value="' + esc(z['Termín schůzky']) + '"' + dis + '></div>' +
-    '<div class="fld"><label><span>Místo</span></label><input type="text" id="sMisto" value="' + esc(z['Místo schůzky'] || D.nastaveni.misto_schuzky_vychozi) + '"' + dis + '></div>' +
+    '<div class="fld"><label><span>Místo</span></label><input type="text" id="sMisto" value="' + esc(z['Místo schůzky'] || (z['Online schůzka'] === 'ANO' ? 'Online' : D.nastaveni.misto_schuzky_vychozi)) + '"' + dis + '></div>' +
     '</div>' +
+    (edit ? '<label class="check"><input type="checkbox" id="sOnline"' + (z['Online schůzka'] === 'ANO' ? ' checked' : '') + (D.nastaveni.odkazOnline ? '' : ' disabled') + '> Online schůzka' +
+      (D.nastaveni.odkazOnline ? ' (v e-mailu bude tlačítko pro připojení)' : ' – nejdřív vyplňte odkaz_online_schuzky v Administraci → Nastavení') + '</label>' : '') +
     (edit ? '<label class="check"><input type="checkbox" id="sEmail" checked> Poslat dobrovolníkovi e-mail ' + (ma ? 's novým termínem' : 's potvrzením termínu') + '</label>' +
       '<div class="btns"><button class="btn" id="sUlozit">' + (ma ? 'Změnit termín' : 'Naplánovat schůzku') + '</button>' +
       (ma ? '<button class="btn ghost danger" id="sZrusit">Zrušit schůzku</button>' : '') + '</div>' +
@@ -789,12 +802,17 @@ function vDetail() {
   const su = $('#smazUpoz');
   if (su) su.onclick = async () => { await ulozit('Upozornění', ''); render(); };
 
+  $('#sOnline').addEventListener('change', e => {
+    const m = $('#sMisto');
+    if (e.target.checked && !m.value.trim()) m.value = 'Online';
+    else if (!e.target.checked && m.value.trim() === 'Online') m.value = D.nastaveni.misto_schuzky_vychozi || '';
+  });
   $('#sUlozit').onclick = async () => {
     const termin = $('#sTermin').value;
     if (!termin) { toast('Vyberte datum a čas schůzky.', 'err'); $('#sTermin').focus(); return; }
     const b = $('#sUlozit'); b.disabled = true; b.textContent = 'Ukládám…';
     try {
-      const r = await api('naplanujSchuzku', z.ID, termin, $('#sMisto').value, $('#sEmail').checked);
+      const r = await api('naplanujSchuzku', z.ID, termin, $('#sMisto').value, $('#sEmail').checked, $('#sOnline').checked);
       nahrad(r.zaznam); render();
       toast((ma ? 'Termín změněn' : 'Schůzka naplánována') + (r.emailOdeslan ? ' a e-mail odeslán' : ''));
       if (r.chybaEmailu) toast('E-mail se nepodařilo odeslat: ' + r.chybaEmailu, 'err');

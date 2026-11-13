@@ -301,6 +301,7 @@ function nactiData(token) {
     vzdelani: VZDELANI,
     nastaveni: {
       misto_schuzky_vychozi: String(n.misto_schuzky_vychozi || ''),
+      odkazOnline: odkazOnline_(n),
       kontaktniOsoby: kontaktniOsoby_(n),
       cinnostiSmlouvy: String(n.cinnosti_smlouvy || ''),
       sablonaSmlouvy: !!extrahujId_(n.sablona_smlouvy_18) && !!extrahujId_(n.sablona_smlouvy_15_17),
@@ -406,9 +407,39 @@ function ulozPole(token, id, pole, hodnota) {
 
 // ===== SCHŮZKY A KALENDÁŘ =====================================
 
-function naplanujSchuzku(token, id, termin, misto, poslatEmail) {
+// Stálý odkaz na online schůzku z Nastavení (jen platný odkaz https://, jinak prázdný text)
+function odkazOnline_(n) {
+  const o = String(n.odkaz_online_schuzky || '').trim();
+  return /^https:\/\/\S+$/.test(o) ? o : '';
+}
+
+// E-mail o schůzce (HTML). U online schůzky obsahuje tlačítko „Připojit se ke schůzce“,
+// {odkaz_schuzky} v šabloně určuje jeho místo; když ho šablona nemá, přidá se na konec.
+function posliEmailSchuzky_(klic, komu, prom, odkaz, n) {
+  const s = sablona_(klic);
+  if (!s) throw new Error('Šablona „' + klic + '“ neexistuje.');
+  let text = s.text;
+  if (odkaz && text.indexOf('{odkaz_schuzky}') < 0) text += '\n\n{odkaz_schuzky}';
+  const ZNACKA = '\u0000ODKAZ\u0000';
+  const p = Object.assign({}, prom, { odkaz_schuzky: odkaz ? ZNACKA : '' });
+  const cisty = dosad_(text, p).replace(/\n{3,}/g, '\n\n');
+  const tlacitko = '<a href="' + esc_(odkaz) + '" style="display:inline-block;background:#c4524e;color:#ffffff;' +
+    'text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:8px">Připojit se ke schůzce</a>';
+  const html = '<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#222">' +
+    esc_(cisty).replace(/\n/g, '<br>').split(ZNACKA).join(odkaz ? tlacitko : '') + '</div>';
+  const zprava = {
+    to: komu, subject: dosad_(s.predmet, p), name: String(n.nazev_organizace || 'Dobrovolnické centrum'),
+    body: cisty.split(ZNACKA).join('Připojit se ke schůzce: ' + odkaz), htmlBody: html
+  };
+  if (n.email_odpovedi) zprava.replyTo = String(n.email_odpovedi);
+  MailApp.sendEmail(zprava);
+}
+
+function naplanujSchuzku(token, id, termin, misto, poslatEmail, online) {
   const a = overAdmin_(token, 'Koordinátor');
   const n = nastaveni_();
+  const odkaz = online ? odkazOnline_(n) : '';
+  if (online && !odkaz) throw new Error('Online schůzka: v Administraci → Nastavení vyplňte odkaz_online_schuzky (začíná https://).');
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(String(termin || ''))) throw new Error('Zadejte datum a čas schůzky.');
   const start = Utilities.parseDate(termin, TZ, "yyyy-MM-dd'T'HH:mm");
   const konec = new Date(start.getTime() + (Number(n.delka_schuzky_min) || 60) * 60000);
@@ -423,7 +454,8 @@ function naplanujSchuzku(token, id, termin, misto, poslatEmail) {
     const bylTermin = !!z['Termín schůzky'];
 
     const nazevUd = 'Schůzka se zájemcem o dobrovolnictví: ' + z['Jméno'] + ' ' + z['Příjmení'] + ' (' + id + ')';
-    const popis = 'Úvodní schůzka se zájemcem o dobrovolnictví.\n\nDetail v dashboardu: ' + odkazNaDetail_(n, id, sh, radek);
+    const popis = 'Úvodní schůzka se zájemcem o dobrovolnictví.' + (odkaz ? '\n\nOnline schůzka – připojit se: ' + odkaz : '') +
+      '\n\nDetail v dashboardu: ' + odkazNaDetail_(n, id, sh, radek);
 
     let udalost = null;
     if (z['ID události kalendáře']) {
@@ -433,6 +465,7 @@ function naplanujSchuzku(token, id, termin, misto, poslatEmail) {
       udalost.setTime(start, konec);
       udalost.setTitle(nazevUd);
       udalost.setLocation(misto);
+      udalost.setDescription(popis);
     } else {
       const moznosti = { description: popis, location: misto };
       if (cal.getId().toLowerCase() !== a.email) { moznosti.guests = a.email; moznosti.sendInvites = true; }
@@ -442,6 +475,7 @@ function naplanujSchuzku(token, id, termin, misto, poslatEmail) {
     const zmeny = {
       'Termín schůzky': start,
       'Místo schůzky': misto,
+      'Online schůzka': odkaz ? 'ANO' : 'NE',
       'ID události kalendáře': udalost.getId(),
       'Naposledy upraveno': new Date(),
       'Upravil/a': a.email
@@ -454,10 +488,10 @@ function naplanujSchuzku(token, id, termin, misto, poslatEmail) {
     let emailOdeslan = false, chybaEmailu = '';
     if (poslatEmail) {
       try {
-        posliSablonu_(bylTermin ? 'zmena_schuzky' : 'potvrzeni_schuzky', z['E-mail'], {
+        posliEmailSchuzky_(bylTermin ? 'zmena_schuzky' : 'potvrzeni_schuzky', z['E-mail'], {
           id: id, jmeno: z['Jméno'], prijmeni: z['Příjmení'], termin: terminCesky_(start),
           misto_schuzky: misto || 'upřesníme', nazev_organizace: String(n.nazev_organizace || '')
-        }, n);
+        }, odkaz, n);
         emailOdeslan = true;
       } catch (e) { chybaEmailu = e.message; }
     }
@@ -484,7 +518,7 @@ function zrusSchuzku(token, id, poslatEmail) {
       } catch (e) { console.warn(e); }
     }
     const zmeny = {
-      'Termín schůzky': '', 'Místo schůzky': '', 'ID události kalendáře': '',
+      'Termín schůzky': '', 'Místo schůzky': '', 'Online schůzka': '', 'ID události kalendáře': '',
       'Naposledy upraveno': new Date(), 'Upravil/a': a.email
     };
     if (z['Stav'] === 'Schůzka domluvena') zmeny['Stav'] = 'Kontaktován';

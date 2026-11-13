@@ -52,7 +52,8 @@ const SLOUPCE_DOBROVOLNICI = [
   'Složka', 'Registrace (PDF)', 'Pozvánka do portálu', 'Upozornění', 'Naposledy upraveno', 'Upravil/a',
   'Služba do', 'Zástupce – jméno', 'Zástupce – adresa', 'Zástupce – datum narození', 'Zástupce – e-mail', 'Zástupce – telefon',
   'Činnosti ve smlouvě',
-  'Záznam o přípravě'
+  'Záznam o přípravě',
+  'Online schůzka'
 ];
 
 const POLE_DATUM = ['Datum narození', 'Dobrovolníkem od', 'Datum smlouvy', 'Služba do', 'Zástupce – datum narození'];
@@ -134,6 +135,7 @@ function vychoziNastaveni_(email) {
     ['kalendar_id', '', 'ID kalendáře pro schůzky (prázdné = hlavní kalendář účtu, pod kterým systém běží)'],
     ['delka_schuzky_min', 60, 'Délka schůzky v minutách'],
     ['misto_schuzky_vychozi', '', 'Výchozí místo schůzky (předvyplní se při plánování)'],
+    ['odkaz_online_schuzky', '', 'Stálý odkaz na online schůzku (Google Meet, Zoom, Teams); používá se u online schůzek, v e-mailech a v tlačítku v dashboardu'],
     ['kontaktni_osoby', 'Mgr. Kateřina Mužíková, tel. 608 236 547, muzikova@konep.cz; Ing. Lucie Křivková, tel. 775 551 412, krivkova@konep.cz', 'Kontaktní osoby na výběr do smlouvy (oddělte středníkem)'],
     ['cinnosti_smlouvy', 'Pravidelná návštěva klientů v domově seniorů (povídání si, četba, hraní společenských her, pobyt na zahradě domova, procházky po blízkém okolí domova apod.)\nPomoc se zajištěním jednorázových akcí a volnočasových projektů pro klienty domova (akce v domově, návštěvy kulturních zařízení, výlety apod.)', 'Výchozí činnosti do článku III smlouvy (každá na nový řádek)'],
     ['sablona_smlouvy_18', '', 'Dokument Google se šablonou smlouvy pro dobrovolníky od 18 let (odkaz nebo ID)'],
@@ -167,14 +169,14 @@ const VYCHOZI_SABLONY = [
     'Potvrzení termínu schůzky',
     'Dobrý den, {jmeno},\n\n' +
     'ještě jednou velmi děkujeme za váš zájem stát se dobrovolníkem či dobrovolnicí. Vážíme si toho.\n\n' +
-    'Potvrzujeme termín osobní schůzky: {termin}\nMísto: {misto_schuzky}\n\n' +
+    'Potvrzujeme termín schůzky: {termin}\nMísto: {misto_schuzky}\n\n{odkaz_schuzky}\n\n' +
     'Pokud by vám termín nevyhovoval, dejte nám prosím vědět odpovědí na tento e-mail.\n\n' +
     'Děkujeme a těšíme se na osobní setkání!\n\n' +
     'S pozdravem\n{nazev_organizace}'],
   ['zmena_schuzky', 'Změna termínu schůzky',
     'Změna termínu schůzky',
     'Dobrý den, {jmeno},\n\n' +
-    'termín naší schůzky se mění. Nový termín: {termin}\nMísto: {misto_schuzky}\n\n' +
+    'termín naší schůzky se mění. Nový termín: {termin}\nMísto: {misto_schuzky}\n\n{odkaz_schuzky}\n\n' +
     'Pokud by vám nový termín nevyhovoval, dejte nám prosím vědět odpovědí na tento e-mail.\n\n' +
     'Děkujeme a těšíme se na setkání!\n\n' +
     'S pozdravem\n{nazev_organizace}'],
