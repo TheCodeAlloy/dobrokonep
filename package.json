@@ -5,7 +5,7 @@
   "scripts": {
     "kontrola": "node -e \"const fs=require('fs');const k=['Kod','Dashboard','Hodiny','Portal','Zalohy','Api'].map(f=>fs.readFileSync('apps-script/'+f+'.gs','utf8')).join('\\n');new Function(k);console.log('Apps Script: syntaxe OK')\"",
     "test": "npm run kontrola && node testy/poradi-souboru.js && node testy/backend-vykaz.js && node testy/backend-hodiny.js && node testy/backend-portal.js && node testy/backend-zalohy.js && node testy/backend-schuzky.js",
-    "test:prohlizec": "node testy/prohlizec-dashboard.js && node testy/prohlizec-portal.js"
+    "test:prohlizec": "node testy/prohlizec-dashboard.js && node testy/prohlizec-organizace.js && node testy/prohlizec-portal.js"
   },
   "devDependencies": {
     "@google/clasp": "^2.4.2",
