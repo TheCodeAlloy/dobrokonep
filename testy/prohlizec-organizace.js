@@ -53,6 +53,13 @@ const { chromium } = require('playwright');
   await p.evaluate(() => { document.querySelector('.scroll').scrollLeft = 0; });
   console.log('výška buňky názvu:', await nz.evaluate(e => e.offsetHeight), 'šířka:', await nz.evaluate(e => e.offsetWidth));
   await p.screenshot({path:__dirname+'/vystup/u11_organizace.png'});
+  // okno s činnostmi u organizace
+  await p.click('#tabs button[data-tab=ORGANIZACE]'); await W(300);
+  await p.hover('.cinBtn >> nth=0'); await W(300);
+  console.log('okno činností viditelné:', await p.$eval('#cinPop', e => !e.hidden), '| položek:', await p.$$eval('#cinPop li', l => l.length), '| věta:', (await p.textContent('#cinPop .pozn')).slice(0, 60));
+  await p.screenshot({path:__dirname+'/vystup/u13_org_cinnosti.png'});
+  await p.click('#cinPop [data-jdi-cinnosti]'); await W(500);
+  console.log('odkaz otevře kartu Činnosti:', await p.$('table.mapa') !== null);
   // mapa činností
   await p.click('#tabs button[data-tab=CINNOSTI]'); await W(500);
   console.log('mapa – záhlaví:', (await p.$$eval('table.mapa thead th', t => t.map(x => x.textContent.trim()))).join(' | '));

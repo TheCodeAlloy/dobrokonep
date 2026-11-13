@@ -153,6 +153,12 @@
   table.mapa td.o.sede input { opacity: .1; pointer-events: none; }
   table.mapa input[type=checkbox] { width: 20px; height: 20px; cursor: pointer; }
   table.mapa .cinSmaz { padding: 2px 10px; font-size: 18px; line-height: 1.2; }
+  #cinPop { position: fixed; z-index: 60; width: 320px; max-width: calc(100vw - 16px); background: #fff; border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 28px rgba(0,0,0,.18); padding: 12px 14px; font-size: 13.5px; }
+  #cinPop[hidden] { display: none; }
+  #cinPop ul { margin: 8px 0; padding-left: 18px; }
+  #cinPop .prazdno { color: var(--muted); margin: 8px 0; }
+  #cinPop .pozn { margin: 10px 0 0; padding-top: 8px; border-top: 1px solid var(--border); font: italic 12.5px Georgia, 'Times New Roman', serif; color: var(--muted); }
+  .cinBtn { padding: 6px 10px; font-size: 13px; white-space: nowrap; }
   table.adm td.ro { color: var(--muted); font-size: 13px; padding-top: 14px; }
   .saved { border-color: var(--ok) !important; box-shadow: 0 0 0 2px rgba(31,122,77,.15); }
   .bad { border-color: var(--error) !important; background: var(--error-bg) !important; }
@@ -282,7 +288,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-13f</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-13g</p>
   </div>
 </div>
 <script>
@@ -1594,7 +1600,7 @@ const KONF = {
     napoveda: 'Místa se nabízejí ve formuláři i v detailu dobrovolníka (místo působení).' },
   ORGANIZACE: { nazev: 'Organizace', podleNazvu: true,
     // [název sloupce v tabulce, popisek, skupina, šířka v px]; sloupce se hledají podle názvu, v tabulce Google je lze přesouvat
-    zobraz: [['ID', 'ID', 0, 90], ['Název', 'Název', 0, 280], ['IČ', 'IČ', 0, 105], ['Město', 'Město', 0, 130], ['Ulice', 'Ulice', 0, 150], ['PSČ', 'PSČ', 0, 80],
+    zobraz: [['ID', 'ID', 0, 90], ['Název', 'Název', 0, 280], ['__cinnosti', 'Činnosti', 0, 120], ['IČ', 'IČ', 0, 105], ['Město', 'Město', 0, 130], ['Ulice', 'Ulice', 0, 150], ['PSČ', 'PSČ', 0, 80],
       ['Titul', 'Kontaktní osoba 1 – titul', 1, 62], ['Kontaktní osoba', 'Kontaktní osoba 1 – jméno a příjmení', 1, 140], ['Funkce / pozice', 'Kontaktní osoba 1 – funkce / pozice', 1, 130], ['E-mail', 'Kontaktní osoba 1 – e-mail', 1, 150], ['Telefon', 'Kontaktní osoba 1 – telefon', 1, 110],
       ['Titul 2', 'Kontaktní osoba 2 – titul', 2, 62], ['Kontaktní osoba 2', 'Kontaktní osoba 2 – jméno a příjmení', 2, 140], ['Funkce / pozice 2', 'Kontaktní osoba 2 – funkce / pozice', 2, 130], ['E-mail 2', 'Kontaktní osoba 2 – e-mail', 2, 150], ['Telefon 2', 'Kontaktní osoba 2 – telefon', 2, 110],
       ['Titul 3', 'Kontaktní osoba 3 – titul', 3, 62], ['Kontaktní osoba 3', 'Kontaktní osoba 3 – jméno a příjmení', 3, 140], ['Funkce / pozice 3', 'Kontaktní osoba 3 – funkce / pozice', 3, 130], ['E-mail 3', 'Kontaktní osoba 3 – e-mail', 3, 150], ['Telefon 3', 'Kontaktní osoba 3 – telefon', 3, 110],
@@ -1813,7 +1819,7 @@ function admTabulka(klic) {
   if (!L) return '<div class="card muted">Nemáte oprávnění.</div>';
   // sloupce k zobrazení: [index v tabulce, popisek, skupina, šířka]; u listů s pohyblivými sloupci se hledají podle názvu
   const sloupce = K.podleNazvu
-    ? K.zobraz.map(z => [L.hlavicky.indexOf(z[0]), z[1], z[2], z[3], z[0]]).filter(z => z[0] >= 0)
+    ? K.zobraz.map(z => [z[0] === '__cinnosti' ? -2 : L.hlavicky.indexOf(z[0]), z[1], z[2], z[3], z[0]]).filter(z => z[0] !== -1)
     : null;
   const kidx = L.klicSloupec || 0;
   const typDe = (c, nazev) => K.podleNazvu ? (K.typy[nazev] || 'text2') : K.sloupce[c];
@@ -1823,6 +1829,10 @@ function admTabulka(klic) {
       '<tr>' + (sloupce ? sloupce.map(z => '<th' + (z[2] ? ' class="g' + z[2] + '"' : '') + (z[3] ? ' style="min-width:' + z[3] + 'px"' : '') + '>' + esc(z[1].replace(/^Kontaktní osoba \d – /, '')) + '</th>')
         : L.hlavicky.map(h => '<th>' + esc(h) + '</th>')).join('') + '</tr></thead><tbody>' +
       L.radky.map(row => '<tr>' + (sloupce ? sloupce.map(z => [z[0], z[2], z[3], z[4]]) : L.hlavicky.map((h, c) => [c, 0, 0, h])).map(([c, g, w, nazev]) => {
+        if (c === -2) {
+          const on = String(row.v[L.hlavicky.indexOf('Název')]).trim();
+          return '<td style="min-width:' + w + 'px">' + (on ? '<button type="button" class="btn ghost cinBtn" data-org="' + esc(on) + '">Činnosti (' + cinnostiOrg(on).length + ')</button>' : '') + '</td>';
+        }
         const typ = typDe(c, nazev), hod = row.v[c] == null ? '' : row.v[c];
         const cls = (g ? ' class="g' + g + '"' : '') + (w ? ' style="min-width:' + w + 'px"' : '');
         return typ ? '<td' + cls + '>' + admVstup(klic, row.r, c, row.v[kidx], typ, hod) + '</td>' : '<td class="' + (g ? 'g' + g + ' ' : '') + 'ro">' + esc(hod) + '</td>';
@@ -1832,6 +1842,51 @@ function admTabulka(klic) {
         : '<input name="' + p[0] + '" type="' + p[2] + '"' + (p[0] === 'id' && klic === 'ORGANIZACE' ? ' value="' + esc(dalsiIdOrg(L)) + '"' : '') + (p[0] === 'nazev' || p[0] === 'email' && klic === 'ADMINI' ? ' required' : '') + '>') + '</div>').join('') +
     '<button class="btn" type="submit">Přidat</button></form></div>';
 }
+
+// ---------- Činnosti u organizace: okno při najetí myší ----------
+function cinnostiOrg(nazev) {
+  const L = ADM.listy.CINNOSTI;
+  if (!L) return [];
+  const c = L.radky.filter(r => (String(r.v[0]).trim() === nazev || String(r.v[0]).trim() === 'Všechny organizace') && String(r.v[2]).trim().toUpperCase() !== 'NE' && String(r.v[1]).trim())
+    .map(r => String(r.v[1]).trim());
+  return c.filter((x, i) => c.indexOf(x) === i).sort((a, b) => a.localeCompare(b, 'cs', { sensitivity: 'base' }));
+}
+let cinPopCas = 0;
+function cinPop() {
+  let p = $('#cinPop');
+  if (!p) {
+    p = document.createElement('div'); p.id = 'cinPop'; p.hidden = true;
+    p.addEventListener('mouseenter', () => clearTimeout(cinPopCas));
+    p.addEventListener('mouseleave', () => cinPopSchovej());
+    p.addEventListener('click', e => {
+      if (e.target.closest('[data-jdi-cinnosti]')) { p.hidden = true; stav.tab = 'CINNOSTI'; vAdmin(); }
+    });
+    document.body.appendChild(p);
+  }
+  return p;
+}
+function cinPopSchovej() { clearTimeout(cinPopCas); cinPopCas = setTimeout(() => { cinPop().hidden = true; }, 250); }
+function cinPopUkaz(btn) {
+  clearTimeout(cinPopCas);
+  const p = cinPop(), nazev = btn.dataset.org, c = cinnostiOrg(nazev);
+  p.innerHTML = '<strong>' + esc(nazev) + '</strong>' +
+    (c.length ? '<ul>' + c.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '<p class="prazdno">Zatím žádné činnosti.</p>') +
+    '<p class="pozn">Činnosti můžete upravit, přidat, odstranit nebo měnit na kartě <a href="#" data-jdi-cinnosti>Činnosti</a> v sekci Administrace.</p>';
+  p.hidden = false;
+  const r = btn.getBoundingClientRect();
+  p.style.left = Math.max(8, Math.min(r.left, window.innerWidth - p.offsetWidth - 8)) + 'px';
+  const pod = r.bottom + 6 + p.offsetHeight <= window.innerHeight;
+  p.style.top = (pod ? r.bottom + 6 : Math.max(8, r.top - 6 - p.offsetHeight)) + 'px';
+}
+document.addEventListener('mouseover', e => { const b = e.target.closest && e.target.closest('.cinBtn'); if (b) cinPopUkaz(b); });
+document.addEventListener('mouseout', e => { if (e.target.closest && e.target.closest('.cinBtn')) cinPopSchovej(); });
+document.addEventListener('focusin', e => { const b = e.target.closest && e.target.closest('.cinBtn'); if (b) cinPopUkaz(b); });
+document.addEventListener('focusout', e => { if (e.target.closest && e.target.closest('.cinBtn')) cinPopSchovej(); });
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('.cinBtn');
+  if (b) { const p = cinPop(); if (!p.hidden && p.dataset.org === b.dataset.org) p.hidden = true; else { cinPopUkaz(b); p.dataset.org = b.dataset.org; } }
+  else if (!(e.target.closest && e.target.closest('#cinPop'))) { const p = $('#cinPop'); if (p) p.hidden = true; }
+});
 
 function admUdalosti(el) {
   const vyska = t => { t.style.height = 'auto'; t.style.height = t.scrollHeight + 2 + 'px'; };
