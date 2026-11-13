@@ -269,7 +269,9 @@ function nastavTabulku() {
       'Funkce / pozice', 'Kontaktní osoba 2', 'Funkce / pozice 2', 'E-mail 2', 'Telefon 2',
       'Kontaktní osoba 3', 'Funkce / pozice 3', 'E-mail 3', 'Telefon 3',
       'IČ', 'Město', 'Ulice', 'PSČ', 'Titul', 'Titul 2', 'Titul 3']);
-  shOrg.getRange('H2:H').setDataValidation(seznamValidace_(['ANO', 'NE']));
+  seradSloupceOrganizaci_(shOrg);
+  const iAktivni = hlavicky_(shOrg).indexOf('Aktivní');
+  shOrg.getRange(2, iAktivni + 1, Math.max(1, shOrg.getMaxRows() - 1), 1).setDataValidation(seznamValidace_(['ANO', 'NE']));
 
   const shS = zajistiList_(ss, LISTY.SABLONY, ['Klíč', 'Popis', 'Předmět', 'Text']);
   doplnChybejiciRadky_(shS, VYCHOZI_SABLONY);
@@ -346,6 +348,32 @@ function migrace_(ss) {
       }
     }
   }
+}
+
+// Pořadí sloupců listu Organizace. Systém čte sloupce podle názvu, takže je lze v tabulce libovolně přesouvat.
+const PORADI_ORGANIZACE = ['ID', 'Název', 'IČ', 'Město', 'Ulice', 'PSČ',
+  'Titul', 'Kontaktní osoba', 'Funkce / pozice', 'E-mail', 'Telefon',
+  'Titul 2', 'Kontaktní osoba 2', 'Funkce / pozice 2', 'E-mail 2', 'Telefon 2',
+  'Titul 3', 'Kontaktní osoba 3', 'Funkce / pozice 3', 'E-mail 3', 'Telefon 3',
+  'Aktivní', 'Poznámky', 'Oblast', 'Adresa'];
+
+// Jednorázově seřadí sloupce (příznak ORG_SERAZENO). Pozdější ruční přesuny už nepřepisuje.
+function seradSloupceOrganizaci_(sh) {
+  const props = PropertiesService.getScriptProperties();
+  if (props.getProperty('ORG_SERAZENO') === 'ANO') return;
+  const hlav = hlavicky_(sh);
+  const nove = PORADI_ORGANIZACE.filter(h => hlav.indexOf(h) >= 0).concat(hlav.filter(h => PORADI_ORGANIZACE.indexOf(h) < 0 && h));
+  const stejne = nove.length === hlav.length && nove.every((h, i) => h === hlav[i]);
+  if (!stejne) {
+    const radku = sh.getLastRow();
+    const v = sh.getRange(1, 1, radku, hlav.length).getValues();
+    const prerad = v.map(r => nove.map(h => r[hlav.indexOf(h)]));
+    sh.getRange(1, 1, radku, nove.length).setValues(prerad);
+    sh.getRange(1, 1, 1, nove.length)
+      .setFontWeight('bold').setBackground('#1f5c45').setFontColor('#ffffff')
+      .setVerticalAlignment('middle').setWrap(true);
+  }
+  props.setProperty('ORG_SERAZENO', 'ANO');
 }
 
 function zajistiList_(ss, nazev, hlavicky) {

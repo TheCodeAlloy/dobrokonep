@@ -64,15 +64,19 @@ function doplnChybejiciRadkyCinnosti_(sh) {
 function doplnIdOrganizaci_() {
   const sh = list_(LISTY.ORGANIZACE);
   if (sh.getLastRow() < 2) return;
-  const r = sh.getRange(2, 1, sh.getLastRow() - 1, 2);
-  const v = r.getValues();
+  const hlav = hlavicky_(sh);
+  const iI = hlav.indexOf('ID'), iN = hlav.indexOf('Název');
+  if (iI < 0 || iN < 0) return;
+  const r = sh.getRange(2, iI + 1, sh.getLastRow() - 1, 1);
+  const ids = r.getValues();
+  const nazvy = sh.getRange(2, iN + 1, sh.getLastRow() - 1, 1).getValues();
   let max = 0;
-  v.forEach(x => { const m = String(x[0]).match(/^ORG-(\d+)$/); if (m) max = Math.max(max, +m[1]); });
+  ids.forEach(x => { const m = String(x[0]).match(/^ORG-(\d+)$/); if (m) max = Math.max(max, +m[1]); });
   let zmena = false;
-  v.forEach(x => {
-    if (String(x[1]).trim() && !String(x[0]).trim()) { max++; x[0] = 'ORG-' + String(max).padStart(3, '0'); zmena = true; }
+  ids.forEach((x, i) => {
+    if (String(nazvy[i][0]).trim() && !String(x[0]).trim()) { max++; x[0] = 'ORG-' + String(max).padStart(3, '0'); zmena = true; }
   });
-  if (zmena) { r.setValues(v); delete MEMO.organizace; }
+  if (zmena) { r.setValues(ids); delete MEMO.organizace; }
 }
 
 // Dřívější jedno pole „Organizace“ u dobrovolníka převedeme na přiřazení

@@ -22,24 +22,57 @@ over('adresa z Ulice/PSČ/Město', organizace_().find(o => o.id === 'ORG-002').a
 const hh = hlavicky_(M.sheets['Hodiny']), hp = hlavicky_(M.sheets['Přiřazení']);
 M.sheets['Hodiny'].appendRow(hh.map(h => h === 'ID organizace' ? 'ORG-001' : h === 'ID' ? 'H1' : ''));
 M.sheets['Přiřazení'].appendRow(hp.map(h => h === 'ID organizace' ? 'ORG-001' : h === 'ID přiřazení' ? 'P1' : ''));
-const ulozit = (c, v, klic) => ulozBunkuListu('T', 'ORGANIZACE', 2, c, v, klic);
-over('prázdné ID odmítnuto', /prázdné/.test(chyba(() => ulozit(0, '', 'ORG-001'))));
-over('ID s mezerou odmítnuto', /mezer/.test(chyba(() => ulozit(0, 'MOJE ZKR', 'ORG-001'))));
-over('duplicitní ID odmítnuto', /už má/.test(chyba(() => ulozit(0, 'org-002', 'ORG-001'))));
-ulozit(0, 'KAL', 'ORG-001');
+const ulozit = (nazev, v, klic) => ulozBunkuListu('T', 'ORGANIZACE', 2, hlavicky_(sh).indexOf(nazev), v, klic);
+over('prázdné ID odmítnuto', /prázdné/.test(chyba(() => ulozit('ID', '', 'ORG-001'))));
+over('ID s mezerou odmítnuto', /mezer/.test(chyba(() => ulozit('ID', 'MOJE ZKR', 'ORG-001'))));
+over('duplicitní ID odmítnuto', /už má/.test(chyba(() => ulozit('ID', 'org-002', 'ORG-001'))));
+ulozit('ID', 'KAL', 'ORG-001');
 over('ID změněno v listu Organizace', String(sh.getRange(2, 1).getValue()) === 'KAL');
 over('ID změněno v Hodinách', String(M.sheets['Hodiny'].getRange(2, hh.indexOf('ID organizace') + 1).getValue()) === 'KAL');
 over('ID změněno v Přiřazeních', String(M.sheets['Přiřazení'].getRange(2, hp.indexOf('ID organizace') + 1).getValue()) === 'KAL');
 MEMO = { ss: MEMO.ss };
 over('organizace_() vrací nové ID', organizace_().some(o => o.id === 'KAL') && !organizace_().some(o => o.id === 'ORG-001'));
 // IČ
-over('IČ s 5 číslicemi odmítnuto', /8 číslic/.test(chyba(() => ulozit(18, '12345', 'KAL'))));
-ulozit(18, '123 456 78', 'KAL');
+over('IČ s 5 číslicemi odmítnuto', /8 číslic/.test(chyba(() => ulozit('IČ', '12345', 'KAL'))));
+ulozit('IČ', '123 456 78', 'KAL');
 over('IČ uloženo bez mezer', String(sh.getRange(2, hd.indexOf('IČ') + 1).getValue()) === '12345678');
 // přidání
 const pr = pridejRadekListu('T', 'ORGANIZACE', { id: 'CEDR', nazev: 'CEDR', ic: '87654321', mesto: 'Chrudim', ulice: 'Nová 2', psc: '53701', kontakt: 'Jana', funkce: 'ředitelka' });
 over('přidání s vlastním ID', pr.listy.ORGANIZACE.radky.some(r => r.v[0] === 'CEDR' && r.v[hd.indexOf('Funkce / pozice')] === 'ředitelka' && r.v[hd.indexOf('Město')] === 'Chrudim'));
 over('přidání bez ID → ORG-003', (() => { const p = pridejRadekListu('T', 'ORGANIZACE', { nazev: 'Další' }); return p.listy.ORGANIZACE.radky.some(r => r.v[0] === 'ORG-003'); })());
 over('přidání s duplicitním ID odmítnuto', /už má/.test(chyba(() => pridejRadekListu('T', 'ORGANIZACE', { id: 'CEDR', nazev: 'X' }))));
+// pořadí po nastavTabulku a odolnost proti přesunu sloupců
+over('sloupce seřazeny: ID, Název, IČ…', hlavicky_(sh).slice(0, 3).join(',') === 'ID,Název,IČ');
+{
+  // uživatel obrátí pořadí všech sloupců
+  const h0 = hlavicky_(sh), v0 = sh.getRange(1, 1, sh.getLastRow(), h0.length).getValues();
+  sh.getRange(1, 1, v0.length, h0.length).setValues(v0.map(r => r.slice().reverse()));
+  MEMO = { ss: MEMO.ss };
+  const o = organizace_().find(x => x.id === 'KAL');
+  over('po obrácení sloupců: organizace_() čte správně', o && o.nazev === 'Kalyna' && o.ic === '12345678' && o.kontakt === 'Petra');
+  ulozit('Poznámky', 'zkouška', 'KAL');
+  over('po obrácení sloupců: uložení do správného sloupce', String(sh.getRange(2, hlavicky_(sh).indexOf('Poznámky') + 1).getValue()) === 'zkouška');
+  ulozit('ID', 'KAL2', 'KAL');
+  over('po obrácení sloupců: přejmenování ID', String(sh.getRange(2, hlavicky_(sh).indexOf('ID') + 1).getValue()) === 'KAL2');
+  over('nactiAdministraci hlásí sloupec s ID', nactiAdministraci('T').listy.ORGANIZACE.klicSloupec === hlavicky_(sh).indexOf('ID'));
+  nastavTabulku();
+  over('nastavTabulku už ručně obrácené pořadí nepřepisuje', hlavicky_(sh)[0] !== 'ID');
+}
+// stará tabulka (9 sloupců ve starém pořadí) se po nastavTabulku seřadí a data zůstanou
+{
+  delete M.sheets['Organizace'];
+  const shO = ss_().insertSheet('Organizace');
+  PropertiesService.getScriptProperties().deleteProperty('ORG_SERAZENO');
+  const star = ['ID', 'Název', 'Kontaktní osoba', 'E-mail', 'Telefon', 'Adresa', 'Oblast', 'Aktivní', 'Poznámky'];
+  shO.getRange(1, 1, 1, 9).setValues([star]);
+  shO.getRange(2, 1, 1, 9).setValues([['ORG-001', 'Charita', 'Marie Nová', 'm@c.cz', '777', 'Dlouhá 1, Praha', 'Sociální', 'ANO', 'pozn']]);
+  MEMO = {};
+  nastavTabulku();
+  const hh = hlavicky_(shO);
+  const rr = shO.getRange(2, 1, 1, hh.length).getValues()[0];
+  const pole = h => String(rr[hh.indexOf(h)]);
+  over('stará tabulka: pořadí ID, Název, IČ, Město, Ulice, PSČ', hh.slice(0, 6).join(',') === 'ID,Název,IČ,Město,Ulice,PSČ');
+  over('stará tabulka: data zůstala u správných sloupců', pole('Kontaktní osoba') === 'Marie Nová' && pole('E-mail') === 'm@c.cz' && pole('Oblast') === 'Sociální' && pole('Poznámky') === 'pozn' && pole('Ulice') === 'Dlouhá 1, Praha');
+}
 console.log(chyby ? 'CHYBA: ' + chyby : 'Organizace: vše OK');
 process.exit(chyby ? 1 : 0);

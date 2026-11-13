@@ -275,7 +275,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-13d</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-13e</p>
   </div>
 </div>
 <script>
@@ -1585,15 +1585,14 @@ const KONF = {
     napoveda: 'Aktivní oblasti se nabízejí v registračním formuláři. Neaktivní zůstávají u stávajících záznamů.' },
   MISTA: { nazev: 'Místa', sloupce: { 0: 'text', 1: ['ANO', 'NE'] }, pridat: [['nazev', 'Nové místo', 'text']],
     napoveda: 'Místa se nabízejí ve formuláři i v detailu dobrovolníka (místo působení).' },
-  ORGANIZACE: { nazev: 'Organizace', sloupce: { 0: 'text2', 1: 'text2', 2: 'text2', 3: 'text2', 4: 'text2', 5: 'text2', 6: 'text2', 7: ['ANO', 'NE'], 8: 'text2',
-      9: 'text2', 10: 'text2', 11: 'text2', 12: 'text2', 13: 'text2', 14: 'text2', 15: 'text2', 16: 'text2', 17: 'text2',
-      18: 'text2', 19: 'text2', 20: 'text2', 21: 'text2', 22: 'text2', 23: 'text2', 24: 'text2' },
-    // [sloupec v tabulce, popisek, skupina, šířka v px]
-    zobraz: [[0, 'ID', 0, 90], [1, 'Název', 0, 280], [18, 'IČ', 0, 105], [19, 'Město', 0, 130], [20, 'Ulice', 0, 150], [21, 'PSČ', 0, 80],
-      [22, 'Kontaktní osoba 1 – titul', 1, 62], [2, 'Kontaktní osoba 1 – jméno a příjmení', 1, 140], [9, 'Kontaktní osoba 1 – funkce / pozice', 1, 130], [3, 'Kontaktní osoba 1 – e-mail', 1, 150], [4, 'Kontaktní osoba 1 – telefon', 1, 110],
-      [23, 'Kontaktní osoba 2 – titul', 2, 62], [10, 'Kontaktní osoba 2 – jméno a příjmení', 2, 140], [11, 'Kontaktní osoba 2 – funkce / pozice', 2, 130], [12, 'Kontaktní osoba 2 – e-mail', 2, 150], [13, 'Kontaktní osoba 2 – telefon', 2, 110],
-      [24, 'Kontaktní osoba 3 – titul', 3, 62], [14, 'Kontaktní osoba 3 – jméno a příjmení', 3, 140], [15, 'Kontaktní osoba 3 – funkce / pozice', 3, 130], [16, 'Kontaktní osoba 3 – e-mail', 3, 150], [17, 'Kontaktní osoba 3 – telefon', 3, 110],
-      [7, 'Aktivní', 0, 80], [8, 'Poznámky', 0, 160]],
+  ORGANIZACE: { nazev: 'Organizace', podleNazvu: true,
+    // [název sloupce v tabulce, popisek, skupina, šířka v px]; sloupce se hledají podle názvu, v tabulce Google je lze přesouvat
+    zobraz: [['ID', 'ID', 0, 90], ['Název', 'Název', 0, 280], ['IČ', 'IČ', 0, 105], ['Město', 'Město', 0, 130], ['Ulice', 'Ulice', 0, 150], ['PSČ', 'PSČ', 0, 80],
+      ['Titul', 'Kontaktní osoba 1 – titul', 1, 62], ['Kontaktní osoba', 'Kontaktní osoba 1 – jméno a příjmení', 1, 140], ['Funkce / pozice', 'Kontaktní osoba 1 – funkce / pozice', 1, 130], ['E-mail', 'Kontaktní osoba 1 – e-mail', 1, 150], ['Telefon', 'Kontaktní osoba 1 – telefon', 1, 110],
+      ['Titul 2', 'Kontaktní osoba 2 – titul', 2, 62], ['Kontaktní osoba 2', 'Kontaktní osoba 2 – jméno a příjmení', 2, 140], ['Funkce / pozice 2', 'Kontaktní osoba 2 – funkce / pozice', 2, 130], ['E-mail 2', 'Kontaktní osoba 2 – e-mail', 2, 150], ['Telefon 2', 'Kontaktní osoba 2 – telefon', 2, 110],
+      ['Titul 3', 'Kontaktní osoba 3 – titul', 3, 62], ['Kontaktní osoba 3', 'Kontaktní osoba 3 – jméno a příjmení', 3, 140], ['Funkce / pozice 3', 'Kontaktní osoba 3 – funkce / pozice', 3, 130], ['E-mail 3', 'Kontaktní osoba 3 – e-mail', 3, 150], ['Telefon 3', 'Kontaktní osoba 3 – telefon', 3, 110],
+      ['Aktivní', 'Aktivní', 0, 80], ['Poznámky', 'Poznámky', 0, 160]],
+    typy: { 'Aktivní': ['ANO', 'NE'] },
     pridat: [['id', 'ID (předvyplněno, lze změnit)', 'text'], ['nazev', 'Název', 'text'], ['ic', 'IČ', 'text'], ['mesto', 'Město', 'text'], ['ulice', 'Ulice', 'text'], ['psc', 'PSČ', 'text'],
       ['titul', 'Titul', 'text'], ['kontakt', 'Kontaktní osoba 1 – jméno a příjmení', 'text'], ['funkce', 'Funkce / pozice', 'text'], ['email', 'E-mail', 'email'], ['telefon', 'Telefon', 'tel']],
     napoveda: 'Přijímající organizace, ke kterým přiřazujete dobrovolníky. Můžete u nich vést až tři kontaktní osoby (barevně odlišené). ID si můžete přepsat na vlastní zkratku (změní se i u hodin a přiřazení). Adresa a kontaktní osoba 1 se doplňují do smlouvy. Další osoby doplníte přímo v tabulce.' }
@@ -1716,22 +1715,28 @@ function admDokumenty() {
 
 function dalsiIdOrg(L) {
   let max = 0;
-  L.radky.forEach(r => { const m = String(r.v[0]).match(/^ORG-(\d+)$/); if (m) max = Math.max(max, +m[1]); });
+  L.radky.forEach(r => { const m = String(r.v[L.klicSloupec || 0]).match(/^ORG-(\d+)$/); if (m) max = Math.max(max, +m[1]); });
   return 'ORG-' + String(max + 1).padStart(3, '0');
 }
 
 function admTabulka(klic) {
   const L = ADM.listy[klic], K = KONF[klic];
   if (!L) return '<div class="card muted">Nemáte oprávnění.</div>';
+  // sloupce k zobrazení: [index v tabulce, popisek, skupina, šířka]; u listů s pohyblivými sloupci se hledají podle názvu
+  const sloupce = K.podleNazvu
+    ? K.zobraz.map(z => [L.hlavicky.indexOf(z[0]), z[1], z[2], z[3], z[0]]).filter(z => z[0] >= 0)
+    : null;
+  const kidx = L.klicSloupec || 0;
+  const typDe = (c, nazev) => K.podleNazvu ? (K.typy[nazev] || 'text2') : K.sloupce[c];
   return '<div class="card adm"><p class="muted small" style="margin-top:0">' + esc(K.napoveda) + '</p>' +
     (L.radky.length ? '<div class="scroll"><table class="adm"><thead>' +
-      (K.zobraz ? '<tr class="skupiny">' + K.zobraz.map(z => z[2] ? (z[1].indexOf('titul') >= 0 ? '<th class="g' + z[2] + '" colspan="5">Kontaktní osoba ' + z[2] + '</th>' : '') : '<th></th>').join('') + '</tr>' : '') +
-      '<tr>' + (K.zobraz ? K.zobraz.map(z => '<th' + (z[2] ? ' class="g' + z[2] + '"' : '') + (z[3] ? ' style="min-width:' + z[3] + 'px"' : '') + '>' + esc(z[1].replace(/^Kontaktní osoba \d – /, '')) + '</th>')
+      (sloupce ? '<tr class="skupiny">' + sloupce.map(z => z[2] ? (z[1].indexOf('titul') >= 0 ? '<th class="g' + z[2] + '" colspan="5">Kontaktní osoba ' + z[2] + '</th>' : '') : '<th></th>').join('') + '</tr>' : '') +
+      '<tr>' + (sloupce ? sloupce.map(z => '<th' + (z[2] ? ' class="g' + z[2] + '"' : '') + (z[3] ? ' style="min-width:' + z[3] + 'px"' : '') + '>' + esc(z[1].replace(/^Kontaktní osoba \d – /, '')) + '</th>')
         : L.hlavicky.map(h => '<th>' + esc(h) + '</th>')).join('') + '</tr></thead><tbody>' +
-      L.radky.map(row => '<tr>' + (K.zobraz ? K.zobraz.map(z => [z[0], z[2], z[3]]) : L.hlavicky.map((h, c) => [c, 0, 0])).map(([c, g, w]) => {
-        const typ = K.sloupce[c], hod = row.v[c] == null ? '' : row.v[c];
+      L.radky.map(row => '<tr>' + (sloupce ? sloupce.map(z => [z[0], z[2], z[3], z[4]]) : L.hlavicky.map((h, c) => [c, 0, 0, h])).map(([c, g, w, nazev]) => {
+        const typ = typDe(c, nazev), hod = row.v[c] == null ? '' : row.v[c];
         const cls = (g ? ' class="g' + g + '"' : '') + (w ? ' style="min-width:' + w + 'px"' : '');
-        return typ ? '<td' + cls + '>' + admVstup(klic, row.r, c, row.v[0], typ, hod) + '</td>' : '<td class="' + (g ? 'g' + g + ' ' : '') + 'ro">' + esc(hod) + '</td>';
+        return typ ? '<td' + cls + '>' + admVstup(klic, row.r, c, row.v[kidx], typ, hod) + '</td>' : '<td class="' + (g ? 'g' + g + ' ' : '') + 'ro">' + esc(hod) + '</td>';
       }).join('') + '</tr>').join('') + '</tbody></table></div>' : '<p class="muted">Zatím prázdné.</p>') +
     '<form class="addrow" id="pridat">' + K.pridat.map(p => '<div class="f"><label>' + esc(p[1]) + '</label>' +
       (Array.isArray(p[2]) ? '<select name="' + p[0] + '">' + p[2].map(o => '<option>' + esc(o) + '</option>').join('') + '</select>'
@@ -1751,7 +1756,7 @@ function admUdalosti(el) {
     const klic = inp.dataset.l;
     try {
       const r = await api('ulozBunkuListu', klic, Number(inp.dataset.r), Number(inp.dataset.c), inp.value, inp.dataset.k);
-      if (Number(inp.dataset.c) === 0) $$('[data-l="' + klic + '"][data-r="' + inp.dataset.r + '"]', el).forEach(x => x.dataset.k = r.klic);
+      if (Number(inp.dataset.c) === (ADM.listy[klic].klicSloupec || 0)) $$('[data-l="' + klic + '"][data-r="' + inp.dataset.r + '"]', el).forEach(x => x.dataset.k = r.klic);
       const radek = ADM.listy[klic].radky.find(x => String(x.r) === inp.dataset.r);
       if (radek) radek.v[Number(inp.dataset.c)] = inp.value;
       inp.classList.add('saved');
