@@ -85,13 +85,10 @@ role = 'Jen čtení';
 over('jen čtení nesmí měnit způsob ani vytvářet tabulky', /role/.test(chyba(() => nastavZpusobPrirazeni('T', pr('DC-2026-0001', 'KAL').id, 'Sám'))) && /role/.test(chyba(() => tabulkaOrganizace('T', 'KAL'))));
 over('jen čtení smí vidět odkazy', !!tabulkyOrganizaci('T').KAL);
 
-// kontrola času v tabulce: vzorec se skládá pro Google Tabulky; význam ověřuji jeho přepisem do JS a proti pravidlům serveru
-const v = vzorecCasuPoPeti_('B5');
-over('kontrola času: vzorec je s čárkami a odkazuje na první buňku', /^=AND\(REGEXMATCH\(B5,/.test(v) && !v.includes(';') && v.includes('MOD(VALUE(RIGHT(B5,2)),5)=0'));
-const kontrola = x => /^\d{1,2}:\d{2}$/.test(x) && +x.split(':')[0] <= 24 && +x.split(':')[1] <= 55 && +x.split(':')[1] % 5 === 0 && (+x.split(':')[0] < 24 || +x.split(':')[1] === 0);
-const vzorky = ['0:00', '9:30', '09:05', '23:55', '24:00', '24:05', '9:07', '25:00', '9:60', '9', 'abc', '9:3', '12:00:00'];
-over('kontrola času: přijme jen platné časy po 5 minutách', vzorky.every(x => kontrola(x) === (minutyDne_(x) !== null)));
-over('kontrola času: 24:00 ano, 24:05 ne, 9:07 ne', kontrola('24:00') && !kontrola('24:05') && !kontrola('9:07'));
+// čas z výběrů hodiny a minut (Formát 2) a jeho kontrola serverem
+over('čas z výběrů: 9 + 30 → 9:30, 9 + (prázdné) → 9:00, 9 + 5 → 9:05, bez hodiny → nic', casZHodinyAMinut_('9', '30') === '9:30' && casZHodinyAMinut_('9', '') === '9:00' && casZHodinyAMinut_(9, 5) === '9:05' && casZHodinyAMinut_('', '30') === '');
+over('všechny kombinace z výběrů (hodina 0–24, minuty po 5) jsou platné, kromě 24:05 až 24:55', (() => { let ok = true; for (let h = 0; h <= 24; h++) for (let m = 0; m < 60; m += 5) { const t = casZHodinyAMinut_(String(h), ('0' + m).slice(-2)); const platne = minutyDne_(t) !== null; if (platne !== (h < 24 || m === 0)) ok = false; } return ok; })());
+over('formát listu: 11 sloupců, značka Formát 2', HLAVICKA_TAB_DOBROVOLNIK.length === 11 && VERZE_LISTU_TAB === 'Formát 2' && HLAVICKA_TAB_DOBROVOLNIK[1] === 'Od – hodina');
 
 console.log(chyby ? 'Tabulky organizací: CHYBY ' + chyby : 'Tabulky organizací: vše OK');
 if (chyby) process.exitCode = 1;
