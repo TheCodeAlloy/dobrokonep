@@ -88,6 +88,17 @@ const { chromium } = require('playwright');
   await p.click('#fvMisto .fv-x'); await W(300); await p.click('#dlgAno'); await W(800);
   console.log('po smazání fotek:', await p.$$eval('#fvMisto .fv-it', l => l.length), '| souborů:', Object.keys(DISK).length);
   await p.click('#fvZavrit'); await W(600);
+  // fotka z detailu dobrovolníka a přímo ve formuláři zápisu hodin
+  await p.evaluate(() => jdi('detail',{id:'DC-2026-0001'})); await W(800);
+  await p.click('#dFotka'); await W(400);
+  await p.setInputFiles('#fvMisto input[data-vstup=soubor]', { name: 'v.jpg', mimeType: 'image/jpeg', buffer: JPG }); await W(1200);
+  console.log('detail: fotek po nahrání:', await p.$$eval('#fvMisto .fv-it', l => l.length));
+  await p.click('#fvZavrit'); await W(300);
+  await p.click('#dZapsat'); await W(500);
+  console.log('formulář: fotky vidět (org předvyplněna?):', await p.isVisible('#zFotky'), '|', (await p.textContent('#zFotky')).replace(/\s+/g, ' ').slice(0, 80));
+  await p.selectOption('#zOrg', { index: 1 }).catch(() => {}); await W(500);
+  console.log('formulář: tlačítko přidat fotku:', await p.isVisible('#zFotky [data-pridat=soubor]'));
+  await p.click('#zZpet'); await W(300);
   // schvalování měsíců
   await p.evaluate(() => jdi('hodiny')); await W(300);
   await p.click('#hMesice'); await W(600);

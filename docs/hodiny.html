@@ -165,7 +165,7 @@
 
 <script src="config.js"></script>
 <script src="rocni-hodiny.js?v=2026-11-14b"></script>
-<script src="fotka-vykazu.js?v=2026-11-14b"></script>
+<script src="fotka-vykazu.js?v=2026-11-14c"></script>
 <script>
 (function () {
   const $ = (s, el) => (el || document).querySelector(s);
@@ -394,6 +394,7 @@
       '<div class="cas2"><div class="cas-r"><span class="sep">od</span>' + casVyber('fOd', z.od, 'Od') + '</div><div class="cas-r"><span class="sep">do</span>' + casVyber('fDo', z.do, 'Do') + '</div></div>' +
       (z.minut && !z.od ? '<p class="muted small" style="margin:6px 0 0">Původní zápis má jen délku (' + esc(fmtMin(z.minut)) + '). Doplňte prosím čas od–do.</p>' : '') +
       '<div id="fCinWrap"></div>' +
+      '<label class="l">📷 Fotka papírového výkazu <span class="muted small">(za měsíc zvoleného dne, nepovinné)</span></label><div id="fFotky"></div>' +
       '<label class="l" for="fPozn">Poznámka <span class="muted small">(nepovinné)</span></label><input type="text" id="fPozn" maxlength="1000" value="' + esc(z.poznamka || '') + '">' +
       '<p class="chyba" id="fChyba" hidden></p>' +
       '<button class="btn block big" id="fUlozit">' + (uprava ? 'Uložit změny' : 'Uložit') + '</button>' +
@@ -432,7 +433,21 @@
         c.map(x => '<label class="chip"><input type="radio" name="cin" value="' + esc(x) + '"' + (x === puv ? ' checked' : '') + '><span>' + esc(x) + '</span></label>').join('') +
         '<label class="chip"><input type="radio" name="cin" value="__jina"' + (jina ? ' checked' : '') + '><span>Jiné…</span></label></div>' +
         '<input type="text" id="fCinText" maxlength="200" placeholder="Napište, co jste dělal/a" value="' + esc(jina ? puv : '') + '"' + (jina ? '' : ' hidden') + ' style="margin-top:8px">';
+      obnovFotky();
       $('#fCin', el).onchange = () => { const t = $('#fCinText', el); t.hidden = vybranaCinnost(true) !== '__jina'; if (!t.hidden) t.focus(); };
+    }
+    function obnovFotky() {
+      const m = $('#fFotky', el), mesic = ($('#fDatum', el).value || d.dnes).slice(0, 7);
+      if (!orgId) { m.innerHTML = '<p class="muted small" style="margin:0">Nejdřív vyberte, pro koho hodiny zapisujete.</p>'; return; }
+      const mimo = () => (DATA.fotky || []).filter(f => f.orgId === orgId && f.mesic === mesic);
+      const zamcen = (DATA.hodiny || []).some(h => h.orgId === orgId && h.datum.slice(0, 7) === mesic && h.zamceno);
+      m.innerHTML = '';
+      FotkaVykazu.mount(m, {
+        fotky: mimo(), muzePridat: !zamcen && mesic.slice(0, 4) === d.dnes.slice(0, 4), muzeSmazat: !zamcen && mesic.slice(0, 4) === d.dnes.slice(0, 4), kamera: true,
+        nacti: async id => (await api('dNactiFotkuVykazu', id)).dataUrl,
+        nahraj: async dataUrl => { const r = await api('dNahrajFotkuVykazu', orgId, mesic, dataUrl); DATA.fotky = r.fotky; return mimo(); },
+        smaz: async id => { const r = await api('dSmazFotkuVykazu', id); DATA.fotky = r.fotky; return mimo(); }
+      });
     }
     function vybranaCinnost(surove) {
       const v = $('input[name="cin"]:checked', el);

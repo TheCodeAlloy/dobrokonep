@@ -106,6 +106,14 @@ const { chromium } = require('playwright');
   console.log('fotka – vodorovný posun na 360 px:', await p.evaluate(() => document.documentElement.scrollWidth > window.innerWidth));
   await p.click('#fvMisto .fv-x'); await W(300);
   console.log('po smazání fotek:', await p.$$eval('#fvMisto .fv-it', l => l.length), '| na „Disku“:', Object.keys(DISK).length);
+  await p.click('#fx');
+  await p.click('#bNovy'); await W(400);
+  await p.click('#fOrg >> text=Charita Pardubice'); await W(300);
+  console.log('formulář: fotka přímo ve formuláři:', await p.isVisible('#fFotky [data-pridat=kamera]'));
+  await p.setInputFiles('#fFotky input[data-vstup=kamera]', { name: 'v.jpg', mimeType: 'image/jpeg', buffer: JPG }); await W(1200);
+  console.log('formulář: fotek po nahrání:', await p.$$eval('#fFotky .fv-it', l => l.length));
+  await p.screenshot({path:__dirname+'/vystup/p7_form_fotka_360.png', fullPage:true});
+  console.log('formulář s fotkou – vodorovný posun na 360 px:', await p.evaluate(() => document.documentElement.scrollWidth > window.innerWidth));
   await p.click('#fx'); await p.setViewportSize({width:1280,height:900});
   // 7) odhlášení a přihlášení kódem
   await p.click('#odhlasit'); await W(400);

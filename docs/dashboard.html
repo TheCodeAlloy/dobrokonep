@@ -293,7 +293,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-14f</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-14g</p>
   </div>
 </div>
 <script>
@@ -348,7 +348,7 @@
 
 <script src="config.js"></script>
 <script src="rocni-hodiny.js?v=2026-11-14b"></script>
-<script src="fotka-vykazu.js?v=2026-11-14b"></script>
+<script src="fotka-vykazu.js?v=2026-11-14c"></script>
 <script>
 const BOOT = { startId: new URLSearchParams(location.search).get('id') || '' };
 let D = null;              // data dobrovolníků a číselníky
@@ -1105,6 +1105,7 @@ function formZapis(z, poUlozeni) {
     htmlCas('z', z) +
     '<div class="fld full" id="zCinWrap"></div>' +
     '<div class="fld full"><label><span>Poznámka</span></label><input type="text" id="zPozn" maxlength="1000" value="' + esc(z.poznamka || '') + '"></div>' +
+    '<div class="fld full"><label><span>📷 Fotka papírového výkazu <span class="muted small">(za měsíc zvoleného data, nepovinné)</span></span></label><div id="zFotky"></div></div>' +
     '</div><p class="mchyba" id="zChyba"' + (z.chyba ? '' : ' hidden') + '>' + esc(z.chyba || '') + '</p>' +
     '<div class="dlg-btns"><button class="btn ghost" id="zZpet">Zrušit</button><button class="btn" id="zUlozit">Uložit</button></div>');
   let orgPuv = z.orgId || '';
@@ -1123,6 +1124,13 @@ function formZapis(z, poUlozeni) {
     const puv = cinnost(el, 'z') || z.cinnost || '';
     $('#zCinWrap', el).outerHTML = '<div class="fld full" id="zCinWrap">' + htmlCinnost('z', orgPodleId($('#zOrg', el).value).nazev, puv) + '</div>';
     napojCinnost(el, 'z');
+    obnovFotky();
+  };
+  const obnovFotky = () => {
+    const d = $('#zDobr', el).value, o = $('#zOrg', el).value, datum = $('#zDatum', el).value;
+    const m = $('#zFotky', el);
+    if (!d || !o || !datum) { m.innerHTML = '<p class="muted small" style="margin:0">Nejdřív vyberte dobrovolníka, organizaci a datum.</p>'; return; }
+    mountFotky(m, { dobrovolnik: d, orgId: o, mesic: datum.slice(0, 7) }, muze('Koordinátor'));
   };
   $('#zDobr', el).addEventListener('change', () => { orgPuv = ''; obnovOrg(); });
   $('#zDatum', el).addEventListener('change', () => { orgPuv = $('#zOrg', el).value; obnovOrg(); });
@@ -1418,22 +1426,52 @@ function kresliMesiceHromadne() {
   el.innerHTML = '<div class="bulk"><span>Vybráno ' + MS.vyber.size + '</span><button class="btn" id="mSchvalitVse">Schválit a zamknout vybrané</button></div>';
   $('#mSchvalitVse').onclick = () => schvalMesice(MS.data.radky.filter(g => MS.vyber.has(klicM(g))));
 }
-// Okno s fotkami papírového výkazu jednoho měsíce
-async function oknoFotek(g) {
-  const el = otevriModal('<h2 style="margin-top:0">Fotky výkazu – ' + esc(g.jmeno) + '</h2><p class="muted small">' + esc(g.org) + ', ' + esc(mesicCz(g.mesic)) + (g.zamceno ? ' · měsíc je zamčený, fotky nelze měnit' : '') + '</p><div id="fvMisto"><div class="loading">Načítám…</div></div><div class="dlg-btns"><button class="btn ghost" id="fvZavrit">Zavřít</button></div>');
-  $('#fvZavrit', el).onclick = () => { zavriModal(); if ($('#mTab')) nactiMesiceTab(); };
+// Fotky papírového výkazu dobrovolníka za organizaci a měsíc – kreslí se do zadaného místa (okno, detail, formulář)
+async function mountFotky(misto, g, muzeMenit) {
+  misto.innerHTML = '<div class="loading">Načítám…</div>';
   const filtr = fl => fl.filter(f => f.orgId === g.orgId && f.mesic === g.mesic);
-  const edit = muze('Koordinátor') && !g.zamceno;
   try {
     const r = await api('fotkyVykazu', g.dobrovolnik);
-    FotkaVykazu.mount($('#fvMisto', el), {
-      fotky: filtr(r.fotky), muzePridat: edit, muzeSmazat: edit,
+    misto.innerHTML = '';
+    FotkaVykazu.mount(misto, {
+      fotky: filtr(r.fotky), muzePridat: muzeMenit, muzeSmazat: muzeMenit,
       nacti: async id => (await api('nactiFotkuVykazu', id)).dataUrl,
       nahraj: async d => filtr((await api('nahrajFotkuVykazu', g.dobrovolnik, g.orgId, g.mesic, d)).fotky),
       smaz: async id => filtr((await api('smazFotkuVykazu', id)).fotky),
       potvrdit: async t => (await dialog({ text: t, potvrdit: 'Smazat' })).ok
     });
-  } catch (e) { $('#fvMisto', el).innerHTML = '<p class="warn">' + esc(e.message) + '</p>'; }
+  } catch (e) { misto.innerHTML = '<p class="warn">' + esc(e.message) + '</p>'; }
+}
+
+// Okno s fotkami jednoho měsíce (ze Schvalování měsíců)
+function oknoFotek(g) {
+  const el = otevriModal('<h2 style="margin-top:0">Fotky výkazu – ' + esc(g.jmeno) + '</h2><p class="muted small">' + esc(g.org) + ', ' + esc(mesicCz(g.mesic)) + (g.zamceno ? ' · měsíc je zamčený, fotky nelze měnit' : '') + '</p><div id="fvMisto"></div><div class="dlg-btns"><button class="btn ghost" id="fvZavrit">Zavřít</button></div>');
+  $('#fvZavrit', el).onclick = () => { zavriModal(); if ($('#mTab')) nactiMesiceTab(); };
+  mountFotky($('#fvMisto', el), g, muze('Koordinátor') && !g.zamceno);
+}
+
+// Okno s fotkami z detailu dobrovolníka: výběr měsíce a organizace
+function oknoFotekDobrovolnika(z) {
+  const dnes = dnesISO(), rok = +dnes.slice(0, 4), mes = +dnes.slice(5, 7);
+  const mesice = [];
+  for (let i = 0; i < 14; i++) { let m = mes - i, r = rok; while (m < 1) { m += 12; r--; } mesice.push(r + '-' + String(m).padStart(2, '0')); }
+  const zaz = (CACHE.get('hd:' + z.ID) || { zaznamy: [] }).zaznamy;
+  const orgs = orgDobrovolnika(z.ID, dnes);
+  zaz.forEach(x => { if (x.orgId && !orgs.some(o => o.id === x.orgId)) orgs.push(orgPodleId(x.orgId)); });
+  if (!orgs.length) { toast('Dobrovolník není přiřazený k žádné organizaci.', 'err'); return; }
+  const el = otevriModal('<h2 style="margin-top:0">Fotka výkazu – ' + esc(popisDobr(z)) + '</h2>' +
+    '<p class="muted small">Papírový výkaz hodin za jeden měsíc u jedné organizace.</p>' +
+    '<div class="fields"><div class="fld"><label><span>Za který měsíc</span></label><select id="fvMes">' + mesice.map(m => '<option value="' + m + '">' + esc(mesicCz(m)) + '</option>').join('') + '</select></div>' +
+    '<div class="fld"><label><span>Organizace</span></label><select id="fvOrg">' + orgs.map(o => '<option value="' + esc(o.id) + '">' + esc(o.nazev) + '</option>').join('') + '</select></div></div>' +
+    '<div id="fvMisto"></div><div class="dlg-btns"><button class="btn ghost" id="fvZavrit">Zavřít</button></div>');
+  const kresli = () => {
+    const orgId = $('#fvOrg', el).value, mesic = $('#fvMes', el).value;
+    const zamcen = zaz.some(x => x.orgId === orgId && x.datum.slice(0, 7) === mesic && x.zamceno);
+    mountFotky($('#fvMisto', el), { dobrovolnik: z.ID, orgId: orgId, mesic: mesic }, muze('Koordinátor') && !zamcen);
+  };
+  $('#fvMes', el).onchange = kresli; $('#fvOrg', el).onchange = kresli;
+  $('#fvZavrit', el).onclick = zavriModal;
+  kresli();
 }
 
 async function schvalMesice(g) {
@@ -1599,6 +1637,7 @@ function vykresliSouhrn(z, data) {
     '<div><strong>' + fmtMin(suma(sch.filter(x => x.datum.slice(0, 7) === mes))) + '</strong><span>tento měsíc</span></div></div>' +
     (ke.length ? '<p class="warn small">Ke schválení: ' + ke.length + ' (' + fmtMin(suma(ke)) + ')</p>' : '');
   $('#hodBtn', el).innerHTML = '<div class="btns">' + (muze('Koordinátor') ? '<button class="btn" id="dZapsat">Zapsat hodiny</button>' : '') +
+    '<button class="btn ghost" id="dFotka">📷 Fotka výkazu</button>' +
     (vse.length ? '<button class="btn ghost" id="dVse">Všechny hodiny →</button>' : '') + '</div>';
   const znovu = async () => {
     const d = await api('nactiHodiny', { dobrovolnik: z.ID });
@@ -1621,6 +1660,7 @@ function vykresliSouhrn(z, data) {
   });
   const zap = $('#dZapsat');
   if (zap) zap.onclick = () => formZapis({ dobrovolnik: z.ID }, () => kresliSouhrnHodin(z));
+  $('#dFotka').onclick = () => oknoFotekDobrovolnika(z);
   const vs = $('#dVse');
   if (vs) vs.onclick = () => { H.filtr = { mesic: '', org: '', dobrovolnik: z.ID, stav: '' }; jdi('hodiny'); };
 }
