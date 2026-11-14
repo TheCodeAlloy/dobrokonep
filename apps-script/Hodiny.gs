@@ -636,6 +636,86 @@ function zpusobyVykazovani_() {
   return o;
 }
 
+// ===== PŘEVOD STÁVAJÍCÍHO SCHVALOVÁNÍ NA MĚSÍČNÍ ZÁMKY ==========
+
+function zalohaPredPrevodem_() {
+  const ss = ss_();
+  const nazev = 'Záloha před převodem schvalování hodin – ' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH-mm');
+  const soubor = DriveApp.getFileById(ss.getId()).makeCopy(nazev, slozkaZaloh_());
+  return { nazev: nazev, url: soubor.getUrl() };
+}
+
+// Kdo měsíc dříve schválil: e-mail z pole „Potvrdila organizace“ („e-mail – datum“), jinak kdo zapsal
+function puvodniSchvalovatel_(radky) {
+  for (let i = 0; i < radky.length; i++) {
+    const m = String(radky[i].potvrdil || '').match(/^(\S+@\S+?)\s+–/);
+    if (m) return m[1];
+  }
+  const z = radky.map(r => r.zapsal).filter(String)[0];
+  return z || 'původní schválení';
+}
+
+// Co by se převodem zamklo a co zůstane otevřené; nic nemění
+function analyzaPrevodu_() {
+  const jm = jmenaDobrovolniku_(), zamky = mesiceZamky_(), dnesM = ymd_(new Date()).slice(0, 7);
+  const skup = {}, bez = [], zamit = [];
+  radkyHodin_().radky.forEach(z => {
+    const popis = { id: z.id, datum: z.datum, dobrovolnik: z.dobrovolnik, jmeno: jm[z.dobrovolnik] || '(smazaný záznam)', org: z.org, minut: z.minut, cinnost: z.cinnost, stav: z.stav };
+    if (z.stav === 'Zamítnuto') zamit.push(popis);
+    if (!z.orgId) { bez.push(popis); return; }
+    const m = z.datum.slice(0, 7), k = klicMesice_(z.dobrovolnik, z.orgId, m);
+    const g = skup[k] = skup[k] || { dobrovolnik: z.dobrovolnik, jmeno: popis.jmeno, orgId: z.orgId, org: z.org, mesic: m, minut: 0, pocet: 0, ke: 0, zam: 0, schv: 0, radky: [] };
+    g.pocet++; g.radky.push(z);
+    if (z.stav === 'Zamítnuto') g.zam++;
+    else { g.minut += z.minut; if (z.stav === 'Ke schválení') g.ke++; else g.schv++; }
+  });
+  const zamknout = [], otevrene = [];
+  Object.keys(skup).forEach(k => {
+    const g = skup[k], z = zamky[k];
+    if (z && z.stav === 'Schváleno') return;   // už zamčeno
+    const duvody = [];
+    if (z && z.stav === 'Odemčeno') duvody.push('byl záměrně odemčen');
+    if (g.mesic >= dnesM) duvody.push('měsíc ještě probíhá');
+    if (g.ke) duvody.push('čeká na schválení: ' + g.ke);
+    if (g.zam) duvody.push('zamítnuto: ' + g.zam);
+    if (!g.schv) duvody.push('žádný schválený záznam');
+    const vystup = { dobrovolnik: g.dobrovolnik, jmeno: g.jmeno, orgId: g.orgId, org: g.org, mesic: g.mesic, minut: g.minut, pocet: g.pocet };
+    if (duvody.length) { vystup.duvody = duvody.join('; '); otevrene.push(vystup); }
+    else { vystup.schvalil = puvodniSchvalovatel_(g.radky); zamknout.push(vystup); }
+  });
+  const rad = (a, b) => b.mesic.localeCompare(a.mesic) || a.jmeno.localeCompare(b.jmeno, 'cs');
+  zamknout.sort(rad); otevrene.sort(rad);
+  zamit.sort((a, b) => b.datum.localeCompare(a.datum));
+  return { zamknout: zamknout, otevrene: otevrene, zamitnute: zamit, bezOrganizace: bez, uzavrenoDo: uzavrenoDo_(nastaveni_()) };
+}
+
+function nahledPrevoduSchvalovani(token) {
+  overAdmin_(token, 'Hlavní admin');
+  return analyzaPrevodu_();
+}
+
+// Provede převod: nejdřív záloha tabulky (nepodaří-li se, nic se nezmění), potom se vytvoří měsíční zámky
+function provedPrevodSchvalovani(token) {
+  const a = overAdmin_(token, 'Hlavní admin');
+  return sZamkem_(() => {
+    const zaloha = zalohaPredPrevodem_();
+    delete MEMO.zamky;
+    const an = analyzaPrevodu_();
+    const shM = list_(LISTY.MESICE), hm = hlavicky_(shM);
+    const ted = new Date();
+    const radky = an.zamknout.map(g => {
+      const r = { 'ID dobrovolníka': g.dobrovolnik, 'ID organizace': g.orgId, 'Měsíc': g.mesic, 'Stav': 'Schváleno', 'Schválil/a': g.schvalil + ' (převod původního schvalování)', 'Schváleno': ted, 'Minut': g.minut };
+      return hm.map(h => r.hasOwnProperty(h) ? r[h] : '');
+    });
+    // měsíce, které už mají řádek (byly odemčené) se tu nezamykají, takže stačí připsat nové řádky
+    if (radky.length) shM.getRange(shM.getLastRow() + 1, 1, radky.length, hm.length).setValues(radky);
+    delete MEMO.zamky;
+    historie_(a, 'Převod schvalování', '', '', 'zamčeno měsíců: ' + radky.length + ', ponecháno otevřených: ' + an.otevrene.length);
+    log_('Převod schvalování hodin', '', 'zamčeno měsíců: ' + radky.length + ', záloha: ' + zaloha.nazev);
+    return { ok: true, zamceno: radky.length, otevrene: an.otevrene.length, zaloha: zaloha.nazev, zalohaUrl: zaloha.url };
+  });
+}
+
 // ===== NAČÍTÁNÍ HODIN =========================================
 
 function radkyHodin_() {
@@ -821,6 +901,7 @@ function ulozAkci(token, d) {
 function zmenStavHodin(token, ids, stav) {
   const a = overAdmin_(token, 'Koordinátor');
   if (STAVY_HODIN.indexOf(stav) < 0) throw new Error('Neznámý stav.');
+  if (stav === 'Schváleno') throw new Error('Hodiny se schvalují po celých měsících: Hodiny → Schvalování měsíců.');
   const n = nastaveni_();
   ids = [].concat(ids || []).map(String);
   return sZamkem_(() => {

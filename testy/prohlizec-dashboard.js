@@ -114,6 +114,12 @@ const { chromium } = require('playwright');
   await p.click('#mTab tbody tr >> nth=0 >> button[data-a=odemknout]'); await W(300);
   await p.fill('#dlgVyber [data-udaj=duvod]', 'oprava překlepu'); await p.click('#dlgAno'); await W(800);
   console.log('po odemčení: ', M.sheets['Měsíce'].getDataRange().getValues()[1].slice(3,9).join(' | '));
+  // náhled převodu schvalování
+  zalohaPredPrevodem_ = () => ({ nazev: 'Záloha test', url: 'https://drive/zaloha' });
+  await p.evaluate(() => jdi('mesice')); await W(400);
+  await p.click('#mPrevod'); await W(700);
+  console.log('převod – náhled:', (await p.textContent('#pvObsah')).replace(/\s+/g, ' ').slice(0, 110));
+  await p.screenshot({path:__dirname+'/vystup/u12_prevod.png', fullPage:true});
   console.log('chyby:', errs); if (errs.length) process.exitCode = 1;
   console.log('Hodiny v tabulce:', radkyHodin_().radky.map(z=>z.dobrovolnik+' '+z.datum+' '+z.minut+' '+z.stav+' '+z.zdroj).join(' | '));
   await b.close();

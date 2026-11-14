@@ -42,7 +42,7 @@ console.log('zápis:', moje.minut, moje.stav, moje.zdroj, '| vlastník', radkyHo
 d = api('dZapisHodiny', T, Object.assign({}, moje, {od:'09:00', do:'12:00'})).data;
 console.log('úprava:', d.hodiny.find(h=>h.id===moje.id).minut);
 // admin schválí → dobrovolník nemůže měnit
-api('zmenStavHodin', adminTok, [moje.id], 'Schváleno');
+{ const d_ = radkyHodin_(); const x_ = d_.radky.find(z => z.id === moje.id); zapisDoRadku_(d_.sh, x_.radek, d_.hlav, {'Stav':'Schváleno'}); console.log('schválení po řádku odmítnuto:', api('zmenStavHodin', adminTok, [moje.id], 'Schváleno').chyba ? 'ano' : 'NE'); }
 console.log('změna schváleného:', api('dZapisHodiny', T, Object.assign({}, moje)).chyba);
 console.log('smazání schváleného:', api('dSmazHodiny', T, moje.id).chyba);
 // admin data – přehled ke schválení

@@ -293,7 +293,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-14g</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-14h</p>
   </div>
 </div>
 <script>
@@ -506,8 +506,8 @@ async function jdi(view, extra) {
   if (zastarale || Date.now() - posledniNacteni > 60000) obnovNaPozadi();
 }
 function render() {
-  $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.view === stav.view || (stav.view === 'detail' && b.dataset.view === 'seznam') || ((stav.view === 'rocni' || stav.view === 'mesice') && b.dataset.view === 'hodiny')));
-  ({ prehled: vPrehled, seznam: vSeznam, detail: vDetail, hodiny: vHodiny, rocni: vRocni, mesice: vMesice, admin: vAdmin }[stav.view] || vPrehled)();
+  $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.view === stav.view || (stav.view === 'detail' && b.dataset.view === 'seznam') || ((stav.view === 'rocni' || stav.view === 'mesice' || stav.view === 'prevod') && b.dataset.view === 'hodiny')));
+  ({ prehled: vPrehled, seznam: vSeznam, detail: vDetail, hodiny: vHodiny, rocni: vRocni, mesice: vMesice, prevod: vPrevod, admin: vAdmin }[stav.view] || vPrehled)();
 }
 $('#nav').addEventListener('click', e => {
   const b = e.target.closest('button[data-view]');
@@ -1298,7 +1298,7 @@ function kresliTabHodin() {
       '<td class="hm"><div class="clip" title="' + esc(x.cinnost + (x.poznamka ? ' – ' + x.poznamka : '')) + '">' + esc(x.cinnost) + '</div>' +
       (x.zdroj ? '<div class="id">' + esc(x.zdroj) + '</div>' : '') + '</td>' +
       '<td>' + badgeH(x.stav) + (x.zamceno ? ' <button type="button" class="ikon mZamek" data-o="' + esc(x.orgId) + '" data-m="' + esc(x.datum.slice(0, 7)) + '" title="Měsíc ' + esc(mesicCz(x.datum.slice(0, 7))) + ' u organizace ' + esc(x.org) + ' je schválený a zamčený. Klepnutím otevřete Schvalování měsíců' + (muze('Hlavní admin') ? ', kde ho můžete odemknout.' : '.') + '">🔒</button>' : '') + '</td>' +
-      (edit ? '<td class="akce">' + (x.zamceno ? '' : x.stav === 'Ke schválení' ? '<button class="ikon ok" data-a="schvalit" title="Schválit">✓</button><button class="ikon ne" data-a="zamitnout" title="Zamítnout">✕</button>' : '') +
+      (edit ? '<td class="akce">' + (x.zamceno ? '' : x.stav === 'Ke schválení' ? '<button class="ikon ne" data-a="zamitnout" title="Zamítnout">✕</button>' : '') +
         (x.zamceno ? '' : '<button class="ikon" data-a="upravit" title="Upravit">✎</button>') + '</td>' : '') + '</tr>').join('') +
     '</tbody></table>';
   Array.from(H.vyber).forEach(id => { if (!z.some(x => x.id === id)) H.vyber.delete(id); });
@@ -1311,7 +1311,7 @@ function kresliTabHodin() {
     if (!b) return;
     const id = b.closest('tr').dataset.h, x = H.data.zaznamy.find(q => q.id === id);
     if (b.dataset.a === 'upravit') return formZapis(x, nactiTabHodin);
-    await zmenStav([id], b.dataset.a === 'schvalit' ? 'Schváleno' : 'Zamítnuto');
+    await zmenStav([id], 'Zamítnuto');
   };
   $('#hTab').onchange = e => {
     if (e.target.id === 'hVse') { $$('.hSel').forEach(c => { c.checked = e.target.checked; if (c.checked) H.vyber.add(c.value); else H.vyber.delete(c.value); }); }
@@ -1324,7 +1324,7 @@ function kresliHromadne() {
   const el = $('#hHromadne');
   if (!H.vyber.size) { el.innerHTML = ''; return; }
   el.innerHTML = '<div class="bulk"><span>Vybráno ' + H.vyber.size + '</span>' +
-    '<button class="btn" data-b="Schváleno">Schválit</button><button class="btn ghost" data-b="Zamítnuto">Zamítnout</button>' +
+    '<button class="btn ghost" data-b="Zamítnuto">Zamítnout</button>' +
     '<button class="btn ghost danger" data-b="smazat">Smazat</button></div>';
   el.onclick = async e => {
     const b = e.target.closest('button[data-b]'); if (!b) return;
@@ -1357,6 +1357,40 @@ async function zmenStav(ids, stavH) {
   }
 }
 
+// ---------- Převod dosavadního schvalování na měsíční zámky (jen hlavní admin) ----------
+async function vPrevod() {
+  obsah.onclick = null; obsah.onkeydown = null;
+  obsah.innerHTML = '<div class="dhead"><button class="back" id="pvZpet">← Schvalování měsíců</button><div><h1>Převod dosavadního schvalování</h1>' +
+    '<p class="sub" style="margin:0">Dříve se schvalovaly jednotlivé řádky. Tento převod zamkne měsíce, kde je u dobrovolníka a organizace všechno schválené. Nejdřív se ukáže náhled, nic se nemění.</p></div></div><div id="pvObsah"><div class="loading">Počítám náhled…</div></div>';
+  $('#pvZpet').onclick = () => jdi('mesice');
+  try {
+    const r = await api('nahledPrevoduSchvalovani');
+    if (stav.view !== 'prevod') return;
+    const tab = (hl, radky, fn) => radky.length ? '<div class="scroll"><table class="list"><thead><tr>' + hl.map(h => '<th>' + h + '</th>').join('') + '</tr></thead><tbody>' + radky.map(fn).join('') + '</tbody></table></div>' : '<p class="muted small">Nic.</p>';
+    const sek = (nadpis, pocet, obsahHtml, otevrit) => '<details class="card"' + (otevrit ? ' open' : '') + '><summary style="cursor:pointer"><strong>' + nadpis + '</strong> (' + pocet + ')</summary><div style="margin-top:10px">' + obsahHtml + '</div></details>';
+    $('#pvObsah').innerHTML =
+      '<div class="card"><p style="margin-top:0"><strong>Zamkne se: ' + r.zamknout.length + ' ' + sklon(r.zamknout.length, 'měsíc', 'měsíce', 'měsíců') + '.</strong> Zůstane otevřených: ' + r.otevrene.length + '. K ručnímu vyřešení: ' + r.zamitnute.length + ' zamítnutých a ' + r.bezOrganizace.length + ' řádků bez organizace.</p>' +
+      '<p class="muted small">Před převodem se automaticky vytvoří záloha celé tabulky do složky Zálohy. Nepovede-li se záloha, nic se nezmění. Měsíc, který ještě probíhá, se nezamyká. Měsíc, který hlavní admin záměrně odemkl, se znovu nezamyká.' + (r.uzavrenoDo ? ' Dosavadní uzávěrka „hodiny_uzavreno_do = ' + esc(r.uzavrenoDo) + '“ zůstává platná; po převodu ji můžete v Administraci → Nastavení smazat.' : '') + '</p>' +
+      '<button class="btn" id="pvProvest"' + (r.zamknout.length ? '' : ' disabled') + '>Vytvořit zálohu a provést převod</button></div>' +
+      sek('Zamknou se', r.zamknout.length, tab(['Dobrovolník', 'Organizace', 'Měsíc', 'Čas', 'Dříve schválil/a'], r.zamknout, g => '<tr><td>' + esc(g.jmeno) + '<div class="id">' + esc(g.dobrovolnik) + '</div></td><td>' + esc(g.org) + '</td><td>' + esc(mesicCz(g.mesic)) + '</td><td>' + esc(fmtMin(g.minut)) + '</td><td>' + esc(g.schvalil) + '</td></tr>'), true) +
+      sek('Zůstanou otevřené', r.otevrene.length, tab(['Dobrovolník', 'Organizace', 'Měsíc', 'Čas', 'Proč'], r.otevrene, g => '<tr><td>' + esc(g.jmeno) + '<div class="id">' + esc(g.dobrovolnik) + '</div></td><td>' + esc(g.org) + '</td><td>' + esc(mesicCz(g.mesic)) + '</td><td>' + esc(fmtMin(g.minut)) + '</td><td>' + esc(g.duvody) + '</td></tr>')) +
+      sek('Zamítnuté řádky k ručnímu vyřešení (nezapočítávají se)', r.zamitnute.length, tab(['Datum', 'Dobrovolník', 'Organizace', 'Čas', 'Činnost'], r.zamitnute, x => '<tr><td>' + esc(fmtD(x.datum)) + '</td><td>' + esc(x.jmeno) + '</td><td>' + esc(x.org) + '</td><td>' + esc(fmtMin(x.minut)) + '</td><td>' + esc(x.cinnost) + '</td></tr>')) +
+      sek('Řádky bez organizace (nelze schvalovat po měsících, je třeba doplnit organizaci)', r.bezOrganizace.length, tab(['Datum', 'Dobrovolník', 'Název organizace ve starém záznamu', 'Čas', 'Stav'], r.bezOrganizace, x => '<tr><td>' + esc(fmtD(x.datum)) + '</td><td>' + esc(x.jmeno) + '</td><td>' + esc(x.org) + '</td><td>' + esc(fmtMin(x.minut)) + '</td><td>' + esc(x.stav) + '</td></tr>'), r.bezOrganizace.length > 0);
+    const b = $('#pvProvest');
+    b.onclick = async () => {
+      const o = await dialog({ text: 'Vytvořit zálohu tabulky a zamknout ' + r.zamknout.length + ' ' + sklon(r.zamknout.length, 'měsíc', 'měsíce', 'měsíců') + '? Odemknout jde každý měsíc zvlášť (jen hlavní admin).', potvrdit: 'Zálohovat a provést' });
+      if (!o.ok) return;
+      b.disabled = true; b.textContent = 'Zálohuji a převádím…';
+      try {
+        const v = await api('provedPrevodSchvalovani');
+        CACHE.clear(); poZmeneHodin();
+        $('#pvObsah').innerHTML = '<div class="card"><h2 style="margin-top:0">Hotovo</h2><p>Zamčeno měsíců: <strong>' + v.zamceno + '</strong>. Otevřených zůstalo: ' + v.otevrene + '.</p><p class="muted small">Záloha: ' + esc(v.zaloha) + (v.zalohaUrl ? ' – <a href="' + esc(v.zalohaUrl) + '" target="_blank" rel="noopener">otevřít</a>' : '') + '</p><button class="btn" id="pvDal">Ke schvalování měsíců</button></div>';
+        $('#pvDal').onclick = () => jdi('mesice');
+      } catch (e) { toast(e.message, 'err'); b.disabled = false; b.textContent = 'Vytvořit zálohu a provést převod'; }
+    };
+  } catch (e) { if ($('#pvObsah')) $('#pvObsah').innerHTML = '<div class="card">' + esc(e.message) + '</div>'; }
+}
+
 // ---------- Schvalování měsíců (dobrovolník × organizace × měsíc) ----------
 const MS = { stav: 'ke', org: '', rok: '', vyber: new Set(), data: null };
 function mesicCz(m) { const p = String(m).split('-'); return Number(p[1]) + '/' + p[0]; }
@@ -1367,13 +1401,14 @@ async function vMesice() {
   const orgs = D.organizaceVse || [];
   const roky = [aktualni + 1, aktualni, aktualni - 1, aktualni - 2, aktualni - 3];
   obsah.innerHTML =
-    '<div class="dhead"><button class="back" id="mZpet">← Hodiny</button><div><h1>Schvalování měsíců</h1>' +
+    '<div class="dhead"><button class="back" id="mZpet">← Hodiny</button><div><h1>Schvalování měsíců</h1>' + (muze('Hlavní admin') ? '<p style="margin:0 0 6px"><button class="btn ghost" id="mPrevod">Převod dosavadního schvalování…</button></p>' : '') +
     '<p class="sub" style="margin:0">Měsíc se schvaluje vždy celý, za dvojici dobrovolník + organizace. Schválením se měsíc zamkne – dobrovolník ani koordinátor už v něm nic nezmění. Odemknout ho může jen hlavní admin.</p></div></div>' +
     '<div class="toolbar"><select id="mStav"><option value="ke"' + (MS.stav === 'ke' ? ' selected' : '') + '>Ke schválení</option><option value="zamcene"' + (MS.stav === 'zamcene' ? ' selected' : '') + '>Schválené (zamčené)</option><option value=""' + (MS.stav === '' ? ' selected' : '') + '>Vše</option></select>' +
     '<select id="mOrg"><option value="">Všechny organizace</option>' + orgs.map(o => '<option value="' + esc(o.id) + '"' + (o.id === MS.org ? ' selected' : '') + '>' + esc(o.nazev) + '</option>').join('') + '</select>' +
     '<select id="mRok"><option value="">Všechny roky</option>' + roky.map(r => '<option' + (String(r) === MS.rok ? ' selected' : '') + '>' + r + '</option>').join('') + '</select></div>' +
     '<div id="mHromadne"></div><div class="scroll" id="mTab"><div class="loading">Načítám…</div></div>';
   $('#mZpet').onclick = () => jdi('hodiny');
+  if ($('#mPrevod')) $('#mPrevod').onclick = () => jdi('prevod');
   ['#mStav', '#mOrg', '#mRok'].forEach(q => $(q).addEventListener('change', () => { MS.stav = $('#mStav').value; MS.org = $('#mOrg').value; MS.rok = $('#mRok').value; MS.vyber.clear(); nactiMesiceTab(); }));
   nactiMesiceTab();
 }

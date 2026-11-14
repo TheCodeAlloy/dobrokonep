@@ -88,7 +88,7 @@ const { chromium } = require('playwright');
   await p.click('#fx');
   // 6) koordinátor schválí
   const ids = radkyHodin_().radky.filter(z=>z.stav==='Ke schválení').map(z=>z.id);
-  zmenStavHodin('ADMIN', [ids[0]], 'Schváleno');
+  { const x = radkyHodin_().radky.find(z => z.id === ids[0]); zapisDoRadku_(radkyHodin_().sh, x.radek, radkyHodin_().hlav, {'Stav':'Schváleno'}); }
   await p.reload(); await W(600);
   console.log('po schválení:', await p.textContent('#stats'), '|', await p.textContent('#cekani'));
   await p.screenshot({path:__dirname+'/vystup/p3_po.png', fullPage:true});

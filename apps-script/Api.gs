@@ -50,6 +50,8 @@ const API_ADMIN = {
   smazDokument: function () { return smazDokument.apply(null, arguments); },
   rocniVykaz: function () { return rocniVykaz.apply(null, arguments); },
   nactiMesice: function () { return nactiMesice.apply(null, arguments); },
+  nahledPrevoduSchvalovani: function () { return nahledPrevoduSchvalovani.apply(null, arguments); },
+  provedPrevodSchvalovani: function () { return provedPrevodSchvalovani.apply(null, arguments); },
   fotkyVykazu: function () { return fotkyVykazu.apply(null, arguments); },
   nactiFotkuVykazu: function () { return nactiFotkuVykazu.apply(null, arguments); },
   nahrajFotkuVykazu: function () { return nahrajFotkuVykazu.apply(null, arguments); },
