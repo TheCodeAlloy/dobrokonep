@@ -324,7 +324,7 @@
     const volby = {
       zaznamy: h, dnes: DATA.dnes, minDatum: posun(-DATA.zpetneDni),
       organizace: DATA.organizace.map(o => ({ id: o.id, nazev: o.nazev })),
-      jeCteni: r => r !== DATA.dnes.slice(0, 4),
+      jeCteni: r => !!DATA.zamykani && r !== DATA.dnes.slice(0, 4),
       lzeUpravit: x => x.stav !== 'Schváleno' && x.datum >= posun(-DATA.zpetneDni),
       orgProDatum: datum => aktivniOrg(datum).map(o => ({ id: o.id, nazev: o.nazev })),
       cinnostiOrg: id => (DATA.organizace.find(o => o.id === id) || { cinnosti: [] }).cinnosti,

@@ -11,6 +11,7 @@ let chyby = 0;
 const over = (popis, ok) => { console.log((ok ? 'OK    ' : 'CHYBA ') + popis); if (!ok) chyby++; };
 const chyba = fn => { try { fn(); return ''; } catch (e) { return e.message; } };
 nastavTabulku();
+nastavHodnotu_('zamykani_mesicu', 'ANO');   // testy zámků běží se zapnutým zamykáním
 const hd = hlavicky_(M.sheets['Organizace']);
 M.sheets['Organizace'].appendRow(hd.map(h => ({ ID: 'KAL', 'Název': 'Kalyna', 'Aktivní': 'ANO' })[h] ?? ''));
 M.sheets['Organizace'].appendRow(hd.map(h => ({ ID: 'HOS', 'Název': 'Hospic', 'Aktivní': 'ANO' })[h] ?? ''));

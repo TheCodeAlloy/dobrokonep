@@ -190,6 +190,7 @@ function oMojeData(token) {
     dobrovolnici: Object.keys(lide).map(id => lide[id]).sort((a, b) => (a.prijmeni + a.jmeno).localeCompare(b.prijmeni + b.jmeno, 'cs')),
     hodiny: hodiny,
     fotky: oFotky_(k),
+    zamykani: zamykaniZapnuto_(),
     nazev: String(n.nazev_organizace || ''),
     dnes: ymd_(new Date())
   };

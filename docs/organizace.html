@@ -328,7 +328,7 @@
     RH = RocniHodiny.mount($('#rocni'), {
       zaznamy: vse, dnes: DATA.dnes,
       organizace: mojeOrgDob.map(o => ({ id: o.id, nazev: o.nazev })),
-      jeCteni: r => r !== rok,
+      jeCteni: r => !!DATA.zamykani && r !== rok,
       lzeUpravit: x => x.stav !== 'Schváleno',
       orgProDatum: () => mojeOrgDob.map(o => ({ id: o.id, nazev: o.nazev })),
       cinnostiOrg: id => (DATA.organizace.find(o => o.id === id) || { cinnosti: [] }).cinnosti,

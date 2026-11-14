@@ -293,7 +293,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-14i</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-14j</p>
   </div>
 </div>
 <script>
@@ -1402,7 +1402,7 @@ async function vMesice() {
   const roky = [aktualni + 1, aktualni, aktualni - 1, aktualni - 2, aktualni - 3];
   obsah.innerHTML =
     '<div class="dhead"><button class="back" id="mZpet">← Hodiny</button><div><h1>Schvalování měsíců</h1>' + (muze('Hlavní admin') ? '<p style="margin:0 0 6px"><button class="btn ghost" id="mPrevod">Převod dosavadního schvalování…</button></p>' : '') +
-    '<p class="sub" style="margin:0">Měsíc se schvaluje vždy celý, za dvojici dobrovolník + organizace. Schválením se měsíc zamkne – dobrovolník ani koordinátor už v něm nic nezmění. Odemknout ho může jen hlavní admin.</p></div></div>' +
+    '<p class="sub" style="margin:0" id="mPopis">Měsíc se schvaluje vždy celý, za dvojici dobrovolník + organizace.</p></div></div>' +
     '<div class="toolbar"><select id="mStav"><option value="ke"' + (MS.stav === 'ke' ? ' selected' : '') + '>Ke schválení</option><option value="zamcene"' + (MS.stav === 'zamcene' ? ' selected' : '') + '>Schválené (zamčené)</option><option value=""' + (MS.stav === '' ? ' selected' : '') + '>Vše</option></select>' +
     '<select id="mOrg"><option value="">Všechny organizace</option>' + orgs.map(o => '<option value="' + esc(o.id) + '"' + (o.id === MS.org ? ' selected' : '') + '>' + esc(o.nazev) + '</option>').join('') + '</select>' +
     '<select id="mRok"><option value="">Všechny roky</option>' + roky.map(r => '<option' + (String(r) === MS.rok ? ' selected' : '') + '>' + r + '</option>').join('') + '</select></div>' +
@@ -1418,6 +1418,12 @@ async function nactiMesiceTab() {
   try {
     MS.data = await api('nactiMesice', { stav: MS.stav, org: MS.org, rok: MS.rok });
     if (!$('#mTab')) return;
+    const zam = MS.data.zamykani;
+    $('#mPopis').textContent = 'Měsíc se schvaluje vždy celý, za dvojici dobrovolník + organizace. ' + (zam
+      ? 'Schválením se měsíc zamkne – dobrovolník ani koordinátor už v něm nic nezmění. Odemknout ho může jen hlavní admin.'
+      : 'Schválením se čekající hodiny označí jako schválené. Zamykání měsíců je zatím vypnuté.');
+    const o2 = $('#mStav option[value="zamcene"]'); if (o2) o2.textContent = zam ? 'Schválené (zamčené)' : 'Schválené';
+    if ($('#mPrevod')) $('#mPrevod').hidden = !zam;
     kresliMesice();
   } catch (e) { if ($('#mTab')) $('#mTab').innerHTML = '<div class="card">' + esc(e.message) + '</div>'; }
 }
@@ -1427,14 +1433,14 @@ function kresliMesice() {
   if (!r.length) { $('#mTab').innerHTML = '<div class="card muted">' + (MS.stav === 'ke' ? 'Nic ke schválení.' : 'Žádné měsíce pro zvolený filtr.') + '</div>'; $('#mHromadne').innerHTML = ''; return; }
   $('#mTab').innerHTML = '<table class="list hodiny"><thead><tr>' + (edit ? '<th><input type="checkbox" id="mVse" aria-label="Vybrat vše"></th>' : '') +
     '<th>Dobrovolník</th><th class="hm">Organizace</th><th>Měsíc</th><th>Čas</th><th>Fotka výkazu</th><th>Stav</th>' + (edit ? '<th></th>' : '') + '</tr></thead><tbody>' +
-    r.map(g => '<tr data-k="' + esc(klicM(g)) + '">' + (edit ? '<td>' + (g.zamceno ? '' : '<input type="checkbox" class="mSel" value="' + esc(klicM(g)) + '"' + (MS.vyber.has(klicM(g)) ? ' checked' : '') + '>') + '</td>' : '') +
+    r.map(g => '<tr data-k="' + esc(klicM(g)) + '">' + (edit ? '<td>' + (g.zamceno || (!MS.data.zamykani && !g.ke) ? '' : '<input type="checkbox" class="mSel" value="' + esc(klicM(g)) + '"' + (MS.vyber.has(klicM(g)) ? ' checked' : '') + '>') + '</td>' : '') +
       '<td><a href="#" class="mDetail" data-id="' + esc(g.dobrovolnik) + '"><strong>' + esc(g.jmeno) + '</strong></a><div class="id">' + esc(g.dobrovolnik) + '</div></td>' +
       '<td class="hm">' + esc(g.org) + '</td><td>' + esc(mesicCz(g.mesic)) + (g.probiha ? ' <span class="muted small">(probíhá)</span>' : '') + '</td>' +
       '<td><strong>' + esc(fmtMin(g.minut)) + '</strong><div class="id">' + g.pocet + ' ' + sklon(g.pocet, 'záznam', 'záznamy', 'záznamů') + (g.zamitnuto ? ', zamítnuto: ' + g.zamitnuto : '') + '</div></td>' +
       '<td><button type="button" class="ikon mFotka" title="Fotky papírového výkazu">📷 ' + g.fotek + '</button>' + (g.papir && !g.fotek ? '<div class="id warn">chybí fotka</div>' : '') + '</td>' +
-      '<td>' + (g.zamceno ? '🔒 schváleno<div class="id">' + esc(g.schvalil) + '</div>' : (g.ke ? '<span class="warn">čeká na schválení: ' + g.ke + '</span>' : 'neuzamčeno')) +
+      '<td>' + (g.zamceno ? '🔒 schváleno<div class="id">' + esc(g.schvalil) + '</div>' : (g.ke ? '<span class="warn">čeká na schválení: ' + g.ke + '</span>' : (!MS.data.zamykani && g.schvaleno ? '✓ schváleno' : 'neuzamčeno'))) +
       (!g.zamceno && g.odemkl ? '<div class="id">odemčeno: ' + esc(g.duvod) + '</div>' : '') + '</td>' +
-      (edit ? '<td class="akce">' + (g.zamceno ? (hlavni ? '<button class="btn ghost" data-a="odemknout">Odemknout</button>' : '') : '<button class="btn" data-a="schvalit">Schválit měsíc</button>') + '</td>' : '') + '</tr>').join('') + '</tbody></table>';
+      (edit ? '<td class="akce">' + (g.zamceno ? (hlavni ? '<button class="btn ghost" data-a="odemknout">Odemknout</button>' : '') : (!MS.data.zamykani && !g.ke ? '' : '<button class="btn" data-a="schvalit">Schválit měsíc</button>')) + '</td>' : '') + '</tr>').join('') + '</tbody></table>';
   kresliMesiceHromadne();
   $('#mTab').onclick = async e => {
     const d = e.target.closest('.mDetail');
@@ -1458,7 +1464,7 @@ function kresliMesice() {
 function kresliMesiceHromadne() {
   const el = $('#mHromadne');
   if (!MS.vyber.size) { el.innerHTML = ''; return; }
-  el.innerHTML = '<div class="bulk"><span>Vybráno ' + MS.vyber.size + '</span><button class="btn" id="mSchvalitVse">Schválit a zamknout vybrané</button></div>';
+  el.innerHTML = '<div class="bulk"><span>Vybráno ' + MS.vyber.size + '</span><button class="btn" id="mSchvalitVse">' + (MS.data && MS.data.zamykani ? 'Schválit a zamknout vybrané' : 'Schválit vybrané') + '</button></div>';
   $('#mSchvalitVse').onclick = () => schvalMesice(MS.data.radky.filter(g => MS.vyber.has(klicM(g))));
 }
 // Fotky papírového výkazu dobrovolníka za organizaci a měsíc – kreslí se do zadaného místa (okno, detail, formulář)
@@ -1511,13 +1517,15 @@ function oknoFotekDobrovolnika(z) {
 
 async function schvalMesice(g) {
   const bezFotky = g.filter(x => x.papir && !x.fotek);
-  const o = await dialog({ text: 'Schválit a zamknout ' + g.length + ' ' + sklon(g.length, 'měsíc', 'měsíce', 'měsíců') + '? Po schválení už v nich nikdo nic nezmění, odemknout je může jen hlavní admin.',
-    chyba: bezFotky.length ? 'Upozornění: u ' + bezFotky.length + ' ' + sklon(bezFotky.length, 'měsíce', 'měsíců', 'měsíců') + ' chybí fotka papírového výkazu (' + bezFotky.slice(0, 3).map(x => x.jmeno + ' ' + mesicCz(x.mesic)).join(', ') + (bezFotky.length > 3 ? ', …' : '') + '). Schválit to jde i tak.' : '', potvrdit: 'Schválit a zamknout' });
+  const zam = MS.data && MS.data.zamykani;
+  const o = await dialog({ text: zam ? 'Schválit a zamknout ' + g.length + ' ' + sklon(g.length, 'měsíc', 'měsíce', 'měsíců') + '? Po schválení už v nich nikdo nic nezmění, odemknout je může jen hlavní admin.'
+      : 'Schválit ' + g.length + ' ' + sklon(g.length, 'měsíc', 'měsíce', 'měsíců') + '? Všechny čekající hodiny se označí jako schválené.',
+    chyba: bezFotky.length ? 'Upozornění: u ' + bezFotky.length + ' ' + sklon(bezFotky.length, 'měsíce', 'měsíců', 'měsíců') + ' chybí fotka papírového výkazu (' + bezFotky.slice(0, 3).map(x => x.jmeno + ' ' + mesicCz(x.mesic)).join(', ') + (bezFotky.length > 3 ? ', …' : '') + '). Schválit to jde i tak.' : '', potvrdit: zam ? 'Schválit a zamknout' : 'Schválit' });
   if (!o.ok) return;
   try {
     const r = await api('schvalMesice', g.map(x => ({ dobrovolnik: x.dobrovolnik, orgId: x.orgId, mesic: x.mesic })));
     CACHE.clear(); poZmeneHodin(); MS.vyber.clear();
-    toast('Schváleno a zamčeno: ' + r.pocet + (r.chyby.length ? ' · nepodařilo se: ' + r.chyby.length + ' (' + r.chyby[0] + ')' : ''), r.chyby.length ? 'err' : '');
+    toast((zam ? 'Schváleno a zamčeno: ' : 'Schváleno: ') + r.pocet + (r.chyby.length ? ' · nepodařilo se: ' + r.chyby.length + ' (' + r.chyby[0] + ')' : ''), r.chyby.length ? 'err' : '');
     nactiMesiceTab();
   } catch (e) { toast(e.message, 'err'); }
 }

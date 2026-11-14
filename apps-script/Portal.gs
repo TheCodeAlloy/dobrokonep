@@ -246,6 +246,7 @@ function dMojeData(token) {
     },
     organizace: organizace,
     hodiny: hodiny,
+    zamykani: zamykaniZapnuto_(),
     zpusob: z['Způsob vykazování'] || ZPUSOBY_VYKAZOVANI[0],
     fotky: fotkyVykazuDobrovolnika_(d.id).map(f => ({ id: f.id, orgId: f.orgId, mesic: f.mesic, nahrano: f.nahrano })),
     zpetneDni: Number(n.hodiny_zpetne_dni) || 60,

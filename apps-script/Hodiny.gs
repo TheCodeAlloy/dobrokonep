@@ -370,6 +370,9 @@ function obnovPrirazeni(token, idPrirazeni) {
 
 // ===== MĚSÍČNÍ ZÁMKY A HISTORIE ===============================
 
+// Zamykání měsíců je zatím vypnuté (Nastavení → zamykani_mesicu = ANO ho zapne). Prázdné nebo chybějící = vypnuto.
+function zamykaniZapnuto_() { return String(nastaveni_().zamykani_mesicu || '').trim().toUpperCase() === 'ANO'; }
+
 function klicMesice_(dobrovolnik, orgId, mesic) { return dobrovolnik + '|' + orgId + '|' + mesic; }
 
 // Všechny řádky listu Měsíce podle klíče dobrovolník|organizace|měsíc (v rámci požadavku v MEMO)
@@ -394,6 +397,7 @@ function mesiceZamky_() {
 }
 
 function mesicZamcen_(dobrovolnik, orgId, datum) {
+  if (!zamykaniZapnuto_()) return false;
   const z = mesiceZamky_()[klicMesice_(dobrovolnik, orgId, String(datum).slice(0, 7))];
   return !!z && z.stav === 'Schváleno';
 }
@@ -408,6 +412,7 @@ function overZamek_(dobrovolnik, orgId, datum) {
 
 // Dobrovolník ani organizace nesmí měnit hodiny z minulých roků (koordinátor KONEP ano, dokud měsíc není schválený)
 function overMinulyRok_(datum) {
+  if (!zamykaniZapnuto_()) return;
   if (String(datum).slice(0, 4) < ymd_(new Date()).slice(0, 4)) {
     throw new Error('Hodiny z minulého roku už nelze měnit. Obraťte se prosím na koordinátora.');
   }
@@ -452,19 +457,21 @@ function nactiMesice(token, f) {
     else { g.minut += z.minut; if (z.stav === 'Ke schválení') g.ke++; }
   });
   const dnesM = ymd_(new Date()).slice(0, 7);
+  const zam = zamykaniZapnuto_();
   let radky = Object.keys(skup).map(k => {
     const g = skup[k], z = zamky[k];
-    g.zamceno = !!z && z.stav === 'Schváleno';
+    g.zamceno = zam && !!z && z.stav === 'Schváleno';
+    g.schvaleno = g.ke === 0 && g.pocet > g.zamitnuto;   // všechny započítané řádky jsou schválené
     g.schvalil = z ? z.schvalil : ''; g.odemkl = z ? z.odemkl : ''; g.duvod = z ? z.duvod : '';
     g.probiha = g.mesic === dnesM;
     g.fotek = fotky.filter(x => x.dobrovolnik === g.dobrovolnik && x.orgId === g.orgId && x.mesic === g.mesic).length;
     g.papir = zpusoby[g.dobrovolnik] === ZPUSOBY_VYKAZOVANI[1];
     return g;
   });
-  if (f.stav === 'ke') radky = radky.filter(g => !g.zamceno && g.pocet > g.zamitnuto);
-  else if (f.stav === 'zamcene') radky = radky.filter(g => g.zamceno);
+  if (f.stav === 'ke') radky = radky.filter(g => zam ? (!g.zamceno && g.pocet > g.zamitnuto) : g.ke > 0);
+  else if (f.stav === 'zamcene') radky = radky.filter(g => zam ? g.zamceno : g.schvaleno);
   radky.sort((a, b) => b.mesic.localeCompare(a.mesic) || a.jmeno.localeCompare(b.jmeno, 'cs'));
-  return { radky: radky };
+  return { radky: radky, zamykani: zam };
 }
 
 // Schválí všechny čekající hodiny dvojice dobrovolník + organizace za měsíc a měsíc zamkne (volat uvnitř zámku)
@@ -474,12 +481,19 @@ function schvalMesicVnitrni_(a, dobrovolnik, orgId, mesic) {
   const data = radkyHodin_();
   const rel = data.radky.filter(z => z.dobrovolnik === dobrovolnik && z.orgId === orgId && z.datum.slice(0, 7) === mesic);
   if (!rel.filter(z => z.stav !== 'Zamítnuto').length) throw new Error('Za měsíc ' + mesicCz_(mesic) + ' nejsou žádné hodiny ke schválení.');
+  const zamykat = zamykaniZapnuto_();
+  if (!zamykat && !rel.some(z => z.stav === 'Ke schválení')) throw new Error('Měsíc ' + mesicCz_(mesic) + ' je už schválený.');
   const ted = new Date();
   const znak = a.email + ' – ' + Utilities.formatDate(ted, TZ, 'd. M. yyyy H:mm');
   rel.filter(z => z.stav === 'Ke schválení').forEach(z => {
     zapisDoRadku_(data.sh, z.radek, data.hlav, { 'Stav': 'Schváleno', 'Potvrdila organizace': znak, 'Upraveno': ted, 'Upravil/a': a.email });
   });
   const minut = rel.filter(z => z.stav !== 'Zamítnuto').reduce((s, z) => s + z.minut, 0);
+  if (!zamykat) {   // bez zamykání se jen schválí hodiny
+    historie_(a, 'Schválení měsíce', '', dobrovolnik, mesic + ', ' + orgId + ', ' + minut + ' min (bez zamykání)');
+    log_('Měsíc schválen', dobrovolnik, mesic + ', ' + orgId + ', ' + minut + ' min');
+    return minut;
+  }
   const shM = list_(LISTY.MESICE), hm = hlavicky_(shM);
   const radek = { 'ID dobrovolníka': dobrovolnik, 'ID organizace': orgId, 'Měsíc': mesic, 'Stav': 'Schváleno', 'Schválil/a': a.email, 'Schváleno': ted, 'Minut': minut };
   const puv = mesiceZamky_()[klicMesice_(dobrovolnik, orgId, mesic)];
@@ -509,6 +523,7 @@ function schvalMesice(token, polozky) {
 // Odemknutí měsíce – jen Hlavní admin, s důvodem; zaznamená se do listů Měsíce, Historie hodin a Log změn
 function odemkniMesic(token, dobrovolnik, orgId, mesic, duvod) {
   const a = overAdmin_(token, 'Hlavní admin');
+  if (!zamykaniZapnuto_()) throw new Error('Zamykání měsíců je vypnuté, není co odemykat.');
   duvod = String(duvod || '').trim().slice(0, 300);
   if (duvod.length < 3) throw new Error('Napište důvod odemčení.');
   return sZamkem_(() => {
@@ -701,6 +716,7 @@ function nahledPrevoduSchvalovani(token) {
 // Provede převod: nejdřív záloha tabulky (nepodaří-li se, nic se nezmění), potom se vytvoří měsíční zámky
 function provedPrevodSchvalovani(token) {
   const a = overAdmin_(token, 'Hlavní admin');
+  if (!zamykaniZapnuto_()) throw new Error('Zamykání měsíců je vypnuté. Převod dává smysl až po jeho zapnutí (Nastavení → zamykani_mesicu).');
   return sZamkem_(() => {
     const zaloha = zalohaPredPrevodem_();
     delete MEMO.zamky;

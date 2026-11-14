@@ -14,6 +14,7 @@ const over = (popis, ok) => { console.log((ok ? 'OK    ' : 'CHYBA ') + popis); i
 const chyba = fn => { try { fn(); return ''; } catch (e) { return e.message; } };
 const api = (akce, token, ...args) => JSON.parse(doPost({ postData: { contents: JSON.stringify({ akce, token, args }) } }));
 nastavTabulku();
+nastavHodnotu_('zamykani_mesicu', 'ANO');   // testy zámků běží se zapnutým zamykáním
 nastavHodnotu_('web_adresa', 'https://x.github.io/dk/');
 const sh = M.sheets;
 const hdO = hlavicky_(sh['Organizace']);

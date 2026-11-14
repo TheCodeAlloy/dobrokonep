@@ -5,6 +5,7 @@ overAdmin_ = (t, r) => { AKTUALNI_UZIVATEL='a@b.cz'; return {email:'koordinator@
 log_ = () => {};
 console.log = (o => (...a) => { if (!String(a[0]).startsWith('Hotovo')) o(...a); })(console.log);
 nastavTabulku();
+nastavHodnotu_('zamykani_mesicu', 'ANO');   // testy zámků běží se zapnutým zamykáním
 const DISK = {}; let cisloS = 0;
 ulozSouborFotky_ = (d, n, b) => { const id = 'S' + (++cisloS); DISK[id] = b; return id; };
 nactiSouborFotky_ = id => 'data:image/jpeg;base64,' + Buffer.from(DISK[id]).toString('base64');
@@ -125,6 +126,10 @@ const { chromium } = require('playwright');
   await p.click('#mPrevod'); await W(700);
   console.log('převod – náhled:', (await p.textContent('#pvObsah')).replace(/\s+/g, ' ').slice(0, 110));
   await p.screenshot({path:__dirname+'/vystup/u12_prevod.png', fullPage:true});
+  // vypnuté zamykání: stránka schvalování to ukáže a nenabízí převod/odemykání
+  nastavHodnotu_('zamykani_mesicu', 'NE'); delete MEMO.nastaveni;
+  await p.evaluate(() => { CACHE.clear(); jdi('mesice'); }); await W(800);
+  console.log('zamykání vypnuté – popis:', (await p.textContent('#mPopis')).slice(-45), '| převod viditelný:', await p.isVisible('#mPrevod'));
   console.log('chyby:', errs); if (errs.length) process.exitCode = 1;
   console.log('Hodiny v tabulce:', radkyHodin_().radky.map(z=>z.dobrovolnik+' '+z.datum+' '+z.minut+' '+z.stav+' '+z.zdroj).join(' | '));
   await b.close();

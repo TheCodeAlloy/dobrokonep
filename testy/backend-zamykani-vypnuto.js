@@ -1,0 +1,44 @@
+// Zamykání měsíců je ve výchozím stavu VYPNUTÉ: schvalování funguje, ale nic se nezamyká a nic nebrání úpravám
+process.env.TZ = 'Europe/Prague';
+const M = require('./gas-mock.js');
+require('./nacti-kod.js')();
+let role = 'Koordinátor';
+const P = { 'Jen čtení': 0, 'Koordinátor': 1, 'Hlavní admin': 2 };
+overAdmin_ = (t, r) => { if (P[role] < P[r]) throw new Error('Nedostatečná role'); AKTUALNI_UZIVATEL = 'k@k.cz'; return { email: 'k@k.cz', role }; };
+overDobrovolnik_ = () => ({ id: 'DC-2026-0001', email: 'jan@x.cz', z: { 'Jméno': 'Jan', 'Příjmení': 'Novák' } });
+log_ = () => {};
+let chyby = 0;
+const over = (popis, ok) => { console.log((ok ? 'OK    ' : 'CHYBA ') + popis); if (!ok) chyby++; };
+const chyba = fn => { try { fn(); return ''; } catch (e) { return e.message; } };
+nastavTabulku();
+over('výchozí nastavení: zamykání je vypnuté (NE)', String(nastaveni_().zamykani_mesicu) === 'NE' && !zamykaniZapnuto_());
+const hdO = hlavicky_(M.sheets['Organizace']);
+M.sheets['Organizace'].appendRow(hdO.map(h => ({ ID: 'KAL', 'Název': 'Kalyna', 'Aktivní': 'ANO' })[h] ?? ''));
+const hdD = hlavicky_(M.sheets['Dobrovolníci']);
+M.sheets['Dobrovolníci'].appendRow(hdD.map(h => ({ ID: 'DC-2026-0001', 'Jméno': 'Jan', 'Příjmení': 'Novák', 'E-mail': 'jan@x.cz', 'Stav': 'Aktivní dobrovolník' })[h] ?? ''));
+pridejPrirazeni('T', 'DC-2026-0001', 'KAL', '', '');
+const rok = ymd_(new Date()).slice(0, 4), mesic = rok + '-02';
+const z = o => Object.assign({ dobrovolnik: 'DC-2026-0001', orgId: 'KAL', datum: mesic + '-10', od: '09:00', do: '11:00', cinnost: 'X' }, o);
+ulozHodiny('T', z({}));
+const idH = radkyHodin_().radky[0].id;
+// čekající hodiny z portálu
+dZapisHodiny('T', { orgId: 'KAL', datum: ymd_(new Date()), od: '09:00', do: '10:00', cinnost: 'Y' });
+const dnesM = ymd_(new Date()).slice(0, 7);
+let r = nactiMesice('T', { stav: 'ke', rok });
+over('přehled: příznak zamykani = false, čekající měsíc je ke schválení', r.zamykani === false && r.radky.some(g => g.mesic === dnesM && g.ke === 1));
+const v = schvalMesice('T', [{ dobrovolnik: 'DC-2026-0001', orgId: 'KAL', mesic: dnesM }]);
+over('schválení měsíce prošlo a hodiny jsou schválené', v.pocet === 1 && radkyHodin_().radky.filter(x => x.datum.slice(0, 7) === dnesM).every(x => x.stav === 'Schváleno'));
+over('nevznikl žádný řádek v listu Měsíce (nic se nezamyká)', M.sheets['Měsíce'].getLastRow() <= 1);
+over('schválený měsíc je v přehledu „Schválené“ a už ne „ke schválení“', nactiMesice('T', { stav: 'zamcene', rok }).radky.some(g => g.mesic === dnesM && g.schvaleno && !g.zamceno) && !nactiMesice('T', { stav: 'ke', rok }).radky.some(g => g.mesic === dnesM));
+over('druhé schválení téhož měsíce odmítnuto', schvalMesice('T', [{ dobrovolnik: 'DC-2026-0001', orgId: 'KAL', mesic: dnesM }]).chyby.length === 1);
+over('zámek se nikde nehlásí (příznak zamceno je false)', nactiHodiny('T', { dobrovolnik: 'DC-2026-0001' }).zaznamy.every(x => x.zamceno === false));
+over('koordinátor smí měnit i smazat v schváleném měsíci', !chyba(() => ulozHodiny('T', z({ id: idH, od: '09:00', do: '10:00' }))) && !chyba(() => ulozHodiny('T', z({ datum: dnesM + '-01' }))));
+over('dobrovolník smí zapsat i upravit zápis z minulého roku (zamykání vypnuté), jen limit 60 dní platí', /nejvýše 60 dní/.test(chyba(() => dZapisHodiny('T', { orgId: 'KAL', datum: (rok - 1) + '-01-10', od: '09:00', do: '10:00', cinnost: 'Y' }))));
+over('portál vrací zamykani = false', dMojeData('T').zamykani === false);
+over('odemknout nejde (není co)', (role = 'Hlavní admin', /vypnuté/.test(chyba(() => odemkniMesic('T', 'DC-2026-0001', 'KAL', dnesM, 'test')))));
+over('převod schvalování je při vypnutém zamykání zablokovaný', /vypnuté/.test(chyba(() => provedPrevodSchvalovani('T'))));
+nastavHodnotu_('zamykani_mesicu', 'ANO'); delete MEMO.nastaveni;
+over('po zapnutí (ANO) zámky zase fungují', zamykaniZapnuto_());
+
+console.log(chyby ? 'Zamykání vypnuté: CHYBY ' + chyby : 'Zamykání vypnuté: vše OK');
+if (chyby) process.exitCode = 1;
