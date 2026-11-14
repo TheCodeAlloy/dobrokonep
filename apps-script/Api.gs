@@ -24,7 +24,23 @@ const API_VEREJNE = {
   dOverKod: (email, kod) => dOverKod(email, kod),
   dPrihlasitOdkazem: t => dPrihlasitOdkazem(t),
   dPrihlasitGoogle: c => dPrihlasitGoogle(c),
-  dOdhlasit: token => dOdhlasit(token)
+  dOdhlasit: token => dOdhlasit(token),
+  // portál organizace – přihlášení
+  oPosliKod: email => oPosliKod(email),
+  oOverKod: (email, kod) => oOverKod(email, kod),
+  oPrihlasitOdkazem: t => oPrihlasitOdkazem(t),
+  oPrihlasitGoogle: c => oPrihlasitGoogle(c),
+  oOdhlasit: token => oOdhlasit(token)
+};
+
+// Akce pro přihlášeného koordinátora organizace (token se doplní jako první argument)
+const API_ORGANIZACE = {
+  oMojeData: function () { return oMojeData.apply(null, arguments); },
+  oUlozHodiny: function () { return oUlozHodiny.apply(null, arguments); },
+  oSmazHodiny: function () { return oSmazHodiny.apply(null, arguments); },
+  oNahrajFotkuVykazu: function () { return oNahrajFotkuVykazu.apply(null, arguments); },
+  oSmazFotkuVykazu: function () { return oSmazFotkuVykazu.apply(null, arguments); },
+  oNactiFotkuVykazu: function () { return oNactiFotkuVykazu.apply(null, arguments); }
 };
 
 // Akce pro přihlášeného dobrovolníka (token se doplní jako první argument)
@@ -95,8 +111,8 @@ function doPost(e) {
     let data;
     if (API_VEREJNE.hasOwnProperty(akce)) {
       data = API_VEREJNE[akce].apply(null, args);
-    } else if (API_ADMIN.hasOwnProperty(akce) || API_DOBROVOLNIK.hasOwnProperty(akce)) {
-      const mapa = API_ADMIN.hasOwnProperty(akce) ? API_ADMIN : API_DOBROVOLNIK;
+    } else if (API_ADMIN.hasOwnProperty(akce) || API_DOBROVOLNIK.hasOwnProperty(akce) || API_ORGANIZACE.hasOwnProperty(akce)) {
+      const mapa = API_ADMIN.hasOwnProperty(akce) ? API_ADMIN : (API_DOBROVOLNIK.hasOwnProperty(akce) ? API_DOBROVOLNIK : API_ORGANIZACE);
       data = mapa[akce].apply(null, [String(pozadavek.token || '')].concat(args));
     } else {
       return json_({ ok: false, chyba: 'Neznámá akce.' });

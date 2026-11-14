@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#c4524e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Portál organizace">
+<link rel="manifest" href="manifest-organizace.webmanifest">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="icon" href="logo.png">
+<title>Portál organizace – dobrovolnické hodiny</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #c4524e; --primary-hover: #a9423f; --accent: #fbe9e8; --accent-strong: #f4cfcd;
+    --text: #2a2121; --muted: #6e6262; --border: #e6d6d5; --bg: #fbf3f2; --card: #fff;
+    --error: #b42318; --error-bg: #fdecea; --ok: #1f7a4d; --ok-bg: #dff3e7; --wait: #8a5a00; --wait-bg: #fff3d6;
+    --teal: #8dbbc1; --radius: 14px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 18px 16px calc(40px + env(safe-area-inset-bottom)); }
+  .hero { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .logo { flex: none; width: 48px; height: 48px; border-radius: 50%; background: #fff; border: 3px solid var(--teal); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  .logo img { width: 100%; height: 100%; object-fit: contain; }
+  .hero strong { display: block; font: 600 16px/1.25 Poppins, sans-serif; }
+  .hero small { color: var(--muted); font-size: 13px; }
+  h1 { font: 700 23px/1.25 Poppins, sans-serif; margin: 0 0 6px; }
+  h2 { font: 600 16px/1.3 Poppins, sans-serif; margin: 0 0 12px; }
+  .muted { color: var(--muted); } .small { font-size: 13px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 14px; }
+  label.l { display: block; font-weight: 600; font-size: 14px; margin: 14px 0 6px; }
+  input[type=email], input[type=text], input[type=date], input[type=time], select, textarea {
+    width: 100%; padding: 12px 13px; border: 1px solid var(--border); border-radius: 10px; background: #fff; font-size: 16px;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--accent-strong); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 12px; padding: 13px 18px;
+    background: var(--primary); color: #fff; font: 600 16px Poppins, sans-serif; cursor: pointer; }
+  .btn:hover { background: var(--primary-hover); }
+  .btn:disabled { opacity: .6; cursor: wait; }
+  .btn.block { width: 100%; margin-top: 14px; }
+  .btn.ghost { background: #fff; color: var(--primary); border: 1px solid var(--border); }
+  .btn.ghost:hover { border-color: var(--primary); }
+  .btn.big { width: 100%; padding: 16px; font-size: 18px; box-shadow: 0 6px 16px rgba(196, 82, 78, .25); }
+  .linkbtn { background: none; border: 0; color: var(--primary); text-decoration: underline; cursor: pointer; padding: 6px 0; font-size: 14px; }
+  .chyba { background: var(--error-bg); color: var(--error); padding: 10px 12px; border-radius: 10px; margin-top: 12px; font-size: 14px; }
+  .info { background: var(--accent); padding: 10px 12px; border-radius: 10px; font-size: 14px; }
+  .nebo { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; margin: 16px 0 4px; }
+  .nebo::before, .nebo::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+  #gBtn { display: flex; justify-content: center; min-height: 44px; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0; }
+  .stats div { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 12px 6px; text-align: center; }
+  .stats strong { display: block; font: 700 18px/1.2 Poppins, sans-serif; color: var(--primary); }
+  .stats span { font-size: 12px; color: var(--muted); }
+  .cekani { background: var(--wait-bg); color: var(--wait); padding: 9px 12px; border-radius: 10px; font-size: 14px; margin-bottom: 12px; }
+  .akce2 { display: grid; gap: 8px; margin-bottom: 18px; }
+
+  .mesic { display: flex; justify-content: space-between; align-items: baseline; margin: 18px 4px 8px; }
+  .mesic h3 { margin: 0; font: 600 15px Poppins, sans-serif; text-transform: capitalize; }
+  .mesic span { color: var(--muted); font-size: 14px; }
+  .zapis { display: flex; justify-content: space-between; gap: 10px; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; width: 100%; text-align: left; }
+  button.zapis { cursor: pointer; }
+  button.zapis:hover { border-color: var(--primary); }
+  .zapis .co { font-weight: 600; }
+  .zapis .kde { color: var(--muted); font-size: 13px; }
+  .zapis .kolik { text-align: right; white-space: nowrap; }
+  .zapis .kolik strong { display: block; }
+  .st { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; margin-top: 3px; }
+  .st.ok { background: var(--ok-bg); color: var(--ok); }
+  .st.wait { background: var(--wait-bg); color: var(--wait); }
+  .st.no { background: var(--error-bg); color: var(--error); }
+  table.prehled { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.prehled td { padding: 7px 4px; border-bottom: 1px solid #f1e6e5; }
+  table.prehled td:last-child { text-align: right; font-weight: 600; }
+  .rok { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { position: relative; cursor: pointer; }
+  .chip input { position: absolute; opacity: 0; pointer-events: none; }
+  .chip span { display: inline-block; padding: 9px 14px; border: 1px solid var(--border); border-radius: 999px; background: #fff; font-size: 15px; }
+  .chip input:checked + span { background: var(--accent); border-color: var(--primary); color: var(--primary); font-weight: 600; }
+  .chip input:focus-visible + span { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row > * { flex: 1; }
+  .row span.sep { flex: none; color: var(--muted); }
+  .vysl { float: right; font-weight: 400; color: var(--primary); }
+
+  .sheet { position: fixed; inset: 0; background: rgba(40, 20, 20, .45); z-index: 40; display: flex; align-items: flex-end; justify-content: center; }
+  .sheet-box { background: var(--bg); width: 100%; max-width: 560px; max-height: 94vh; overflow-y: auto; border-radius: 18px 18px 0 0; padding: 18px 16px calc(24px + env(safe-area-inset-bottom)); }
+  @media (min-width: 600px) { .sheet { align-items: center; } .sheet-box { border-radius: 18px; } }
+  .sheet-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .x { background: none; border: 0; font-size: 26px; line-height: 1; cursor: pointer; color: var(--muted); padding: 4px 8px; }
+  .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: #2a2121; color: #fff; padding: 11px 16px; border-radius: 12px; z-index: 60; font-size: 15px; max-width: calc(100% - 32px); }
+  .pata { text-align: center; margin-top: 26px; }
+  details.tip { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; margin-top: 18px; font-size: 14px; }
+  details.tip summary { cursor: pointer; font-weight: 600; }
+  .nacitam { text-align: center; color: var(--muted); padding: 50px 0; }
+  [hidden] { display: none !important; }
+  .cas2 { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+  .cas-r { display: flex; align-items: center; gap: 10px; }
+  .cas-r .sep { width: 24px; }
+  .cv { display: inline-flex; align-items: center; gap: 3px; }
+  .cv select { width: auto; min-width: 64px; }
+  .lide { display: grid; gap: 8px; }
+  .clovek { display: block; width: 100%; text-align: left; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; cursor: pointer; }
+  .clovek:hover { border-color: var(--primary); }
+  .clovek .jm { font-weight: 600; }
+  .clovek .kon { font-size: 13px; color: var(--muted); }
+  .clovek .rad { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+  .kontakt a { color: var(--primary); }
+  .zpet { background: none; border: 0; color: var(--primary); font: inherit; cursor: pointer; padding: 6px 0; }
+  .hledat { margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="hero">
+    <div class="logo"><img src="logo.png" alt=""></div>
+    <div><strong id="nazevOrg">Dobrovolnické centrum</strong><small>Portál organizace</small></div>
+  </header>
+
+  <div class="nacitam" id="nacitam">Načítám…</div>
+
+  <!-- Přihlášení -->
+  <section id="login" hidden>
+    <div class="card">
+      <h1>Přihlášení</h1>
+      <p class="muted small" style="margin:0">Přehled dobrovolníků a jejich hodin pro vaši organizaci. Přístup mají koordinátoři, které přidalo dobrovolnické centrum.</p>
+      <div id="gWrap" hidden style="margin-top:16px"><div id="gBtn"></div><div class="nebo">nebo e-mailem</div></div>
+      <form id="fEmail">
+        <label class="l" for="email">Váš e-mail</label>
+        <input type="email" id="email" autocomplete="email" inputmode="email" required>
+        <button class="btn block" id="bPoslat" type="submit">Pokračovat</button>
+      </form>
+      <form id="fKod" hidden>
+        <p class="info" style="margin:14px 0 0">Na <strong id="kam"></strong> jsme poslali e-mail. <strong>Stačí v něm klepnout na tlačítko „Přihlásit se“</strong>, nebo sem opište kód.</p>
+        <label class="l" for="kod">Kód z e-mailu</label>
+        <input type="text" id="kod" inputmode="numeric" autocomplete="one-time-code" maxlength="6">
+        <button class="btn block" id="bKod" type="submit">Přihlásit se</button>
+        <button class="linkbtn" type="button" id="jinyEmail">Zadat jiný e-mail nebo poslat znovu</button>
+      </form>
+      <p class="chyba" id="lChyba" hidden></p>
+      <p class="muted small" style="margin:14px 0 0">E-mail nepřišel? Zkontrolujte složku Spam. Přístup vám zřizuje dobrovolnické centrum.</p>
+    </div>
+  </section>
+
+  <!-- Aplikace -->
+  <section id="app" hidden>
+    <div id="prehled">
+      <h1 id="pozdrav"></h1>
+      <p class="muted small" id="mojeOrg" style="margin:0"></p>
+      <div class="rok" id="orgTabs" style="margin-top:12px"></div>
+      <div class="stats" id="stats"></div>
+      <div class="akce2"><button class="btn big" id="bFotka">📷 Vyfotit výkaz</button></div>
+      <h2>Dobrovolníci</h2>
+      <input type="search" class="hledat" id="hledat" placeholder="Hledat jméno…" hidden>
+      <div class="lide" id="lide"></div>
+    </div>
+    <div id="detail" hidden>
+      <button class="zpet" id="zpet">← Všichni dobrovolníci</button>
+      <h1 id="dJmeno" style="margin-top:4px"></h1>
+      <p class="kontakt muted small" id="dKontakt" style="margin:0 0 12px"></p>
+      <button class="btn ghost block" id="dFotka" style="margin-top:0">📷 Fotka papírového výkazu</button>
+      <div id="rocni" style="margin-top:14px"></div>
+    </div>
+    <details class="tip"><summary>Jak si přidat stránku na plochu telefonu</summary>
+      <p><strong>Android (Chrome):</strong> vpravo nahoře ⋮ → „Přidat na plochu“ nebo „Instalovat aplikaci“.</p>
+      <p><strong>iPhone (Safari):</strong> dole tlačítko Sdílet (čtvereček se šipkou) → „Přidat na plochu“.</p>
+      <p style="margin-bottom:0">Pak stačí klepnout na ikonu a jste rovnou přihlášen/a.</p>
+    </details>
+    <div class="pata"><button class="linkbtn" id="odhlasit">Odhlásit se</button></div>
+  </section>
+</main>
+
+<div class="sheet" id="sheet" hidden><div class="sheet-box" id="sheetBox" role="dialog" aria-modal="true"></div></div>
+
+<script src="config.js"></script>
+<script src="rocni-hodiny.js?v=2026-11-14b"></script>
+<script src="fotka-vykazu.js?v=2026-11-14c"></script>
+<script>
+(function () {
+  const $ = (s, el) => (el || document).querySelector(s);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  let TOKEN = '', DATA = null, RH = null, ORG = '', VYBRANY = '', HLEDAT = '';
+  const ulozeno = {
+    get(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } },
+    set(k, v) { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) { /* bez úložiště */ } }
+  };
+  TOKEN = ulozeno.get('do_token');
+
+  const MESICE = ['leden', 'únor', 'březen', 'duben', 'květen', 'červen', 'červenec', 'srpen', 'září', 'říjen', 'listopad', 'prosinec'];
+  function fmtMin(m) { m = Math.round(+m || 0); const h = Math.floor(m / 60), r = m % 60; return !h ? r + ' min' : h + ' h' + (r ? ' ' + r + ' min' : ''); }
+  const suma = a => a.reduce((s, x) => s + x.minut, 0);
+  const jmeno = d => [d.titul, d.jmeno, d.prijmeni].filter(Boolean).join(' ');
+  function toast(t) {
+    const el = document.createElement('div'); el.className = 'toast'; el.textContent = t;
+    document.body.appendChild(el); setTimeout(() => el.remove(), 3200);
+  }
+  async function api(akce) {
+    const args = Array.prototype.slice.call(arguments, 1);
+    try { return await volejApi(akce, args, TOKEN); }
+    catch (e) {
+      if (/^PRIHLASENI/.test(e.message)) { odhlasLokalne(); ukazLogin(e.message.replace(/^PRIHLASENI:\s*/, '')); throw new Error(''); }
+      throw e;
+    }
+  }
+
+  // ---------- přihlášení ----------
+  function ukazLogin(zprava) {
+    $('#nacitam').hidden = true; $('#app').hidden = true; $('#login').hidden = false;
+    $('#fEmail').hidden = false; $('#fKod').hidden = true; chybaLogin(zprava || '');
+    try {
+      const c = JSON.parse(ulozeno.get('do_cekam') || 'null');
+      if (c && Date.now() - c.cas < 600000) ukazKod(c.email);
+    } catch (e) { /* nic */ }
+  }
+  function ukazKod(email) {
+    $('#email').value = email; $('#kam').textContent = email;
+    $('#fEmail').hidden = true; $('#fKod').hidden = false; $('#kod').value = '';
+  }
+  function chybaLogin(t) { $('#lChyba').textContent = t; $('#lChyba').hidden = !t; }
+  function prihlasen(token) { TOKEN = token; ulozeno.set('do_token', token); ulozeno.set('do_cekam', ''); nactiData(); }
+  function odhlasLokalne() { TOKEN = ''; ulozeno.set('do_token', ''); RH = null; VYBRANY = ''; }
+
+  $('#fEmail').addEventListener('submit', async e => {
+    e.preventDefault(); chybaLogin('');
+    const email = $('#email').value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return chybaLogin('Zadejte platný e-mail.');
+    const b = $('#bPoslat'); b.disabled = true; b.textContent = 'Odesílám…';
+    try {
+      await volejApi('oPosliKod', [email], '');
+      ulozeno.set('do_cekam', JSON.stringify({ email: email, cas: Date.now() }));
+      ukazKod(email);
+    } catch (err) { chybaLogin(err.message); }
+    b.disabled = false; b.textContent = 'Pokračovat';
+  });
+  $('#fKod').addEventListener('submit', async e => {
+    e.preventDefault(); chybaLogin('');
+    const b = $('#bKod'); b.disabled = true; b.textContent = 'Ověřuji…';
+    try { prihlasen((await volejApi('oOverKod', [$('#email').value.trim(), $('#kod').value], '')).token); }
+    catch (err) { chybaLogin(err.message); }
+    b.disabled = false; b.textContent = 'Přihlásit se';
+  });
+  $('#jinyEmail').onclick = () => { ulozeno.set('do_cekam', ''); ukazLogin(''); };
+
+  function nactiGoogle(clientId) {
+    const sc = document.createElement('script');
+    sc.src = 'https://accounts.google.com/gsi/client'; sc.async = true;
+    sc.onload = () => {
+      try {
+        google.accounts.id.initialize({ client_id: clientId, ux_mode: 'popup', callback: async r => {
+          chybaLogin('');
+          try { prihlasen((await volejApi('oPrihlasitGoogle', [r.credential], '')).token); } catch (err) { chybaLogin(err.message); }
+        } });
+        google.accounts.id.renderButton($('#gBtn'), { theme: 'outline', size: 'large', text: 'signin_with', shape: 'pill', locale: 'cs', width: 280 });
+        $('#gWrap').hidden = false;
+      } catch (e) { /* zůstane přihlášení e-mailem */ }
+    };
+    document.head.appendChild(sc);
+  }
+  $('#odhlasit').onclick = async () => {
+    try { await volejApi('oOdhlasit', [TOKEN], ''); } catch (e) { /* nevadí */ }
+    odhlasLokalne(); ukazLogin('Byli jste odhlášeni.');
+  };
+
+  // ---------- data ----------
+  async function nactiData() {
+    $('#login').hidden = true; $('#nacitam').hidden = false; $('#nacitam').textContent = 'Načítám…';
+    try { DATA = await api('oMojeData'); } catch (e) { if (e.message) { $('#nacitam').textContent = e.message; } return; }
+    $('#nacitam').hidden = true; $('#app').hidden = false;
+    kresli();
+  }
+  const moje = () => DATA.organizace.filter(o => !ORG || o.id === ORG).map(o => o.id);
+  const hodinyOrg = () => DATA.hodiny.filter(h => !ORG || h.orgId === ORG);
+  const lidiOrg = () => DATA.dobrovolnici.filter(d => d.prirazeni.some(p => !ORG || p.orgId === ORG));
+
+  function kresliStats() {
+    const h = hodinyOrg().filter(x => x.stav !== 'Zamítnuto'), rok = DATA.dnes.slice(0, 4), mes = DATA.dnes.slice(0, 7);
+    const ceka = h.filter(x => x.stav === 'Ke schválení');
+    $('#stats').innerHTML =
+      '<div><strong>' + fmtMin(suma(h.filter(x => x.datum.slice(0, 7) === mes))) + '</strong><span>tento měsíc</span></div>' +
+      '<div><strong>' + fmtMin(suma(h.filter(x => x.datum.slice(0, 4) === rok))) + '</strong><span>letos</span></div>' +
+      '<div><strong>' + ceka.length + '</strong><span>čeká na schválení</span></div>';
+  }
+
+  function kresli() {
+    $('#pozdrav').textContent = 'Dobrý den' + (DATA.koordinator.jmeno ? ', ' + DATA.koordinator.jmeno : '');
+    $('#mojeOrg').textContent = DATA.organizace.map(o => o.nazev).join(', ');
+    $('#orgTabs').innerHTML = DATA.organizace.length > 1
+      ? [{ id: '', nazev: 'Všechny' }].concat(DATA.organizace).map(o => '<label class="chip"><input type="radio" name="org" value="' + esc(o.id) + '"' + (o.id === ORG ? ' checked' : '') + '><span>' + esc(o.nazev) + '</span></label>').join('') : '';
+    kresliStats();
+    const lide = lidiOrg().filter(d => !HLEDAT || (jmeno(d) + ' ' + d.email).toLowerCase().indexOf(HLEDAT) >= 0);
+    $('#hledat').hidden = lidiOrg().length < 8;
+    const rok = DATA.dnes.slice(0, 4);
+    $('#lide').innerHTML = lide.length ? lide.map(d => {
+      const h = hodinyOrg().filter(x => x.dobrovolnik === d.id && x.stav !== 'Zamítnuto');
+      const ceka = h.filter(x => x.stav === 'Ke schválení').length;
+      return '<button type="button" class="clovek" data-id="' + esc(d.id) + '"><div class="rad"><span class="jm">' + esc(jmeno(d)) + '</span><strong>' + esc(fmtMin(suma(h.filter(x => x.datum.slice(0, 4) === rok)))) + '</strong></div>' +
+        '<div class="kon">letos' + (ceka ? ' · <span style="color:var(--wait)">čeká na schválení: ' + ceka + '</span>' : '') + (d.aktivni === false ? '' : '') + '</div></button>';
+    }).join('') : '<p class="muted">Žádní dobrovolníci.</p>';
+    if (VYBRANY) kresliDetail();
+    else { $('#prehled').hidden = false; $('#detail').hidden = true; }
+  }
+
+  $('#orgTabs').onchange = e => { ORG = e.target.value; RH = null; kresli(); };
+  $('#hledat').oninput = e => { HLEDAT = e.target.value.trim().toLowerCase(); kresli(); };
+  $('#lide').onclick = e => { const b = e.target.closest('.clovek'); if (b) { VYBRANY = b.dataset.id; RH = null; kresli(); window.scrollTo(0, 0); } };
+  $('#zpet').onclick = () => { VYBRANY = ''; RH = null; kresli(); };
+
+  // ---------- detail dobrovolníka: roční stránka hodin ----------
+  function kresliDetail() {
+    const d = DATA.dobrovolnici.find(x => x.id === VYBRANY);
+    if (!d) { VYBRANY = ''; kresli(); return; }
+    $('#prehled').hidden = true; $('#detail').hidden = false;
+    $('#dJmeno').textContent = jmeno(d);
+    $('#dKontakt').innerHTML = [d.email ? '<a href="mailto:' + esc(d.email) + '">' + esc(d.email) + '</a>' : '', d.telefon ? '<a href="tel:' + esc(d.telefon.replace(/\s/g, '')) + '">' + esc(d.telefon) + '</a>' : ''].filter(Boolean).join(' · ');
+    const mojeOrgDob = DATA.organizace.filter(o => d.prirazeni.some(p => p.orgId === o.id));
+    const vse = DATA.hodiny.filter(h => h.dobrovolnik === d.id);
+    if (RH) { RH.nastav(vse); return; }
+    const rok = DATA.dnes.slice(0, 4);
+    const filtr = () => DATA.hodiny.filter(h => h.dobrovolnik === d.id);
+    RH = RocniHodiny.mount($('#rocni'), {
+      zaznamy: vse, dnes: DATA.dnes,
+      organizace: mojeOrgDob.map(o => ({ id: o.id, nazev: o.nazev })),
+      jeCteni: r => r !== rok,
+      lzeUpravit: x => x.stav !== 'Schváleno',
+      orgProDatum: () => mojeOrgDob.map(o => ({ id: o.id, nazev: o.nazev })),
+      cinnostiOrg: id => (DATA.organizace.find(o => o.id === id) || { cinnosti: [] }).cinnosti,
+      ulozit: async z => { DATA = await api('oUlozHodiny', Object.assign({}, z, { dobrovolnik: d.id })); kresliStats(); kresliSeznam(); return filtr(); },
+      smazat: async id => { DATA = await api('oSmazHodiny', id); kresliStats(); kresliSeznam(); return filtr(); }
+    });
+  }
+  function kresliSeznam() { /* seznam se překreslí při návratu */ }
+  $('#dFotka').onclick = () => oknoFotky(VYBRANY);
+  $('#bFotka').onclick = () => oknoFotky('');
+
+  // ---------- fotka papírového výkazu ----------
+  function otevri(html) { $('#sheetBox').innerHTML = html; $('#sheet').hidden = false; document.body.style.overflow = 'hidden'; return $('#sheetBox'); }
+  function zavri() { $('#sheet').hidden = true; document.body.style.overflow = ''; $('#sheetBox').innerHTML = ''; if (!$('#app').hidden) kresli(); }
+  $('#sheet').addEventListener('click', e => { if (e.target.id === 'sheet') zavri(); });
+
+  function oknoFotky(predvolen) {
+    const rok = DATA.dnes.slice(0, 4), mesice = [];
+    for (let m = +DATA.dnes.slice(5, 7); m >= 1 && mesice.length < 6; m--) mesice.push(rok + '-' + String(m).padStart(2, '0'));
+    const lide = lidiOrg();
+    let dob = predvolen || (lide[0] || {}).id || '', mesic = mesice[0], orgId = '';
+    const el = otevri(
+      '<div class="sheet-head"><h2 style="margin:0">Fotka výkazu</h2><button class="x" id="fx" aria-label="Zavřít">×</button></div>' +
+      '<p class="muted small" style="margin:0 0 8px">Vyfoťte papírový výkaz hodin dobrovolníka. Stačí, aby byl text čitelný.</p>' +
+      (predvolen ? '' : '<label class="l">Dobrovolník</label><select id="fvDob">' + lide.map(d => '<option value="' + esc(d.id) + '">' + esc(jmeno(d)) + '</option>').join('') + '</select>') +
+      '<label class="l">Za který měsíc</label><select id="fvMes">' + mesice.map(m => '<option value="' + m + '">' + MESICE[+m.slice(5) - 1] + ' ' + m.slice(0, 4) + '</option>').join('') + '</select>' +
+      '<div id="fvOrgWrap"></div><div id="fvMisto" style="margin-top:10px"></div>');
+    $('#fx', el).onclick = zavri;
+    const orgsDob = () => { const d = DATA.dobrovolnici.find(x => x.id === dob); return d ? DATA.organizace.filter(o => d.prirazeni.some(p => p.orgId === o.id) && (!ORG || o.id === ORG)) : []; };
+    function kresliFV() {
+      const os = orgsDob();
+      if (!os.some(o => o.id === orgId)) orgId = (os[0] || {}).id || '';
+      $('#fvOrgWrap', el).innerHTML = os.length > 1 ? '<label class="l">Pro koho</label><select id="fvOrg">' + os.map(o => '<option value="' + esc(o.id) + '"' + (o.id === orgId ? ' selected' : '') + '>' + esc(o.nazev) + '</option>').join('') + '</select>' : '';
+      const so = $('#fvOrg', el); if (so) so.onchange = e => { orgId = e.target.value; kresliFV(); };
+      const mimo = () => DATA.fotky.filter(f => f.dobrovolnik === dob && f.orgId === orgId && f.mesic === mesic);
+      const zamcen = DATA.hodiny.some(h => h.dobrovolnik === dob && h.orgId === orgId && h.datum.slice(0, 7) === mesic && h.zamceno);
+      const m = $('#fvMisto', el); m.innerHTML = '';
+      if (!dob || !orgId) { m.innerHTML = '<p class="muted small">Nejdřív vyberte dobrovolníka.</p>'; return; }
+      FotkaVykazu.mount(m, {
+        fotky: mimo(), muzePridat: !zamcen, muzeSmazat: !zamcen, kamera: true,
+        nacti: async id => (await api('oNactiFotkuVykazu', id)).dataUrl,
+        nahraj: async dataUrl => { const r = await api('oNahrajFotkuVykazu', dob, orgId, mesic, dataUrl); DATA.fotky = r.fotky; return mimo(); },
+        smaz: async id => { const r = await api('oSmazFotkuVykazu', id); DATA.fotky = r.fotky; return mimo(); }
+      });
+    }
+    const sd = $('#fvDob', el); if (sd) { sd.value = dob; sd.onchange = e => { dob = e.target.value; kresliFV(); }; }
+    $('#fvMes', el).onchange = e => { mesic = e.target.value; kresliFV(); };
+    kresliFV();
+  }
+
+  // ---------- start ----------
+  volejApi('konfigurace', [], '').then(cfg => {
+    $('#nazevOrg').textContent = cfg.nazev;
+    if (cfg.googleClientId) nactiGoogle(cfg.googleClientId);
+  }).catch(() => { /* nevadí */ });
+
+  (async function start() {
+    const p = new URLSearchParams(location.search);
+    const vstup = p.get('vstup');
+    if (vstup) {
+      try { history.replaceState(null, '', location.pathname); } catch (e) { /* nevadí */ }
+      try { prihlasen((await volejApi('oPrihlasitOdkazem', [vstup], '')).token); return; }
+      catch (err) { if (TOKEN) return nactiData(); return ukazLogin(err.message); }
+    }
+    if (TOKEN) nactiData(); else ukazLogin('');
+  })();
+})();
+</script>
+</body>
+</html>

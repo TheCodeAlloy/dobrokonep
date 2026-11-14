@@ -1,6 +1,6 @@
 # Přestavba zápisu dobrovolnických hodin – schválený plán
 
-Stav: **fáze A hotová a nasazená**, **fáze B hotová a nasazená**, fáze C se dělá ve třech krocích: **C1 (měsíční schvalování, zámky, historie) hotové a nasazené**, **C2 (fotky výkazů, Způsob vykazování) hotové a nasazené**, **C3 (převod stávajícího schvalování, zrušení schvalování po řádcích) hotové, čeká na nasazení a na provedení převodu správcem**; D čeká. Každou fázi: otestovat, nasadit, nechat uživatele
+Stav: **fáze A hotová a nasazená**, **fáze B hotová a nasazená**, fáze C se dělá ve třech krocích: **C1 (měsíční schvalování, zámky, historie) hotové a nasazené**, **C2 (fotky výkazů, Způsob vykazování) hotové a nasazené**, **C3 hotové a nasazené (převod provádí správce)**; **D1 (portál organizace) hotové, čeká na nasazení**, D2 (pozvánka nového dobrovolníka od organizace) čeká. Každou fázi: otestovat, nasadit, nechat uživatele
 vyzkoušet, teprve pak další. Na konci fáze aktualizovat AGENTS.md.
 
 ## Hierarchie a viditelnost
@@ -41,6 +41,7 @@ rolovací stránka po měsících, jen dny se záznamem, součty měsíců, „+
   měsíční zámky.
 
 ## Fáze D – portál organizace
+Rozhodnutí uživatele: organizace vidí jen jméno a kontakt dobrovolníka; smí zapisovat a opravovat hodiny, dokud měsíc není schválený; žádné e-maily o zápisech; přihlášení stejně jako dobrovolníci.
 Nová stránka `organizace.html` (přihlášení kódem/odkazem/Googlem, přidání na plochu telefonu), list Koordinátoři
 organizací spravuje KONEP v dashboardu (jedna organizace jich může mít víc). Vlevo dobrovolníci organizace, roční
 stránka z fáze B jen s ouškem této organizace, rychlá volba „Vyfotit výkaz“. **Nový dobrovolník od organizace:**

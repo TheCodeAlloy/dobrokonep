@@ -1,0 +1,71 @@
+// Portál organizace v prohlížeči (telefon 360 px): přihlášení odkazem, seznam, roční stránka, zápis, fotka
+process.env.TZ = 'Europe/Prague';
+const M = require('./gas-mock.js');
+require('./nacti-kod.js')();
+overAdmin_ = () => { AKTUALNI_UZIVATEL = 'k@k.cz'; return { email: 'k@k.cz', role: 'Hlavní admin' }; };
+log_ = () => {};
+const quiet = console.log; console.log = (...a) => { if (!String(a[0]).startsWith('Hotovo')) quiet(...a); }; console.error = () => {};
+nastavTabulku();
+const DISK = {}; let cisloS = 0;
+ulozSouborFotky_ = (d, n, b) => { const id = 'S' + (++cisloS); DISK[id] = b; return id; };
+nactiSouborFotky_ = id => 'data:image/jpeg;base64,' + Buffer.from(DISK[id]).toString('base64');
+smazSouborFotky_ = id => { delete DISK[id]; };
+nastavHodnotu_('web_adresa', 'http://web.test/dc/');
+const sh = M.sheets;
+const hdO = hlavicky_(sh['Organizace']);
+[['KAL', 'Kalyna'], ['HOS', 'Hospic Chrudim']].forEach(([i, n]) => sh['Organizace'].appendRow(hdO.map(h => ({ ID: i, 'Název': n, 'Aktivní': 'ANO' })[h] ?? '')));
+const hdD = hlavicky_(sh['Dobrovolníci']);
+[['0001', 'Jan', 'Novák'], ['0002', 'Eva', 'Malá'], ['0003', 'Petr', 'Cizí']].forEach(([i, j, p]) => sh['Dobrovolníci'].appendRow(hdD.map(h => ({ ID: 'DC-2026-' + i, 'Jméno': j, 'Příjmení': p, 'E-mail': j.toLowerCase() + '@x.cz', 'Telefon': '777 111 22' + i.slice(-1), 'Stav': 'Aktivní dobrovolník' })[h] ?? '')));
+pridejPrirazeni('T', 'DC-2026-0001', 'KAL', '', ''); pridejPrirazeni('T', 'DC-2026-0002', 'KAL', '', ''); pridejPrirazeni('T', 'DC-2026-0003', 'HOS', '', '');
+const dnes = ymd_(new Date()), rok = dnes.slice(0, 4);
+ulozHodiny('T', { dobrovolnik: 'DC-2026-0001', orgId: 'KAL', datum: rok + '-01-10', od: '09:00', do: '12:00', cinnost: 'Pomoc na akci' });
+ulozHodiny('T', { dobrovolnik: 'DC-2026-0003', orgId: 'HOS', datum: rok + '-01-10', od: '09:00', do: '12:00', cinnost: 'Pomoc na akci' });
+const hdK = hlavicky_(sh['Koordinátoři organizací']);
+sh['Koordinátoři organizací'].appendRow(hdK.map(h => ({ 'E-mail': 'karel@kal.cz', 'Jméno': 'Karel', 'ID organizace': 'KAL', 'Aktivní': 'ANO' })[h] ?? ''));
+const { chromium } = require('playwright');
+(async () => {
+  const b = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH, args: ['--headless=new'] } : {});
+  const ctx = await b.newContext({ viewport: { width: 360, height: 800 }, deviceScaleFactor: 1 });
+  const errs = [];
+  await ctx.route('https://fonts.googleapis.com/**', r => r.abort());
+  await ctx.route('https://script.google.com/**', async r => r.fulfill({ contentType: 'application/json', body: doPost({ postData: { contents: r.request().postData() } }) }));
+  await ctx.route('http://web.test/**', r => r.fulfill({ path: require('path').join(require('./nacti-kod.js').WEB, new URL(r.request().url()).pathname.split('/').pop()) }));
+  const p = await ctx.newPage(); p.setDefaultTimeout(5000);
+  p.on('pageerror', e => errs.push('JS: ' + e.message)); p.on('dialog', d => d.accept());
+  const W = ms => p.waitForTimeout(ms || 300);
+  // přihlášení e-mailem a odkazem z e-mailu
+  await p.goto('http://web.test/dc/organizace.html'); await W(600);
+  await p.fill('#email', 'karel@kal.cz'); await p.click('#bPoslat'); await W(500);
+  const mail = MAILS.pop();
+  console.log('e-mail s kódem:', mail.subject, '| odkaz na portál organizace:', /organizace\.html\?vstup=/.test(mail.body));
+  await p.goto(mail.body.match(/http:\/\/web\.test\/dc\/organizace\.html\?vstup=[a-f0-9]{64}/)[0]); await W(800);
+  console.log('pozdrav:', await p.textContent('#pozdrav'));
+  console.log('dobrovolníci:', (await p.$$eval('#lide .clovek .jm', l => l.map(x => x.textContent))).join(', '));
+  console.log('vidí cizího (Petr)?', (await p.textContent('#lide')).includes('Petr'));
+  console.log('statistiky:', (await p.textContent('#stats')).replace(/\s+/g, ' '));
+  await p.screenshot({ path: __dirname + '/vystup/o1_prehled_360.png', fullPage: true });
+  // detail dobrovolníka, zápis řádku
+  await p.click('#lide .clovek >> nth=0'); await W(400);
+  console.log('detail:', await p.textContent('#dJmeno'), '|', (await p.textContent('#dKontakt')).replace(/\s+/g, ' '));
+  await p.click('#rocni [data-a=pridat]'); await W(200);
+  await p.selectOption('#rocni [data-k=odH]', '13'); await p.selectOption('#rocni [data-k=doH]', '15');
+  await p.selectOption('#rocni [data-k=cin]', { index: 1 });
+  await p.click('#rocni [data-a=ulozit]'); await W(800);
+  console.log('řádků v roční stránce:', await p.$$eval('#rocni .rh-row', l => l.length), '| v tabulce Hodiny (Kalyna):', radkyHodin_().radky.filter(r => r.orgId === 'KAL').length, '| stav:', radkyHodin_().radky.filter(r => r.zdroj === 'Organizace').map(r => r.stav).join());
+  // fotka
+  await p.click('#dFotka'); await W(400);
+  const JPG = Buffer.from((await p.evaluate(() => { const c = document.createElement('canvas'); c.width = 40; c.height = 30; const x = c.getContext('2d'); x.fillStyle = '#393'; x.fillRect(0, 0, 40, 30); return c.toDataURL('image/jpeg'); })).split(',')[1], 'base64');
+  await p.setInputFiles('#fvMisto input[data-vstup=kamera]', { name: 'v.jpg', mimeType: 'image/jpeg', buffer: JPG }); await W(1200);
+  console.log('fotek po nahrání:', await p.$$eval('#fvMisto .fv-it', l => l.length), '| na „Disku“:', Object.keys(DISK).length);
+  await p.screenshot({ path: __dirname + '/vystup/o2_detail_fotka_360.png' });
+  console.log('vodorovný posun na 360 px:', await p.evaluate(() => document.documentElement.scrollWidth > window.innerWidth));
+  await p.click('#fx'); await W(300);
+  await p.click('#zpet'); await W(300);
+  console.log('zpět na seznam:', await p.isVisible('#lide'));
+  // odebrání přístupu
+  sh['Koordinátoři organizací'].getRange(2, 4).setValue('NE');
+  await p.reload(); await W(800);
+  console.log('po odebrání přístupu se ukáže přihlášení:', await p.isVisible('#login'));
+  console.log('chyby:', errs); if (errs.length) process.exitCode = 1;
+  await b.close();
+})();

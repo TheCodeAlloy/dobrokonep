@@ -293,7 +293,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-14h</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-14i</p>
   </div>
 </div>
 <script>
@@ -1751,11 +1751,15 @@ async function vAdmin() {
   if (ADM.listy.ADMINI) zalozky.push(['ADMINI', 'Administrátoři']);
   if (ADM.listy.SABLONY) zalozky.push(['SABLONY', 'Šablony e-mailů']);
   zalozky.push(['DOKUMENTY', 'Šablony dokumentů']);
-  zalozky.push(['ORGANIZACE', 'Organizace'], ['CINNOSTI', 'Činnosti'], ['MISTA', 'Místa'], ['OBLASTI', 'Oblasti zájmu']);
+  zalozky.push(['ORGANIZACE', 'Organizace'], ['KORDORG', 'Koordinátoři organizací'], ['CINNOSTI', 'Činnosti'], ['MISTA', 'Místa'], ['OBLASTI', 'Oblasti zájmu']);
   const orgVolby = ['Všechny organizace'].concat((D.organizaceVse || []).map(o => o.nazev));
   KONF.CINNOSTI = { nazev: 'Činnosti', sloupce: { 0: orgVolby, 1: 'text', 2: ['ANO', 'NE'] },
     pridat: [['organizace', 'Organizace', orgVolby], ['nazev', 'Činnost', 'text']],
     napoveda: 'Přednastavené činnosti, na které se při zápisu hodin jen klikne. „Všechny organizace“ = nabízí se u každé organizace. Neaktivní (NE) se přestanou nabízet, staré zápisy zůstanou.' };
+  const orgIds = (D.organizaceVse || []).map(o => o.id);
+  KONF.KORDORG = { nazev: 'Koordinátoři organizací', sloupce: { 0: 'email', 1: 'text', 2: orgIds, 3: ['ANO', 'NE'] },
+    pridat: [['email', 'E-mail koordinátora', 'email'], ['jmeno', 'Jméno', 'text'], ['orgId', 'Organizace (ID)', orgIds]],
+    napoveda: 'Lidé z přijímajících organizací, kteří se přihlašují do portálu organizace (adresa …/organizace.html) e-mailem a vidí jen dobrovolníky a hodiny své organizace. Jedna organizace jich může mít víc; kdo koordinuje víc organizací, má víc řádků. Přístup odeberete nastavením Aktivní = NE. Hodiny za organizaci zapisují, schvaluje je KONEP.' };
   if (!stav.tab || !zalozky.some(z => z[0] === stav.tab)) stav.tab = zalozky[0][0];
 
   obsah.innerHTML = '<h1>Administrace</h1><p class="sub">Změny se ukládají automaticky po opuštění pole.</p>' +

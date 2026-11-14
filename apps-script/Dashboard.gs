@@ -29,7 +29,8 @@ function editovatelneListy_() {
     OBLASTI: { list: LISTY.OBLASTI, role: 'Koordinátor', sloupce: [0, 1] },
     MISTA: { list: LISTY.MISTA, role: 'Koordinátor', sloupce: [0, 1] },
     ORGANIZACE: { list: LISTY.ORGANIZACE, role: 'Koordinátor', nazvySloupcu: PORADI_ORGANIZACE },
-    CINNOSTI: { list: LISTY.CINNOSTI, role: 'Koordinátor', sloupce: [0, 1, 2] }
+    CINNOSTI: { list: LISTY.CINNOSTI, role: 'Koordinátor', sloupce: [0, 1, 2] },
+    KORDORG: { list: LISTY.KORDORG, role: 'Koordinátor', sloupce: [0, 1, 2, 3] }
   };
 }
 
@@ -1099,8 +1100,10 @@ function ulozBunkuListu(token, klic, radek, sloupec, hodnota, puvodniKlic) {
   let v = String(hodnota == null ? '' : hodnota).trim().slice(0, 5000);
   if (klic === 'ORGANIZACE') v = v.replace(/\s*[\r\n]+\s*/g, ' ');
   const anoNe = (klic === 'OBLASTI' || klic === 'MISTA') && sloupec === 1 || klic === 'CINNOSTI' && sloupec === 2 ||
-    klic === 'ORGANIZACE' && jm === 'Aktivní' || klic === 'ADMINI' && (sloupec === 3 || sloupec === 4);
+    klic === 'ORGANIZACE' && jm === 'Aktivní' || klic === 'ADMINI' && (sloupec === 3 || sloupec === 4) || klic === 'KORDORG' && sloupec === 3;
   if (anoNe && ['ANO', 'NE'].indexOf(v) < 0) throw new Error('Povolené hodnoty jsou ANO / NE.');
+  if (klic === 'KORDORG' && sloupec === 0) { v = v.toLowerCase(); if (!platnyEmail_(v)) throw new Error('Neplatný e-mail.'); }
+  if (klic === 'KORDORG' && sloupec === 2 && !organizace_().some(o => o.id === v)) throw new Error('Neznámé ID organizace.');
   if (klic === 'ADMINI' && sloupec === 0) { v = v.toLowerCase(); if (!platnyEmail_(v)) throw new Error('Neplatný e-mail.'); }
   if (klic === 'ADMINI' && sloupec === 2 && ROLE.indexOf(v) < 0) throw new Error('Neznámá role.');
   if (klic === 'ORGANIZACE' && ['E-mail', 'E-mail 2', 'E-mail 3'].indexOf(jm) >= 0 && v && !platnyEmail_(v)) throw new Error('Neplatný e-mail.');
@@ -1240,7 +1243,7 @@ function prejmenujIdOrganizace_(stare, nove) {
 
 function pridejRadekListu(token, klic, d) {
   const cfg = editovatelneListy_()[klic];
-  if (!cfg || ['OBLASTI', 'MISTA', 'ORGANIZACE', 'ADMINI', 'CINNOSTI'].indexOf(klic) < 0) throw new Error('Do tohoto listu nelze přidávat.');
+  if (!cfg || ['OBLASTI', 'MISTA', 'ORGANIZACE', 'ADMINI', 'CINNOSTI', 'KORDORG'].indexOf(klic) < 0) throw new Error('Do tohoto listu nelze přidávat.');
   overAdmin_(token, cfg.role);
   d = d || {};
   const t = (v, max) => String(v == null ? '' : v).trim().slice(0, max || 300);
@@ -1266,6 +1269,14 @@ function pridejRadekListu(token, klic, d) {
       const vse = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, 2).getValues() : [];
       if (vse.some(r => String(r[0]).trim() === org && String(r[1]).trim().toLowerCase() === nazev.toLowerCase())) throw new Error('Tato činnost už v seznamu je.');
       radek = [bunka_(org), bunka_(nazev), 'ANO'];
+    } else if (klic === 'KORDORG') {
+      const email = t(d.email, 200).toLowerCase();
+      if (!platnyEmail_(email)) throw new Error('Zadejte platný e-mail.');
+      const orgId = t(d.orgId, 40);
+      if (!organizace_().some(o => o.id === orgId)) throw new Error('Vyberte organizaci.');
+      const vse = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, 3).getValues() : [];
+      if (vse.some(r => String(r[0]).trim().toLowerCase() === email && String(r[2]).trim() === orgId)) throw new Error('Tento koordinátor už u této organizace je.');
+      radek = [email, bunka_(t(d.jmeno, 100)), orgId, 'ANO'];
     } else if (klic === 'ORGANIZACE') {
       const nazev = t(d.nazev, 200);
       if (!nazev) throw new Error('Zadejte název organizace.');

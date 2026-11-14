@@ -114,6 +114,11 @@ const { chromium } = require('playwright');
   await p.click('#mTab tbody tr >> nth=0 >> button[data-a=odemknout]'); await W(300);
   await p.fill('#dlgVyber [data-udaj=duvod]', 'oprava překlepu'); await p.click('#dlgAno'); await W(800);
   console.log('po odemčení: ', M.sheets['Měsíce'].getDataRange().getValues()[1].slice(3,9).join(' | '));
+  // správa koordinátorů organizací
+  await p.evaluate(() => jdi('admin', { tab: 'KORDORG' })); await W(800);
+  await p.fill('#pridat input[name=email]', 'karel@kal.cz'); await p.fill('#pridat input[name=jmeno]', 'Karel');
+  await p.click('#pridat button[type=submit]'); await W(800);
+  console.log('koordinátor organizace přidán:', sh['Koordinátoři organizací'].getLastRow() - 1, '|', sh['Koordinátoři organizací'].getDataRange().getValues()[1].join(' | '));
   // náhled převodu schvalování
   zalohaPredPrevodem_ = () => ({ nazev: 'Záloha test', url: 'https://drive/zaloha' });
   await p.evaluate(() => jdi('mesice')); await W(400);

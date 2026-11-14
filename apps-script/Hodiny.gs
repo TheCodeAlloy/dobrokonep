@@ -56,6 +56,10 @@ function nastavListyHodin_(ss) {
   const shHi = zajistiList_(ss, LISTY.HISTORIE, SLOUPCE_HISTORIE);
   shHi.getRange(2, 1, shHi.getMaxRows() - 1, 1).setNumberFormat('d. M. yyyy H:mm:ss');
 
+  const shKo = zajistiList_(ss, LISTY.KORDORG, SLOUPCE_KORDORG);
+  shKo.getRange('D2:D').setDataValidation(seznamValidace_(['ANO', 'NE']));
+  shKo.setColumnWidth(1, 240).setColumnWidth(2, 200).setColumnWidth(3, 160);
+
   const shFo = zajistiList_(ss, LISTY.FOTKY, SLOUPCE_FOTKY);
   shFo.getRange(2, 4, shFo.getMaxRows() - 1, 1).setNumberFormat('@');
   shFo.getRange(2, 8, shFo.getMaxRows() - 1, 1).setNumberFormat('d. M. yyyy H:mm');

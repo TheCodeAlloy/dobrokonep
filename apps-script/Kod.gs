@@ -41,6 +41,7 @@ const LISTY = {
   MESICE: 'Měsíce',
   HISTORIE: 'Historie hodin',
   FOTKY: 'Fotky výkazů',
+  KORDORG: 'Koordinátoři organizací',
   LOG: 'Log změn'
 };
 
@@ -203,6 +204,13 @@ const VYCHOZI_SABLONY = [
     'Přihlášení k dobrovolnickým hodinám: {kod}',
     'Dobrý den, {jmeno},\n\n' +
     'váš kód pro přihlášení: {kod}\n\n' +
+    'Nebo se přihlaste jedním klepnutím:\n{odkaz}\n\n' +
+    'Kód i odkaz platí 10 minut. Pokud jste o přihlášení nežádali, tento e-mail ignorujte.\n\n' +
+    '{nazev_organizace}'],
+  ['prihlaseni_organizace', 'Přihlašovací kód do portálu organizace',
+    'Přihlášení do portálu organizace: {kod}',
+    'Dobrý den,\n\n' +
+    'váš kód pro přihlášení do portálu organizace: {kod}\n\n' +
     'Nebo se přihlaste jedním klepnutím:\n{odkaz}\n\n' +
     'Kód i odkaz platí 10 minut. Pokud jste o přihlášení nežádali, tento e-mail ignorujte.\n\n' +
     '{nazev_organizace}'],
