@@ -149,7 +149,6 @@
     <div id="cekani"></div>
     <div class="akce2" id="akce2"></div>
     <div id="seznam"></div>
-    <div class="card" id="prehledKarta" hidden><h2>Přehled po měsících</h2><div class="rok" id="roky"></div><div id="prehled"></div></div>
     <details class="tip"><summary>Jak si přidat stránku na plochu telefonu</summary>
       <p><strong>Android (Chrome):</strong> vpravo nahoře ⋮ → „Přidat na plochu“ nebo „Instalovat aplikaci“.</p>
       <p><strong>iPhone (Safari):</strong> dole tlačítko Sdílet (čtvereček se šipkou) → „Přidat na plochu“.</p>
@@ -165,12 +164,13 @@
 <div class="sheet" id="sheet" hidden><div class="sheet-box" id="sheetBox" role="dialog" aria-modal="true"></div></div>
 
 <script src="config.js"></script>
+<script src="rocni-hodiny.js?v=2026-11-14"></script>
 <script>
 (function () {
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  let TOKEN = '', DATA = null, rokVybrany = '';
+  let TOKEN = '', DATA = null, RH = null;
   const ulozeno = {
     get(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } },
     set(k, v) { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) { /* bez úložiště */ } }
@@ -231,7 +231,7 @@
   }
   function chybaLogin(t) { $('#lChyba').textContent = t; $('#lChyba').hidden = !t; }
   function prihlasen(token) { TOKEN = token; ulozeno.set('dh_token', token); ulozeno.set('dh_cekam', ''); nactiData(); }
-  function odhlasLokalne() { TOKEN = ''; ulozeno.set('dh_token', ''); }
+  function odhlasLokalne() { TOKEN = ''; ulozeno.set('dh_token', ''); RH = null; const sz = $('#seznam'); if (sz) sz.innerHTML = ''; }
 
   $('#fEmail').addEventListener('submit', async e => {
     e.preventDefault(); chybaLogin('');
@@ -317,51 +317,18 @@
       if (z) z.onclick = () => formular({ orgId: posl.orgId, od: posl.od, do: posl.do, minut: posl.minut, cinnost: posl.cinnost });
     }
 
-    // zápisy po měsících
-    if (!h.length) {
-      $('#seznam').innerHTML = '<p class="muted" style="text-align:center">Zatím tu nejsou žádné hodiny.</p>';
-    } else {
-      const mesice = {};
-      h.forEach(x => { (mesice[x.datum.slice(0, 7)] = mesice[x.datum.slice(0, 7)] || []).push(x); });
-      $('#seznam').innerHTML = Object.keys(mesice).sort().reverse().slice(0, 6).map(k => {
-        const a = mesice[k], [r, m] = k.split('-');
-        const schv = suma(a.filter(x => x.stav === 'Schváleno'));
-        return '<div class="mesic"><h3>' + MESICE[+m - 1] + ' ' + r + '</h3><span>' + (schv ? 'schváleno ' + fmtMin(schv) : '') + '</span></div>' +
-          a.map(x => {
-            const lzeUpravit = x.stav !== 'Schváleno';
-            return '<' + (lzeUpravit ? 'button type="button" data-id="' + esc(x.id) + '"' : 'div') + ' class="zapis">' +
-              '<div><div class="co">' + esc(x.cinnost) + '</div><div class="kde">' + denTydne(x.datum) + ' ' + esc(fmtD(x.datum)) + (x.od ? ' · ' + esc(x.od + '–' + x.do) : '') +
-              (d.organizace.length > 1 ? ' · ' + esc(x.org) : '') + '</div></div>' +
-              '<div class="kolik"><strong>' + esc(fmtMin(x.minut)) + '</strong>' + stavHtml(x.stav) + '</div></' + (lzeUpravit ? 'button' : 'div') + '>';
-          }).join('');
-      }).join('') + (Object.keys(mesice).length > 6 ? '<p class="muted small" style="text-align:center">Starší měsíce najdete v přehledu níže.</p>' : '');
-      $('#seznam').onclick = e => {
-        const b = e.target.closest('button[data-id]');
-        if (b) formular(h.find(x => x.id === b.dataset.id));
-      };
-    }
-    kresliPrehled();
-  }
-
-  function kresliPrehled() {
-    const sch = DATA.hodiny.filter(x => x.stav === 'Schváleno');
-    if (!sch.length) { $('#prehledKarta').hidden = true; return; }
-    $('#prehledKarta').hidden = false;
-    const roky = sch.map(x => x.datum.slice(0, 4)).filter((x, i, a) => a.indexOf(x) === i).sort().reverse();
-    if (!rokVybrany || roky.indexOf(rokVybrany) < 0) rokVybrany = roky[0];
-    $('#roky').innerHTML = roky.map(r => '<label class="chip"><input type="radio" name="rok" value="' + r + '"' + (r === rokVybrany ? ' checked' : '') + '><span>' + r + '</span></label>').join('');
-    $('#roky').onchange = e => { rokVybrany = e.target.value; kresliPrehled(); };
-    const vRoce = sch.filter(x => x.datum.slice(0, 4) === rokVybrany);
-    let rows = '';
-    for (let m = 12; m >= 1; m--) {
-      const k = rokVybrany + '-' + String(m).padStart(2, '0');
-      const a = vRoce.filter(x => x.datum.slice(0, 7) === k);
-      if (a.length) rows += '<tr><td style="text-transform:capitalize">' + MESICE[m - 1] + '</td><td>' + fmtMin(suma(a)) + '</td></tr>';
-    }
-    const orgs = vRoce.map(x => x.org).filter((x, i, a) => a.indexOf(x) === i);
-    if (orgs.length > 1) rows += '<tr><td colspan="2" class="muted small" style="padding-top:14px">Podle organizací</td></tr>' + orgs.map(o => '<tr><td class="muted">' + esc(o) + '</td><td>' + fmtMin(suma(vRoce.filter(x => x.org === o))) + '</td></tr>').join('');
-    rows += '<tr><td><strong>Celkem ' + rokVybrany + '</strong></td><td>' + fmtMin(suma(vRoce)) + '</td></tr>';
-    $('#prehled').innerHTML = '<table class="prehled">' + rows + '</table><p class="muted small" style="margin-bottom:0">Počítají se jen schválené hodiny.</p>';
+    // roční stránka hodin (sdílená součást): ouška roků a organizací, měsíce, úpravy přímo v seznamu
+    const volby = {
+      zaznamy: h, dnes: DATA.dnes, minDatum: posun(-DATA.zpetneDni),
+      organizace: DATA.organizace.map(o => ({ id: o.id, nazev: o.nazev })),
+      jeCteni: r => r !== DATA.dnes.slice(0, 4),
+      lzeUpravit: x => x.stav !== 'Schváleno' && x.datum >= posun(-DATA.zpetneDni),
+      orgProDatum: datum => aktivniOrg(datum).map(o => ({ id: o.id, nazev: o.nazev })),
+      cinnostiOrg: id => (DATA.organizace.find(o => o.id === id) || { cinnosti: [] }).cinnosti,
+      ulozit: async z => { DATA = await api('dZapisHodiny', z); kresli(); return DATA.hodiny; },
+      smazat: async id => { DATA = await api('dSmazHodiny', id); kresli(); return DATA.hodiny; }
+    };
+    if (RH) RH.nastav(h); else RH = RocniHodiny.mount($('#seznam'), volby);
   }
 
   // ---------- formulář zápisu ----------

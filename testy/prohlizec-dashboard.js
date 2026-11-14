@@ -58,45 +58,19 @@ const { chromium } = require('playwright');
   await p.click('#pridatOrg'); await W(100);
   // Jan má 2 organizace -> přepínač
   await p.evaluate(() => jdi('detail',{id:'DC-2026-0001'})); await W(600);
-  console.log('Jan přepínač:', (await p.textContent('#souhrnOrg').catch(()=> 'není')).replace(/\s+/g,' '));
-  await p.screenshot({path:__dirname+'/vystup/u3_detail.png', fullPage:true});
-  // akce (testovací data jsou z října 2026, proto pevný měsíc – test nezávisí na dnešním datu)
-  await p.evaluate(() => { H.filtr = { mesic: '2026-10', org: '', dobrovolnik: '', stav: '' }; jdi('hodiny'); }); await W(500);
-  await p.click('#hAkce'); await W();
-  await p.fill('#aDatum','2026-10-15'); await p.dispatchEvent('#aDatum','change'); await W(100);
-  console.log('akce seznam:', (await p.textContent('#aSeznam')).replace(/\s+/g,' '));
-  await p.selectOption('#aOdH','14'); await p.selectOption('#aDoH','17'); await p.selectOption('#aDoM','30');
-  await p.click('#aVse'); await p.click('#aCin label:first-child');
-  await p.screenshot({path:__dirname+'/vystup/u4_akce.png'});
-  await p.click('#aUlozit'); await W(600);
-  await p.screenshot({path:__dirname+'/vystup/u5_hodiny.png'});
-  console.log('souhrn hodin:', await p.textContent('#hSouhrn'));
-  // schválit ke schválení
-  await p.click('tr:has(.badge:text("Ke schválení")) button[data-a="schvalit"]'); await W(500);
-  console.log('po schválení:', await p.textContent('#hSouhrn'));
-  // hromadné smazání 1
-  await p.click('.hSel >> nth=0'); await W(100);
-  console.log('bulk:', await p.textContent('#hHromadne'));
-  console.log('výběr po schválení:', await p.textContent('#hSouhrn'));
-  // admin činnosti
-  await p.evaluate(() => { stav.tab='CINNOSTI'; jdi('admin'); }); await W(600);
-  await p.screenshot({path:__dirname+'/vystup/u7_cinnosti.png'});
-  // seznam hodin – celé období
-  await p.evaluate(() => { H.filtr={mesic:'',org:'',dobrovolnik:'',stav:''}; jdi('hodiny'); }); await W(500);
-  await p.fill('#hMesic',''); await p.dispatchEvent('#hMesic','change'); await W(500);
-  console.log('vše:', await p.textContent('#hSouhrn'));
-  // mobil
-  await p.setViewportSize({width:390,height:844}); await W(200);
-  await p.screenshot({path:__dirname+'/vystup/u8_mobil.png'});
-  await p.click('#hNovy'); await W(); await p.screenshot({path:__dirname+'/vystup/u9_mobil_form.png'});
-  // Jan detail po zápisech – přepínač organizací
-  await p.keyboard.press('Escape'); await p.setViewportSize({width:1280,height:900});
-  await p.evaluate(() => jdi('detail',{id:'DC-2026-0001'})); await W(800);
-  console.log('Jan přepínač:', (await p.textContent('#souhrnOrg').catch(()=> 'není')).replace(/\s+/g,' '));
-  await p.click('#souhrnOrg >> text=Hospic Chrudim').catch(e=>console.log('klik selhal', e.message.slice(0,1500))); await W(100);
-  console.log('checked:', await p.$eval('#souhrnOrg input:checked', i=>i.value).catch(()=>'?'));
+  console.log('Jan ouška:', (await p.$$eval('#rocniHod .rh-orgs .rh-tab', l => l.map(x => x.textContent))).join(' | '));
+  const radkuVse = await p.$$eval('#rocniHod .rh-row', l => l.length);
+  await p.click('#rocniHod .rh-orgs >> text=Hospic Chrudim'); await W(100);
+  const radkuHospic = await p.$$eval('#rocniHod .rh-row', l => l.length);
+  console.log('řádků všechny/Hospic:', radkuVse, radkuHospic, radkuHospic < radkuVse);
+  // přidání řádku přímo v seznamu (koordinátor)
+  await p.click('#rocniHod [data-a=pridat]'); await W(100);
+  await p.selectOption('#rocniHod [data-k=odH]','8'); await p.selectOption('#rocniHod [data-k=doH]','9'); await p.selectOption('#rocniHod [data-k=doM]','30');
+  console.log('organizace předvyplněna:', await p.$eval('#rocniHod [data-k=org]', e => e.value));
+  await p.selectOption('#rocniHod [data-k=cin]', { index: 1 });
+  await p.click('#rocniHod [data-a=ulozit]'); await W(700);
+  console.log('řádků po přidání:', await p.$$eval('#rocniHod .rh-row', l => l.length), '| v tabulce Jan:', radkyHodin_().radky.filter(z=>z.dobrovolnik==='DC-2026-0001').length);
   console.log('Jan jen Hospic:', (await p.textContent('#hodSouhrn .stats')).replace(/\s+/g,' '));
-  await p.click('#souhrnOrg >> text=Všechny organizace').catch(()=>{}); await W(100);
   await p.screenshot({path:__dirname+'/vystup/u10_jan.png'});
   console.log('chyby:', errs); if (errs.length) process.exitCode = 1;
   console.log('Hodiny v tabulce:', radkyHodin_().radky.map(z=>z.dobrovolnik+' '+z.datum+' '+z.minut+' '+z.stav+' '+z.zdroj).join(' | '));

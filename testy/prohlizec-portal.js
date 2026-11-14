@@ -54,10 +54,30 @@ const { chromium } = require('playwright');
   console.log('opakování předvyplněno:', await p.inputValue('#fOdH'), await p.inputValue('#fDoH'), await p.isChecked('input[name="cin"][value="Pomoc na akci"]'));
   await p.click('#fUlozit'); await W(600);
   // 4) úprava čekajícího zápisu
-  await p.click('#seznam button.zapis >> nth=0'); await W();
-  await p.selectOption('#fOdH','9'); await p.selectOption('#fDoH','12');
-  await p.click('#fUlozit'); await W(600);
-  console.log('po úpravě:', (await p.textContent('#seznam')).replace(/\s+/g,' ').slice(0,160));
+  console.log('ouška organizací:', (await p.$$eval('#seznam .rh-orgs .rh-tab', l => l.map(x => x.textContent))).join(' | '));
+  console.log('ouška roků:', (await p.$$eval('#seznam .rh-roky .rh-tab', l => l.map(x => x.textContent))).join(' | '));
+  await p.click('#seznam .rh-row button[data-a=upravit] >> nth=0'); await W();
+  await p.selectOption('#seznam [data-k=odH]','9'); await p.selectOption('#seznam [data-k=doH]','12');
+  await p.click('#seznam [data-a=ulozit]'); await W(600);
+  console.log('po úpravě:', (await p.textContent('#seznam')).replace(/\s+/g,' ').slice(0,200));
+  // nový řádek přímo v seznamu
+  await p.click('#seznam [data-a=pridat]'); await W();
+  await p.selectOption('#seznam [data-k=odH]','10'); await p.selectOption('#seznam [data-k=doH]','11');
+  await p.click('#seznam [data-a=ulozit]'); await W(300);
+  console.log('bez organizace v řádku:', await p.textContent('#seznam [data-k=chyba]'));
+  await p.selectOption('#seznam [data-k=org]', { index: 1 });
+  await p.selectOption('#seznam [data-k=cin]', { index: 1 });
+  await p.click('#seznam [data-a=ulozit]'); await W(600);
+  console.log('řádků po přidání:', await p.$$eval('#seznam .rh-row', l => l.length));
+  // smazání řádku
+  await p.click('#seznam .rh-row button[data-a=upravit] >> nth=0'); await W();
+  await p.click('#seznam [data-a=smazat]'); await W(600);
+  console.log('řádků po smazání:', await p.$$eval('#seznam .rh-row', l => l.length));
+  await p.setViewportSize({width:360,height:800});
+  await p.click('#seznam .rh-row button[data-a=upravit] >> nth=0'); await W();
+  await p.screenshot({path:__dirname+'/vystup/p5_radek_360.png', fullPage:true});
+  console.log('seznam – vodorovný posun na 360 px:', await p.evaluate(() => document.documentElement.scrollWidth > window.innerWidth));
+  await p.click('#seznam [data-a=zrusit]'); await p.setViewportSize({width:1280,height:900});
   // 5) zápis před 70 dny – nejde vybrat (min), zkusíme podvrhnout
   await p.click('#bNovy'); await W(); await p.click('#fDny >> text=Jiný den');
   const minAttr = await p.getAttribute('#fDatum','min'); console.log('min datum:', minAttr);
@@ -68,7 +88,6 @@ const { chromium } = require('playwright');
   await p.reload(); await W(600);
   console.log('po schválení:', await p.textContent('#stats'), '|', await p.textContent('#cekani'));
   await p.screenshot({path:__dirname+'/vystup/p3_po.png', fullPage:true});
-  console.log('přehled:', (await p.textContent('#prehled')).replace(/\s+/g,' '));
   // 7) odhlášení a přihlášení kódem
   await p.click('#odhlasit'); await W(400);
   await p.fill('#email','jan@x.cz'); await p.click('#bPoslat'); await W(400);

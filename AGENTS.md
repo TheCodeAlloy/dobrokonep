@@ -55,7 +55,7 @@ docs/hodiny.html     ──┘  (JSON)        │     ├─ Tabulka Google (dat
 
 ### docs/ (GitHub Pages – web)
 `index.html` (formulář), `dashboard.html`, `hodiny.html` (portál), `config.js` (adresa API + `volejApi`),
-`logo.png`, `manifest.webmanifest` (přidání na plochu), `.nojekyll`.
+`rocni-hodiny.js` (sdílená roční stránka hodin dobrovolníka: ouška roků a organizací, měsíce, přidání/úprava řádku přímo v seznamu; načítá se s `?v=RRRR-MM-DD` – při změně souboru číslo zvyš; používá ji detail dobrovolníka v dashboardu i portál, později portál organizace; stránka jen kreslí, pravidla vždy ověřuje server), `logo.png`, `manifest.webmanifest` (přidání na plochu), `.nojekyll`.
 
 ### testy/ (Node.js, napodobenina Apps Scriptu)
 `gas-mock.js` (SpreadsheetApp, PropertiesService, CacheService, MailApp… v paměti), `nacti-kod.js`,

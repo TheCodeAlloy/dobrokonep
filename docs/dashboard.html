@@ -293,7 +293,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-14a</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-14b</p>
   </div>
 </div>
 <script>
@@ -347,6 +347,7 @@
 </div>
 
 <script src="config.js"></script>
+<script src="rocni-hodiny.js?v=2026-11-14"></script>
 <script>
 const BOOT = { startId: new URLSearchParams(location.search).get('id') || '' };
 let D = null;              // data dobrovolníků a číselníky
@@ -794,7 +795,7 @@ function vDetail() {
 
   $('#zpet').onclick = () => jdi(stav.zpet || 'seznam');
   obsah.onclick = null; obsah.onkeydown = null;
-  souhrnOrg = '';
+
   kresliPrirazeni(z);
   kresliSouhrnHodin(z);
   kresliPortal(z);
@@ -1452,7 +1453,7 @@ function kresliPrirazeni(z) {
     } catch (err) { toast(err.message, 'err'); }
   };
 }
-let souhrnOrg = '';
+let RHD = null;   // roční stránka hodin v detailu dobrovolníka (sdílená součást rocni-hodiny.js)
 async function kresliSouhrnHodin(z, jenPrekreslit) {
   const el = $('#hodSouhrn');
   if (!el) return;
@@ -1470,37 +1471,46 @@ async function kresliSouhrnHodin(z, jenPrekreslit) {
 function vykresliSouhrn(z, data) {
   const el = $('#hodSouhrn');
   const vse = data.zaznamy;
-  // organizace z přiřazení i z dosavadních zápisů
-  const zPrir = (D.prirazeni || []).filter(p => p.dobrovolnik === z.ID).map(p => orgPodleId(p.orgId).nazev);
-  const orgs = zPrir.concat(vse.map(x => x.org)).filter((x, i, a) => x && a.indexOf(x) === i);
-  if (souhrnOrg && orgs.indexOf(souhrnOrg) < 0) souhrnOrg = '';
-  const zz = souhrnOrg ? vse.filter(x => x.org === souhrnOrg) : vse;
-  const sch = zz.filter(x => x.stav === 'Schváleno');
+  if (el.dataset.z !== z.ID || !$('#rocniHod', el)) {
+    el.innerHTML = '<div id="hodStat"></div><div id="rocniHod"></div><div id="hodBtn"></div>';
+    el.dataset.z = z.ID; RHD = null;
+  }
+  const zPrir = (D.prirazeni || []).filter(p => p.dobrovolnik === z.ID).map(p => orgPodleId(p.orgId));
+  const orgs = zPrir.concat(vse.map(x => ({ id: x.orgId, nazev: x.org }))).filter((x, i, a) => x.nazev && a.findIndex(y => y.nazev === x.nazev) === i);
+  const sch = vse.filter(x => x.stav === 'Schváleno');
   const rok = dnesISO().slice(0, 4), mes = tentoMesic();
   const suma = a => a.reduce((s, x) => s + x.minut, 0);
-  const ke = zz.filter(x => x.stav === 'Ke schválení');
-  el.innerHTML =
-    (orgs.length > 1 ? '<div class="chips" id="souhrnOrg" style="margin-top:12px">' +
-      ['', ...orgs].map(o => '<label class="chip"><input type="radio" name="sOrg" value="' + esc(o) + '"' + (o === souhrnOrg ? ' checked' : '') + '><span>' + esc(o || 'Všechny organizace') + '</span></label>').join('') + '</div>' : '') +
+  const ke = vse.filter(x => x.stav === 'Ke schválení');
+  $('#hodStat', el).innerHTML =
     '<div class="stats"><div><strong>' + fmtMin(suma(sch)) + '</strong><span>celkem</span></div>' +
     '<div><strong>' + fmtMin(suma(sch.filter(x => x.datum.slice(0, 4) === rok))) + '</strong><span>letos</span></div>' +
     '<div><strong>' + fmtMin(suma(sch.filter(x => x.datum.slice(0, 7) === mes))) + '</strong><span>tento měsíc</span></div></div>' +
-    (!souhrnOrg && orgs.length > 1 ? '<table class="phtable small" style="margin:-2px 0 10px;width:100%">' + orgs.map(o =>
-      '<tr><td>' + esc(o) + '</td><td style="text-align:right"><strong>' + fmtMin(suma(sch.filter(x => x.org === o))) + '</strong></td></tr>').join('') + '</table>' : '') +
-    (ke.length ? '<p class="warn small">Ke schválení: ' + ke.length + ' (' + fmtMin(suma(ke)) + ')</p>' : '') +
-    (zz.length ? '<ul class="doclist">' + zz.slice(0, 5).map(x => '<li><span>' + esc(fmtD(x.datum)) + ' · ' + esc(x.cinnost) + '<br><span class="muted small">' + esc(x.org) + '</span></span><span>' + esc(fmtMin(x.minut)) + ' ' + badgeH(x.stav) + '</span></li>').join('') + '</ul>'
-      : '<p class="muted small">Zatím žádné hodiny.</p>') +
-    '<div class="btns">' + (muze('Koordinátor') ? '<button class="btn" id="dZapsat">Zapsat hodiny</button>' : '') +
+    (ke.length ? '<p class="warn small">Ke schválení: ' + ke.length + ' (' + fmtMin(suma(ke)) + ')</p>' : '');
+  $('#hodBtn', el).innerHTML = '<div class="btns">' + (muze('Koordinátor') ? '<button class="btn" id="dZapsat">Zapsat hodiny</button>' : '') +
     (vse.length ? '<button class="btn ghost" id="dVse">Všechny hodiny →</button>' : '') + '</div>';
-  const so = $('#souhrnOrg');
-  if (so) so.onchange = e => { souhrnOrg = e.target.value; vykresliSouhrn(z, data); };
-  const zap = $('#dZapsat');
-  if (zap) zap.onclick = () => formZapis({ dobrovolnik: z.ID, orgId: souhrnOrg ? ((D.organizaceVse || []).find(o => o.nazev === souhrnOrg) || {}).id : '' }, () => kresliSouhrnHodin(z));
-  const vs = $('#dVse');
-  if (vs) vs.onclick = () => {
-    const org = souhrnOrg ? ((D.organizaceVse || []).find(o => o.nazev === souhrnOrg) || {}).id || '' : '';
-    H.filtr = { mesic: '', org: org, dobrovolnik: z.ID, stav: '' }; jdi('hodiny');
+  const znovu = async () => {
+    const d = await api('nactiHodiny', { dobrovolnik: z.ID });
+    CACHE.set('hd:' + z.ID, d); poZmeneHodin();
+    vykresliSouhrn(z, d);
+    return d.zaznamy;
   };
+  if (RHD) RHD.nastav(vse);
+  else RHD = RocniHodiny.mount($('#rocniHod', el), {
+    zaznamy: vse, dnes: dnesISO(),
+    organizace: orgs.map(o => ({ id: o.id || ((D.organizaceVse || []).find(q => q.nazev === o.nazev) || {}).id || o.nazev, nazev: o.nazev })),
+    jeCteni: () => false,
+    lzePridat: muze('Koordinátor'),
+    lzeUpravit: x => muze('Koordinátor') && (!(data.uzavrenoDo) || x.datum.slice(0, 7) > data.uzavrenoDo || muze('Hlavní admin')),
+    orgProDatum: datum => orgDobrovolnika(z.ID, datum),
+    cinnostiOrg: id => cinnostiPro(orgPodleId(id).nazev),
+    potvrdit: async t => (await dialog({ text: t, potvrdit: 'Smazat' })).ok,
+    ulozit: async d => { await api('ulozHodiny', Object.assign({}, d, { dobrovolnik: z.ID })); return znovu(); },
+    smazat: async id => { await api('smazHodiny', [id]); return znovu(); }
+  });
+  const zap = $('#dZapsat');
+  if (zap) zap.onclick = () => formZapis({ dobrovolnik: z.ID }, () => kresliSouhrnHodin(z));
+  const vs = $('#dVse');
+  if (vs) vs.onclick = () => { H.filtr = { mesic: '', org: '', dobrovolnik: z.ID, stav: '' }; jdi('hodiny'); };
 }
 
 // ---------- Administrace ----------

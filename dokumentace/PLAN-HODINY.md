@@ -1,6 +1,6 @@
 # Přestavba zápisu dobrovolnických hodin – schválený plán
 
-Stav: **fáze A hotová** (čeká na vyzkoušení a nasazení), B–D čekají. Každou fázi: otestovat, nasadit, nechat uživatele
+Stav: **fáze A hotová a nasazená**, **fáze B hotová (čeká na nasazení a vyzkoušení)**, C–D čekají. Každou fázi: otestovat, nasadit, nechat uživatele
 vyzkoušet, teprve pak další. Na konci fáze aktualizovat AGENTS.md.
 
 ## Hierarchie a viditelnost
@@ -13,7 +13,7 @@ a KONEP vidí všechny hodiny, organizace jen hodiny pro sebe (vynucuje server).
 i Měsíční výkaz. Staré záznamy bez od–do platí dál; úprava vyžaduje od–do. Jedna organizace = předvyplněná; víc = bez
 výběru a bez výběru se neuloží.
 
-## Fáze B – roční stránka hodin dobrovolníka
+## Fáze B – roční stránka hodin dobrovolníka (HOTOVO)
 Sdílený soubor `docs/rocni-hodiny.js` (načítat s číslem verze v adrese, např. `rocni-hodiny.js?v=2026-11-14`), použije
 dashboard, portál dobrovolníka a později portál organizace. Ouška roků (minulé roky jen ke čtení pro dobrovolníky
 a organizace), pod nimi ouška organizací („Všechny“ + každá organizace; u jediné organizace se podouška nezobrazí),
