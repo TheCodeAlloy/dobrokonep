@@ -191,7 +191,7 @@ function oMojeData(token) {
     hodiny: hodiny,
     fotky: oFotky_(k),
     zamykani: zamykaniZapnuto_(),
-    tabulky: (() => { const t = {}; k.orgIds.forEach(id => { const u = tabulkaOrgUrl_(tabulkaOrgId_(id)); if (u) t[id] = u; }); return t; })(),
+    tabulky: (() => { const t = {}; k.orgIds.forEach(id => { const u = tabulkaOrgUrl_(tabulkaOrgId_(id)); if (u) t[id] = Object.assign({ url: u }, poslednihNacteni_(id)); }); return t; })(),
     nazev: String(n.nazev_organizace || ''),
     dnes: ymd_(new Date())
   };

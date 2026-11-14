@@ -199,11 +199,11 @@ function sdilejTabulkuOrganizace(token, orgId) {
   return { pocet: emaily.length };
 }
 
-// ID organizace → odkaz na její tabulku (jen pro přihlášené administrátory)
+// ID organizace → { url, naposledy, souhrn } (jen pro přihlášené administrátory)
 function tabulkyOrganizaci(token) {
   overAdmin_(token, 'Jen čtení');
   const o = {};
-  organizace_().forEach(x => { const id = tabulkaOrgId_(x.id); if (id) o[x.id] = tabulkaOrgUrl_(id); });
+  organizace_().forEach(x => { const id = tabulkaOrgId_(x.id); if (id) o[x.id] = Object.assign({ url: tabulkaOrgUrl_(id) }, poslednihNacteni_(x.id)); });
   return o;
 }
 
@@ -226,4 +226,205 @@ function nastavZpusobPrirazeni(token, idPrirazeni, zpusob) {
     }
     return { prirazeni: prirazeni_(), tabulka: tabulka };
   });
+}
+
+// ===== NAČÍTÁNÍ ŘÁDKŮ Z TABULKY DO DATABÁZE =====================
+
+const ZDROJ_TABULKA = 'Tabulka organizace';
+const PRVNI_RADEK_TAB = RADEK_HLAVICKY_TAB + 1;
+
+// --- cizí tabulky (jen tyto dvě funkce; testy je nahrazují)
+
+// Řádky všech viditelných listů dobrovolníků: [{ list, dobrovolnik, radky: [{ r, datum, od, do, cinnost, poznamka, zneplatnit, stav, id }] }]
+function tabOrgPrectiListy_(idTab) {
+  const ss = SpreadsheetApp.openById(idTab), out = [];
+  const datumZ = (v, zobr) => {
+    if (v instanceof Date) return Utilities.formatDate(v, TZ, 'yyyy-MM-dd');
+    const t = String(zobr || v || '').trim();
+    let m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (m) return m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2);
+    m = t.match(/^(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})$/);
+    return m ? m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2) : t;
+  };
+  ss.getSheets().forEach(sh => {
+    const nazev = sh.getName(), m = nazev.match(/\((DC-\d{4}-\d+)\)$/);
+    if (!m || sh.isSheetHidden()) return;   // skryté listy = dobrovolník už není papírový
+    const posl = sh.getLastRow();
+    const radky = [];
+    if (posl >= PRVNI_RADEK_TAB) {
+      const rozsah = sh.getRange(PRVNI_RADEK_TAB, 1, posl - PRVNI_RADEK_TAB + 1, 9);
+      const h = rozsah.getValues(), d = rozsah.getDisplayValues();
+      h.forEach((r, i) => {
+        const x = {
+          r: PRVNI_RADEK_TAB + i, datum: datumZ(r[0], d[i][0]), od: String(d[i][1]).trim(), do: String(d[i][2]).trim(),
+          cinnost: String(r[4] || '').trim(), poznamka: String(r[5] || '').trim(), zneplatnit: r[6] === true,
+          stav: String(r[7] || '').trim(), id: String(r[8] || '').trim()
+        };
+        if (x.datum || x.od || x.do || x.cinnost || x.poznamka) radky.push(x);
+      });
+    }
+    out.push({ list: nazev, dobrovolnik: m[1], radky: radky });
+  });
+  return out;
+}
+
+// Zapíše do sloupců Stav a ID záznamu: zmeny = [{ r, stav, id? }]
+function tabOrgZapisStavy_(idTab, nazevListu, zmeny) {
+  if (!zmeny.length) return;
+  const sh = SpreadsheetApp.openById(idTab).getSheetByName(nazevListu);
+  if (!sh) return;
+  const posl = Math.max.apply(null, zmeny.map(z => z.r));
+  const rozsah = sh.getRange(PRVNI_RADEK_TAB, 8, posl - PRVNI_RADEK_TAB + 1, 2), v = rozsah.getValues();
+  zmeny.forEach(z => { const i = z.r - PRVNI_RADEK_TAB; v[i][0] = z.stav; if (z.id) v[i][1] = z.id; });
+  rozsah.setValues(v);
+}
+
+// --- logika
+
+function poslednihNacteni_(orgId) {
+  const raw = PropertiesService.getScriptProperties().getProperty('TABORG_POSLEDNI_' + orgId);
+  if (!raw) return { naposledy: '', souhrn: null };
+  try { const x = JSON.parse(raw); return { naposledy: x.kdy, souhrn: x.souhrn }; } catch (e) { return { naposledy: '', souhrn: null }; }
+}
+
+// Načte tabulku jedné organizace. Pravidla jsou stejná jako při zápisu na webu (pripravZapis_).
+// Řádek bez ID = nový zápis; řádek s ID = případná změna; „Zneplatnit řádek“ = zápis se přestane započítávat (stav Zamítnuto).
+// Systém do tabulky zapíše stav řádku a ID. Smazané řádky systém nemaže, jen je započítá do „chybí v tabulce“.
+function nactiTabulkuOrganizaceVnitrni_(orgId, a) {
+  const idTab = tabulkaOrgId_(orgId);
+  if (!idTab) throw new Error('Tabulka této organizace ještě neexistuje.');
+  const n = nastaveni_(), orgs = organizace_(), pr = prirazeni_();
+  const ted = new Date(), znak = Utilities.formatDate(ted, TZ, 'd. M. yyyy H:mm');
+  const sou = { novych: 0, zmenenych: 0, zneplatnenych: 0, beze_zmeny: 0, chyb: 0, chybiVTabulce: 0, listu: 0 };
+  const videneId = {};
+  const listy = tabOrgPrectiListy_(idTab);
+  listy.forEach(l => {
+    sou.listu++;
+    const zmeny = [];
+    const papirOk = papirPrirazeni_(l.dobrovolnik, orgId);
+    const data = radkyHodin_();
+    const mojeDb = {};
+    data.radky.filter(z => z.dobrovolnik === l.dobrovolnik && z.orgId === orgId && z.zdroj === ZDROJ_TABULKA).forEach(z => { mojeDb[z.id] = z; });
+    l.radky.forEach(x => {
+      if (x.id) videneId[x.id] = true;
+      const stavZapis = (stav, id) => zmeny.push({ r: x.r, stav: String(stav).slice(0, 250), id: id });
+      try {
+        if (!papirOk) { sou.chyb++; return stavZapis('Chyba: dobrovolník už u této organizace nevykazuje podle papírového výkazu'); }
+        const puv = x.id ? mojeDb[x.id] : null;
+        if (x.id && !puv) { sou.chyb++; return stavZapis('Záznam byl v systému odstraněn, řádek se nenačítá'); }
+        if (x.zneplatnit) {
+          if (puv && puv.stav !== 'Zamítnuto') {
+            overZamek_(puv.dobrovolnik, puv.orgId, puv.datum);
+            const dd = radkyHodin_(), z2 = dd.radky.find(q => q.id === puv.id);
+            zapisDoRadku_(dd.sh, z2.radek, dd.hlav, { 'Stav': 'Zamítnuto', 'Upraveno': ted, 'Upravil/a': a.email });
+            historie_(a, 'Zneplatnění řádku v tabulce', puv.id, puv.dobrovolnik, popisZaznamu_(puv));
+            sou.zneplatnenych++;
+          }
+          return stavZapis('Zneplatněno');
+        }
+        const z = { dobrovolnik: l.dobrovolnik, orgId: orgId, datum: x.datum, od: x.od, do: x.do, cinnost: x.cinnost, poznamka: x.poznamka };
+        const p = pripravZapis_(z, pr, orgs, n, a, false);
+        const popis = { datum: p.datum, od: p.od, do: p.do, minut: p.minut, orgId: p.org.id, cinnost: p.cinnost };
+        if (puv) {
+          const stejne = ymd_(puv.datum) === ymd_(p.datum) && puv.od === p.od && puv.do === p.do && puv.cinnost === p.cinnost && puv.poznamka === p.poznamka && puv.stav !== 'Zamítnuto';
+          if (stejne) { sou.beze_zmeny++; return stavZapis('Načteno', puv.id); }
+          overZamek_(puv.dobrovolnik, puv.orgId, puv.datum);
+          const dd = radkyHodin_(), z2 = dd.radky.find(q => q.id === puv.id);
+          zapisDoRadku_(dd.sh, z2.radek, dd.hlav, {
+            'Datum': p.datum, 'Počet hodin': Math.round(p.minut / 60 * 100) / 100, 'Činnost': p.cinnost, 'Čas od': p.od, 'Čas do': p.do,
+            'Minut': p.minut, 'Poznámka': p.poznamka, 'Stav': 'Ke schválení', 'Upraveno': ted, 'Upravil/a': a.email
+          });
+          historie_(a, 'Úprava z tabulky', puv.id, puv.dobrovolnik, popisZaznamu_(puv) + ' → ' + popisZaznamu_(popis));
+          sou.zmenenych++;
+          return stavZapis('Načteno (změna ' + znak + ')', puv.id);
+        }
+        const zaznam = novyZaznamHodin_(p, a, ZDROJ_TABULKA, '');
+        zaznam['Stav'] = 'Ke schválení';
+        zapisRadkyHodin_([zaznam]);
+        historie_(a, 'Zápis z tabulky', zaznam['ID záznamu'], p.dobrovolnik, popisZaznamu_(popis));
+        sou.novych++;
+        videneId[zaznam['ID záznamu']] = true;
+        return stavZapis('Načteno ' + znak, zaznam['ID záznamu']);
+      } catch (e) {
+        sou.chyb++;
+        stavZapis('Chyba: ' + e.message);
+      }
+    });
+    tabOrgZapisStavy_(idTab, l.list, zmeny);
+  });
+  // záznamy z tabulky, které v ní už nejsou (řádek byl smazán): jen se spočítají, nic se nemaže
+  radkyHodin_().radky.filter(z => z.orgId === orgId && z.zdroj === ZDROJ_TABULKA && !videneId[z.id] && papirPrirazeni_(z.dobrovolnik, orgId)).forEach(() => { sou.chybiVTabulce++; });
+  PropertiesService.getScriptProperties().setProperty('TABORG_POSLEDNI_' + orgId, JSON.stringify({ kdy: Utilities.formatDate(ted, TZ, 'yyyy-MM-dd HH:mm'), souhrn: sou }));
+  log_('Načtena tabulka organizace', '', orgId + ': nových ' + sou.novych + ', změn ' + sou.zmenenych + ', chyb ' + sou.chyb);
+  return sou;
+}
+
+const SYSTEM_TABULKA = { email: 'tabulka organizace', role: 'Koordinátor organizace' };
+
+// Načíst teď (dashboard)
+function nactiTabulkuOrganizace(token, orgId) {
+  const a = overAdmin_(token, 'Koordinátor');
+  orgId = String(orgId || '').trim();
+  return sZamkem_(() => ({ souhrn: nactiTabulkuOrganizaceVnitrni_(orgId, SYSTEM_TABULKA) }));
+}
+
+// Načíst tabulky všech organizací (dashboard, před schvalováním měsíce)
+function nactiVsechnyTabulkyOrganizaci(token) {
+  overAdmin_(token, 'Koordinátor');
+  return sZamkem_(() => nactiVsechnyVnitrni_());
+}
+
+function nactiVsechnyVnitrni_() {
+  const vys = { organizaci: 0, novych: 0, zmenenych: 0, chyb: 0, selhalo: [] };
+  organizace_().forEach(o => {
+    if (!tabulkaOrgId_(o.id)) return;
+    try {
+      const s = nactiTabulkuOrganizaceVnitrni_(o.id, SYSTEM_TABULKA);
+      vys.organizaci++; vys.novych += s.novych; vys.zmenenych += s.zmenenych; vys.chyb += s.chyb;
+    } catch (e) { vys.selhalo.push(o.nazev + ': ' + e.message); }
+  });
+  return vys;
+}
+
+// Načíst teď (portál organizace; nejvýše jednou za minutu u jedné organizace)
+function oNactiTabulkuTed(token, orgId) {
+  const k = overKoordinatorOrg_(token);
+  orgId = String(orgId || '').trim();
+  if (k.orgIds.indexOf(orgId) < 0) throw new Error('Pro tuto organizaci nemáte oprávnění.');
+  const cache = CacheService.getScriptCache();
+  if (cache.get('TABNACTI_' + orgId)) throw new Error('Tabulka se právě načítala. Zkuste to za minutu.');
+  cache.put('TABNACTI_' + orgId, '1', 60);
+  return sZamkem_(() => ({ souhrn: nactiTabulkuOrganizaceVnitrni_(orgId, SYSTEM_TABULKA) }));
+}
+
+// Spouští se jednou týdně (viz zapnoutTydenniNacitani)
+function nactiTabulkyOrganizaciSpoustec() {
+  AKTUALNI_UZIVATEL = 'týdenní načtení tabulek';
+  MEMO = {};
+  sZamkem_(() => { const v = nactiVsechnyVnitrni_(); log_('Týdenní načtení tabulek organizací', '', 'organizací ' + v.organizaci + ', nových ' + v.novych + ', změn ' + v.zmenenych + ', chyb ' + v.chyb + (v.selhalo.length ? ', selhalo: ' + v.selhalo.join('; ') : '')); });
+}
+
+// --- týdenní spouštěč (jen tyto funkce sahají na ScriptApp; testy je nahrazují)
+function spoustecNacitaniExistuje_() { return ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'nactiTabulkyOrganizaciSpoustec'); }
+function spoustecNacitaniNastav_(zapnout) {
+  ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'nactiTabulkyOrganizaciSpoustec').forEach(t => ScriptApp.deleteTrigger(t));
+  if (zapnout) ScriptApp.newTrigger('nactiTabulkyOrganizaciSpoustec').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(5).inTimezone(TZ).create();
+}
+
+function stavTydenniNacitani(token) {
+  overAdmin_(token, 'Jen čtení');
+  return { zapnuto: spoustecNacitaniExistuje_() };
+}
+
+function nastavTydenniNacitani(token, zapnout) {
+  overAdmin_(token, 'Hlavní admin');
+  spoustecNacitaniNastav_(!!zapnout);
+  log_('Týdenní načítání tabulek organizací', '', zapnout ? 'zapnuto (pondělí kolem 5:00)' : 'vypnuto');
+  return { zapnuto: !!zapnout };
+}
+
+// Pro ruční spuštění z menu tabulky
+function zapnoutTydenniNacitani() {
+  spoustecNacitaniNastav_(true);
+  upozorni_('Týdenní načítání tabulek organizací je zapnuté (pondělí kolem 5:00).');
 }

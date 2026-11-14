@@ -157,7 +157,7 @@
       <p class="muted small" id="mojeOrg" style="margin:0"></p>
       <div class="rok" id="orgTabs" style="margin-top:12px"></div>
       <div class="stats" id="stats"></div>
-      <div class="akce2"><button class="btn big" id="bFotka">📷 Vyfotit výkaz</button><a class="btn ghost" id="bTabulka" href="#" target="_blank" rel="noopener" hidden style="text-decoration:none">📄 Otevřít tabulku papírových výkazů</a></div>
+      <div class="akce2"><button class="btn big" id="bFotka">📷 Vyfotit výkaz</button><a class="btn ghost" id="bTabulka" href="#" target="_blank" rel="noopener" hidden style="text-decoration:none">📄 Otevřít tabulku papírových výkazů</a><button class="btn ghost" id="bNacist" hidden>↻ Načíst tabulku teď</button><p class="muted small" id="tabInfo" style="margin:0" hidden></p></div>
       <h2>Dobrovolníci</h2>
       <input type="search" class="hledat" id="hledat" placeholder="Hledat jméno…" hidden>
       <div class="lide" id="lide"></div>
@@ -295,8 +295,9 @@
     $('#orgTabs').innerHTML = DATA.organizace.length > 1
       ? [{ id: '', nazev: 'Všechny' }].concat(DATA.organizace).map(o => '<label class="chip"><input type="radio" name="org" value="' + esc(o.id) + '"' + (o.id === ORG ? ' checked' : '') + '><span>' + esc(o.nazev) + '</span></label>').join('') : '';
     kresliStats();
-    const tab = Object.keys(DATA.tabulky || {}).filter(id => !ORG || id === ORG).map(id => DATA.tabulky[id])[0];
-    $('#bTabulka').hidden = !tab; if (tab) $('#bTabulka').href = tab;
+    const tid = Object.keys(DATA.tabulky || {}).filter(id => !ORG || id === ORG)[0], tab = tid ? DATA.tabulky[tid] : null;
+    $('#bTabulka').hidden = !tab; $('#bNacist').hidden = !tab; $('#tabInfo').hidden = !(tab && tab.naposledy);
+    if (tab) { $('#bTabulka').href = tab.url; $('#bNacist').dataset.org = tid; if (tab.naposledy) $('#tabInfo').textContent = 'Naposledy načteno ' + tab.naposledy + (tab.souhrn ? ' (nových ' + tab.souhrn.novych + ', změn ' + tab.souhrn.zmenenych + (tab.souhrn.chyb ? ', chyb ' + tab.souhrn.chyb : '') + ')' : ''); }
     const lide = lidiOrg().filter(d => !HLEDAT || (jmeno(d) + ' ' + d.email).toLowerCase().indexOf(HLEDAT) >= 0);
     $('#hledat').hidden = lidiOrg().length < 8;
     const rok = DATA.dnes.slice(0, 4);
@@ -314,6 +315,12 @@
   $('#hledat').oninput = e => { HLEDAT = e.target.value.trim().toLowerCase(); kresli(); };
   $('#lide').onclick = e => { const b = e.target.closest('.clovek'); if (b) { VYBRANY = b.dataset.id; RH = null; kresli(); window.scrollTo(0, 0); } };
   $('#zpet').onclick = () => { VYBRANY = ''; RH = null; kresli(); };
+  $('#bNacist').onclick = async () => {
+    const b = $('#bNacist'); b.disabled = true; b.textContent = 'Načítám…';
+    try { const r = await api('oNactiTabulkuTed', b.dataset.org); await nactiData(); toast('Načteno: nových ' + r.souhrn.novych + ', změn ' + r.souhrn.zmenenych + (r.souhrn.chyb ? ', chyb ' + r.souhrn.chyb + ' (u řádků je vidět proč)' : '')); }
+    catch (e) { if (e.message) toast(e.message); }
+    b.disabled = false; b.textContent = '↻ Načíst tabulku teď';
+  };
 
   // ---------- detail dobrovolníka: roční stránka hodin ----------
   function kresliDetail() {

@@ -43,7 +43,7 @@ over('další papírový dobrovolník: tabulka se nevytváří znovu, přibyl li
 r = nastavZpusobPrirazeni('T', pr('DC-2026-0002', 'KAL').id, 'Sám');
 over('přepnutí zpět na „Sám“: list se z tabulky vyřadí (skryje), nic se nemaže', nastaveno[2].listy.length === 2 && !nastaveno[2].listy.some(n => /Malá/.test(n)));
 over('neznámý způsob odmítnut', /Neznámý/.test(chyba(() => nastavZpusobPrirazeni('T', pr('DC-2026-0002', 'KAL').id, 'blbost'))));
-over('Hospic nemá žádnou tabulku (nemá papírové dobrovolníky)', !tabulkyOrganizaci('T').HOS && /TAB1/.test(tabulkyOrganizaci('T').KAL));
+over('Hospic nemá žádnou tabulku (nemá papírové dobrovolníky)', !tabulkyOrganizaci('T').HOS && /TAB1/.test(tabulkyOrganizaci('T').KAL.url));
 
 // ruční vytvoření, sdílení
 over('ruční aktualizace listů', tabulkaOrganizace('T', 'KAL').nova === false);
@@ -72,7 +72,7 @@ kdo = 'DC-2026-0001';
 const hdKo = hlavicky_(M.sheets['Koordinátoři organizací']);
 const tokenO = (() => { const t = 'tokenO'; PropertiesService.getScriptProperties().setProperty('SESO_' + hash_(t), JSON.stringify({ email: 'karel@kal.cz', exp: Date.now() + 1e9 })); return t; })();
 const od = oMojeData(tokenO);
-over('portál organizace: odkaz na tabulku Kalyny', Object.keys(od.tabulky).join() === 'KAL' && /TAB1/.test(od.tabulky.KAL));
+over('portál organizace: odkaz na tabulku Kalyny', Object.keys(od.tabulky).join() === 'KAL' && /TAB1/.test(od.tabulky.KAL.url));
 over('portál organizace: ví, kdo je papírový', od.dobrovolnici.find(d => d.id === 'DC-2026-0001').prirazeni[0].papir === true);
 
 // selhání Disku nebrání uložení volby

@@ -240,6 +240,8 @@ function onOpen() {
     .addItem('Zapnout automatické zálohy', 'zapnoutZalohy')
     .addItem('Zálohovat nyní', 'zalohovatNyni')
     .addItem('Vypnout automatické zálohy', 'vypnoutZalohy')
+    .addSeparator()
+    .addItem('Zapnout týdenní načítání tabulek organizací', 'zapnoutTydenniNacitani')
     .addToUi();
 }
 

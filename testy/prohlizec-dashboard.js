@@ -7,7 +7,7 @@ console.log = (o => (...a) => { if (!String(a[0]).startsWith('Hotovo')) o(...a);
 nastavTabulku();
 nastavHodnotu_('zamykani_mesicu', 'ANO');   // testy zámků běží se zapnutým zamykáním
 const DISK = {}; let cisloS = 0;
-let TAB = 0; tabOrgVytvor_ = () => 'TAB' + (++TAB); tabOrgNastavListy_ = () => {}; tabOrgSdilej_ = () => {};
+let TAB = 0; spoustecNacitaniExistuje_ = () => false; spoustecNacitaniNastav_ = () => {}; tabOrgVytvor_ = () => 'TAB' + (++TAB); tabOrgNastavListy_ = () => {}; tabOrgSdilej_ = () => {};
 ulozSouborFotky_ = (d, n, b) => { const id = 'S' + (++cisloS); DISK[id] = b; return id; };
 nactiSouborFotky_ = id => 'data:image/jpeg;base64,' + Buffer.from(DISK[id]).toString('base64');
 smazSouborFotky_ = id => { delete DISK[id]; };

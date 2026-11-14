@@ -40,7 +40,8 @@ const API_ORGANIZACE = {
   oSmazHodiny: function () { return oSmazHodiny.apply(null, arguments); },
   oNahrajFotkuVykazu: function () { return oNahrajFotkuVykazu.apply(null, arguments); },
   oSmazFotkuVykazu: function () { return oSmazFotkuVykazu.apply(null, arguments); },
-  oNactiFotkuVykazu: function () { return oNactiFotkuVykazu.apply(null, arguments); }
+  oNactiFotkuVykazu: function () { return oNactiFotkuVykazu.apply(null, arguments); },
+  oNactiTabulkuTed: function () { return oNactiTabulkuTed.apply(null, arguments); }
 };
 
 // Akce pro přihlášeného dobrovolníka (token se doplní jako první argument)
@@ -70,6 +71,10 @@ const API_ADMIN = {
   tabulkaOrganizace: function () { return tabulkaOrganizace.apply(null, arguments); },
   sdilejTabulkuOrganizace: function () { return sdilejTabulkuOrganizace.apply(null, arguments); },
   tabulkyOrganizaci: function () { return tabulkyOrganizaci.apply(null, arguments); },
+  nactiTabulkuOrganizace: function () { return nactiTabulkuOrganizace.apply(null, arguments); },
+  nactiVsechnyTabulkyOrganizaci: function () { return nactiVsechnyTabulkyOrganizaci.apply(null, arguments); },
+  stavTydenniNacitani: function () { return stavTydenniNacitani.apply(null, arguments); },
+  nastavTydenniNacitani: function () { return nastavTydenniNacitani.apply(null, arguments); },
   nahledPrevoduSchvalovani: function () { return nahledPrevoduSchvalovani.apply(null, arguments); },
   provedPrevodSchvalovani: function () { return provedPrevodSchvalovani.apply(null, arguments); },
   fotkyVykazu: function () { return fotkyVykazu.apply(null, arguments); },

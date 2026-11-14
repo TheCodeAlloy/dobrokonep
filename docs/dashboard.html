@@ -293,7 +293,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-14k</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-14l</p>
   </div>
 </div>
 <script>
@@ -1395,7 +1395,7 @@ async function vMesice() {
   const orgs = D.organizaceVse || [];
   const roky = [aktualni + 1, aktualni, aktualni - 1, aktualni - 2, aktualni - 3];
   obsah.innerHTML =
-    '<div class="dhead"><button class="back" id="mZpet">← Hodiny</button><div><h1>Schvalování měsíců</h1>' + (muze('Hlavní admin') ? '<p style="margin:0 0 6px"><button class="btn ghost" id="mPrevod">Převod dosavadního schvalování…</button></p>' : '') +
+    '<div class="dhead"><button class="back" id="mZpet">← Hodiny</button><div><h1>Schvalování měsíců</h1>' + '<p style="margin:0 0 6px"><button class="btn ghost" id="mNacist">↻ Načíst tabulky organizací</button> ' + (muze('Hlavní admin') ? '<button class="btn ghost" id="mPrevod">Převod dosavadního schvalování…</button>' : '') + '</p>' +
     '<p class="sub" style="margin:0" id="mPopis">Měsíc se schvaluje vždy celý, za dvojici dobrovolník + organizace.</p></div></div>' +
     '<div class="toolbar"><select id="mStav"><option value="ke"' + (MS.stav === 'ke' ? ' selected' : '') + '>Ke schválení</option><option value="zamcene"' + (MS.stav === 'zamcene' ? ' selected' : '') + '>Schválené (zamčené)</option><option value=""' + (MS.stav === '' ? ' selected' : '') + '>Vše</option></select>' +
     '<select id="mOrg"><option value="">Všechny organizace</option>' + orgs.map(o => '<option value="' + esc(o.id) + '"' + (o.id === MS.org ? ' selected' : '') + '>' + esc(o.nazev) + '</option>').join('') + '</select>' +
@@ -1403,6 +1403,12 @@ async function vMesice() {
     '<div id="mHromadne"></div><div class="scroll" id="mTab"><div class="loading">Načítám…</div></div>';
   $('#mZpet').onclick = () => jdi('hodiny');
   if ($('#mPrevod')) $('#mPrevod').onclick = () => jdi('prevod');
+  $('#mNacist').onclick = async () => {
+    const b = $('#mNacist'); b.disabled = true; b.textContent = 'Načítám tabulky…';
+    try { const r = await api('nactiVsechnyTabulkyOrganizaci'); CACHE.clear(); poZmeneHodin(); toast('Načteno z ' + r.organizaci + ' tabulek: nových ' + r.novych + ', změn ' + r.zmenenych + ', chyb ' + r.chyb + (r.selhalo.length ? ' · selhalo: ' + r.selhalo.length : ''), r.chyb || r.selhalo.length ? 'err' : ''); nactiMesiceTab(); }
+    catch (e) { toast(e.message, 'err'); }
+    b.disabled = false; b.textContent = '↻ Načíst tabulky organizací';
+  };
   ['#mStav', '#mOrg', '#mRok'].forEach(q => $(q).addEventListener('change', () => { MS.stav = $('#mStav').value; MS.org = $('#mOrg').value; MS.rok = $('#mRok').value; MS.vyber.clear(); nactiMesiceTab(); }));
   nactiMesiceTab();
 }
@@ -1800,24 +1806,33 @@ function admZalozka() {
 }
 
 // ---------- Tabulky organizací (papírové výkazy) ----------
+function souhrnNacteni(s) {
+  if (!s) return '';
+  return 'nových ' + s.novych + ', změn ' + s.zmenenych + (s.zneplatnenych ? ', zneplatněno ' + s.zneplatnenych : '') + (s.chyb ? ', <span class="warn">chyb ' + s.chyb + '</span>' : '') + (s.chybiVTabulce ? ', chybí v tabulce ' + s.chybiVTabulce : '');
+}
 async function admTabulkyOrg() {
   const el = $('#tabOrg'); if (!el) return;
-  let odkazy = {};
-  try { odkazy = await api('tabulkyOrganizaci'); } catch (e) { el.innerHTML = '<p class="muted small">' + esc(e.message) + '</p>'; return; }
+  let odkazy = {}, tyden = { zapnuto: false };
+  try { odkazy = await api('tabulkyOrganizaci'); tyden = await api('stavTydenniNacitani'); } catch (e) { el.innerHTML = '<p class="muted small">' + esc(e.message) + '</p>'; return; }
   if (!$('#tabOrg')) return;
   const orgs = (D.organizaceVse || []).filter(o => o.aktivni);
   const edit = muze('Koordinátor');
   el.innerHTML = '<h2 style="margin-top:0">Tabulky organizací (papírové výkazy)</h2>' +
-    '<p class="muted small">Pro organizaci s aspoň jedním „papírovým“ dobrovolníkem (nastavuje se v detailu dobrovolníka u přiřazení) vznikne jedna tabulka na sdíleném disku s listem pro každého takového dobrovolníka. Tabulku pak sdílejte koordinátorům organizace.</p>' +
-    '<table class="list"><thead><tr><th>Organizace</th><th>Tabulka</th>' + (edit ? '<th></th>' : '') + '</tr></thead><tbody>' +
-    orgs.map(o => '<tr data-o="' + esc(o.id) + '"><td>' + esc(o.nazev) + '</td><td>' + (odkazy[o.id] ? '<a href="' + esc(odkazy[o.id]) + '" target="_blank" rel="noopener">Otevřít tabulku</a>' : '<span class="muted">zatím neexistuje</span>') + '</td>' +
-      (edit ? '<td class="akce"><button class="btn ghost" data-t="vytvorit">' + (odkazy[o.id] ? 'Aktualizovat listy' : 'Vytvořit tabulku') + '</button>' + (odkazy[o.id] ? '<button class="btn ghost" data-t="sdilet">Sdílet s koordinátory</button>' : '') + '</td>' : '') + '</tr>').join('') + '</tbody></table>';
+    '<p class="muted small">Pro organizaci s aspoň jedním „papírovým“ dobrovolníkem (nastavuje se v detailu dobrovolníka u přiřazení) vznikne jedna tabulka na sdíleném disku s listem pro každého takového dobrovolníka. Tabulku pak sdílejte koordinátorům organizace. Řádky z tabulky se do systému načítají jednou týdně a po klepnutí na „Načíst teď“.</p>' +
+    '<p class="small">Týdenní načítání (pondělí kolem 5:00): <strong>' + (tyden.zapnuto ? 'zapnuto' : 'vypnuto') + '</strong> ' + (muze('Hlavní admin') ? '<button class="btn ghost" id="tydenPrep">' + (tyden.zapnuto ? 'Vypnout' : 'Zapnout') + '</button>' : '') + '</p>' +
+    '<table class="list"><thead><tr><th>Organizace</th><th>Tabulka</th><th>Naposledy načteno</th>' + (edit ? '<th></th>' : '') + '</tr></thead><tbody>' +
+    orgs.map(o => { const t = odkazy[o.id]; return '<tr data-o="' + esc(o.id) + '"><td>' + esc(o.nazev) + '</td><td>' + (t ? '<a href="' + esc(t.url) + '" target="_blank" rel="noopener">Otevřít tabulku</a>' : '<span class="muted">zatím neexistuje</span>') + '</td>' +
+      '<td>' + (t && t.naposledy ? esc(t.naposledy) + '<div class="id">' + souhrnNacteni(t.souhrn) + '</div>' : '<span class="muted">—</span>') + '</td>' +
+      (edit ? '<td class="akce"><button class="btn ghost" data-t="vytvorit">' + (t ? 'Aktualizovat listy' : 'Vytvořit tabulku') + '</button>' + (t ? '<button class="btn ghost" data-t="nacist">Načíst teď</button><button class="btn ghost" data-t="sdilet">Sdílet s koordinátory</button>' : '') + '</td>' : '') + '</tr>'; }).join('') + '</tbody></table>';
+  const tp = $('#tydenPrep', el);
+  if (tp) tp.onclick = async () => { try { await api('nastavTydenniNacitani', !tyden.zapnuto); toast(tyden.zapnuto ? 'Týdenní načítání vypnuto' : 'Týdenní načítání zapnuto'); admTabulkyOrg(); } catch (e) { toast(e.message, 'err'); } };
   el.onclick = async e => {
     const b = e.target.closest('button[data-t]'); if (!b) return;
     const orgId = b.closest('tr').dataset.o;
     b.disabled = true;
     try {
       if (b.dataset.t === 'vytvorit') { const r = await api('tabulkaOrganizace', orgId); toast(r.nova ? 'Tabulka vytvořena (listů: ' + r.pocetListu + ')' : 'Listy aktualizovány (' + r.pocetListu + ')'); admTabulkyOrg(); }
+      else if (b.dataset.t === 'nacist') { b.textContent = 'Načítám…'; const r = await api('nactiTabulkuOrganizace', orgId); toast('Načteno: nových ' + r.souhrn.novych + ', změn ' + r.souhrn.zmenenych + ', chyb ' + r.souhrn.chyb, r.souhrn.chyb ? 'err' : ''); poZmeneHodin(); CACHE.clear(); admTabulkyOrg(); }
       else { const o = await dialog({ text: 'Sdílet tabulku s aktivními koordinátory této organizace? Google jim pošle pozvánku k úpravám.', potvrdit: 'Sdílet' }); if (o.ok) { const r = await api('sdilejTabulkuOrganizace', orgId); toast('Tabulka sdílena: ' + r.pocet); } b.disabled = false; }
     } catch (err) { toast(err.message, 'err'); b.disabled = false; }
   };
