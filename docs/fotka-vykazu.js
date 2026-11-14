@@ -59,6 +59,9 @@
   function mount(el, o) {
     pridejStyl();
     var fotky = o.fotky || [], nahrava = false, chyba = '', nahledy = {};
+    // na telefonu a tabletu vždy nabídnout přímé vyfocení (capture otevře foťák), jinak jen výběr souboru
+    var mobil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform));
+    function kamera() { return o.kamera === true || (o.kamera !== false && mobil); }
 
     function potvrdit(t) { return o.potvrdit ? o.potvrdit(t) : Promise.resolve(window.confirm(t)); }
 
@@ -69,8 +72,8 @@
             (o.muzeSmazat ? '<button type="button" class="fv-x" data-smaz="' + esc(f.id) + '" title="Smazat fotku" aria-label="Smazat fotku">×</button>' : '') + '</div>';
         }).join('') + '</div>' : '<p class="fv-muted" style="margin:6px 0">Zatím žádná fotka.</p>') +
         (o.muzePridat ? '<div class="fv-btns">' +
-          (o.kamera ? '<button type="button" class="fv-btn p" data-pridat="kamera"' + (nahrava ? ' disabled' : '') + '>📷 Vyfotit</button>' : '') +
-          '<button type="button" class="fv-btn' + (o.kamera ? '' : ' p') + '" data-pridat="soubor"' + (nahrava ? ' disabled' : '') + '>' + (nahrava ? 'Nahrávám…' : (o.kamera ? 'Vybrat z telefonu' : '+ Přidat fotku')) + '</button>' +
+          (kamera() ? '<button type="button" class="fv-btn p" data-pridat="kamera"' + (nahrava ? ' disabled' : '') + '>📷 Vyfotit</button>' : '') +
+          '<button type="button" class="fv-btn' + (kamera() ? '' : ' p') + '" data-pridat="soubor"' + (nahrava ? ' disabled' : '') + '>' + (nahrava ? 'Nahrávám…' : (kamera() ? 'Vybrat z galerie' : '+ Přidat fotku')) + '</button>' +
           '<input type="file" accept="image/*" capture="environment" data-vstup="kamera" hidden><input type="file" accept="image/*" data-vstup="soubor" hidden></div>' : '') +
         (chyba ? '<div class="fv-chyba">' + esc(chyba) + '</div>' : '') + '</div>';
       napoj(); nactiNahledy();
