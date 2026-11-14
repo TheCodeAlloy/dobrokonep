@@ -73,6 +73,7 @@
     '.rh-o{color:var(--muted,#6e6262);font-size:13px}' +
     '.rh-st{display:inline-block;font-size:12px;font-weight:600;padding:1px 8px;border-radius:999px}' +
     '.rh-ok{background:var(--ok-bg,#dff3e7);color:var(--ok,#1f7a4d)}.rh-wait{background:var(--wait-bg,#fff3d6);color:var(--wait,#8a5a00)}.rh-no{background:var(--error-bg,#fdecea);color:var(--error,#b42318)}' +
+    '.rh-zam{font-size:12px;color:var(--muted,#6e6262)}' +
     '.rh-ik{border:1px solid var(--border,#e6d6d5);background:#fff;border-radius:8px;padding:3px 9px;font:inherit;font-size:14px;cursor:pointer;color:inherit}' +
     '.rh-ik:hover{border-color:var(--primary,#c4524e)}' +
     '.rh-edit{background:var(--accent,#fbe9e8);border:1px solid var(--primary,#c4524e);border-radius:10px;padding:12px;margin-bottom:8px}' +
@@ -151,11 +152,12 @@
     }
 
     function radek(x, cteni, ukazOrg) {
-      var lze = !cteni && o.lzeUpravit && o.lzeUpravit(x);
+      var lze = !cteni && !x.zamceno && o.lzeUpravit && o.lzeUpravit(x);
       return '<div class="rh-row" data-id="' + esc(x.id) + '"><div class="rh-r1"><span class="rh-d">' + esc(denText(x.datum)) + '</span>' +
         '<span class="rh-t">' + (x.od ? esc(hm(x.od) + '–' + hm(x.do)) : 'bez času od–do') + '</span><span class="rh-h">' + esc(fmtMin(x.minut)) + '</span></div>' +
         '<div class="rh-r2"><span class="rh-c">' + esc(x.cinnost) + (ukazOrg ? ' <span class="rh-o">· ' + esc(x.org) + '</span>' : '') + '</span>' +
         (x.stav !== 'Schváleno' ? stavHtml(x.stav) : '') +
+        (x.zamceno ? '<span class="rh-zam" title="Měsíc je schválený a zamčený">🔒 zamčeno</span>' : '') +
         (lze ? '<button type="button" class="rh-ik" data-a="upravit" title="Upravit" aria-label="Upravit">✎</button>' : '') + '</div></div>';
     }
 

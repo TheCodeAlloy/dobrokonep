@@ -48,7 +48,7 @@ docs/hodiny.html     ──┘  (JSON)        │     ├─ Tabulka Google (dat
 |---|---|
 | `Kod.gs` | konstanty (LISTY, sloupce, stavy, výchozí nastavení a šablony e-mailů), `nastavTabulku()` (idempotentní nastavení/migrace tabulky), registrace z formuláře, PDF, e-maily, pomocné funkce (`ss_`, `list_`, `nastaveni_`, `zapisDoRadku_`, `bunka_`, `log_`…), menu v tabulce |
 | `Dashboard.gs` | přihlášení administrátorů (kód, odkaz, Google, osobní odkaz z notifikace), `nactiData`, úpravy dobrovolníka, schůzky + kalendář (osobní i online se stálým odkazem `odkaz_online_schuzky`; HTML e-mail s tlačítkem `posliEmailSchuzky_`, zástupný znak `{odkaz_schuzky}`), výmaz (GDPR), generování smlouvy/docházky z šablon Google Docs, administrace číselníků |
-| `Hodiny.gs` | přiřazení dobrovolník↔organizace, katalog činností, zápis hodin (jednotlivě nebo akce; vždy od–do), schvalování, mazání, uzávěrka |
+| `Hodiny.gs` | přiřazení dobrovolník↔organizace, katalog činností, zápis hodin (jednotlivě nebo akce; vždy od–do), schvalování (po řádcích i po měsících se zámkem), historie změn, mazání, uzávěrka |
 | `Portal.gs` | portál dobrovolníka: přihlášení (kód, odkaz, pozvánka, Google), relace, vlastní hodiny |
 | `Zalohy.gs` | denní zálohy tabulky (5 denních + 30 týdenních), spouštěč |
 | `Api.gs` | `doPost`/`doGet`, mapy povolených akcí `API_VEREJNE`, `API_ADMIN`, `API_DOBROVOLNIK` |
@@ -67,7 +67,7 @@ docs/hodiny.html     ──┘  (JSON)        │     ├─ Tabulka Google (dat
 ## 4. Datový model (Tabulka Google)
 
 Listy (konstanta `LISTY` v `Kod.gs`): Dobrovolníci, Nastavení, Administrátoři, Oblasti zájmu, Místa,
-Organizace, Šablony e-mailů, Hodiny, Přiřazení, Činnosti, Log změn.
+Organizace, Šablony e-mailů, Hodiny, Přiřazení, Činnosti, Měsíce, Historie hodin, Log změn.
 
 - **Ke sloupcům se přistupuje podle názvu v záhlaví, nikdy podle pozice** (`hlavicky_(sh)` + `indexOf`).
   Nové sloupce přidává `zajistiList_` na konec listu – pořadí v tabulce se může lišit.
@@ -77,6 +77,7 @@ Organizace, Šablony e-mailů, Hodiny, Přiřazení, Činnosti, Log změn.
 - **Hodiny** – `SLOUPCE_HODINY`. Pravdou je sloupec **`Minut`** (celé číslo, zaokrouhleno na 5 min);
   `Počet hodin` je jen pro čitelnost. `Stav` ∈ Ke schválení / Schváleno / Zamítnuto. `Zdroj` = Dashboard / Akce /
   Starý měsíční výkaz (jen u starých záznamů) / Dobrovolník. `ID organizace` (ORG-001) je klíč, `Organizace` je název (snímek).
+- **Měsíce a zámky (fáze C1)** – list `Měsíce` (`SLOUPCE_MESICE`): řádek dobrovolník + organizace + měsíc (RRRR-MM), `Stav` = Schváleno (zamčeno) / Odemčeno (kdo, kdy, proč). Schválení (`schvalMesice`, Koordinátor i Hlavní admin) schválí všechny čekající hodiny dvojice za měsíc a zamkne ho; `odemkniMesic` jen Hlavní admin s důvodem. V zamčeném měsíci nejde zapsat, upravit, smazat ani změnit stav (`overZamek_` v `pripravZapis_`, `ulozHodiny`, `smazHodiny`, `zmenStavHodin`, portálu; akce: nic se neuloží a vypíše se, u koho). Dobrovolník nesmí měnit hodiny z minulého roku (`overMinulyRok_`), koordinátor ano, dokud měsíc není schválený. List `Historie hodin` (`historie_`) eviduje zápis/úpravu/smazání/změnu stavu/schválení/odemčení bez IP adres; u hodin je sloupec `Role zapisujícího`. Staré globální `hodiny_uzavreno_do` zatím platí vedle zámků (nahradí je převod stávajících dat – fáze C3). Záznamy z API nesou příznak `zamceno`. V dashboardu: Hodiny → Schvalování měsíců.
 - **Přiřazení** – `SLOUPCE_PRIRAZENI`: dobrovolník ↔ organizace s obdobím Od–Do (prázdné = bez omezení).
 - **Organizace** – čte se **podle názvů sloupců**, takže je lze v tabulce libovolně přesouvat (`PORADI_ORGANIZACE` v `Kod.gs`; při prvním `nastavTabulku` se sloupce jednorázově seřadí, příznak `ORG_SERAZENO` v Script Properties, ruční pořadí se pak nepřepisuje). Přiřazení a Hodiny se zatím čtou podle pozice. sloupce ID, Název, Kontaktní osoba, E-mail, Telefon, Adresa, Oblast, Aktivní, Poznámky + (přidané na konec) `Funkce / pozice`, `Kontaktní osoba 2/3`, `Funkce / pozice 2/3`, `E-mail 2/3`, `Telefon 2/3`, `IČ`, `Město`, `Ulice`, `PSČ`, `Titul`/`Titul 2`/`Titul 3` (adresa se skládá z nich; starý sloupec Adresa se při `nastavTabulku` jednorázově přesune do Ulice). ID organizace je v dashboardu editovatelné (zkratka); přejmenování přepíše `ID organizace` i v Hodinách a Přiřazeních (`prejmenujIdOrganizace_`). Kontaktní osoba 1 = původní sloupce. V dashboardu (Administrace → Organizace) jsou osoby 1–3 seskupené a barevně odlišené (`KONF.ORGANIZACE.zobraz`); do smluv jde osoba 1 (`organizace_kontakt`, `organizace_funkce`). `organizace_()` vrací i pole `kontakty`.
 - **Činnosti** – Organizace (název nebo „Všechny organizace“), Činnost, Aktivní. V dashboardu je to křížová mapa činnost × organizace (`admCinnosti`; server `nastavCinnost`, `pridejCinnost`, `prejmenujCinnost`, `smazCinnost`). Zaškrtnutí = Aktivní ANO; odškrtnutí jen přepne na NE (výběr jde vrátit). „Všechny organizace“ zešedí jednotlivé sloupce, ale jejich výběr se nemaže.

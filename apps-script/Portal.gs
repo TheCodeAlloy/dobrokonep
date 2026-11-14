@@ -237,7 +237,7 @@ function dMojeData(token) {
   });
   const hodiny = radkyHodin_().radky.filter(x => x.dobrovolnik === d.id).map(x => ({
     id: x.id, datum: x.datum, orgId: x.orgId, org: x.org, od: x.od, do: x.do, minut: x.minut,
-    cinnost: x.cinnost, poznamka: x.poznamka, stav: x.stav, zdroj: x.zdroj
+    cinnost: x.cinnost, poznamka: x.poznamka, stav: x.stav, zdroj: x.zdroj, zamceno: mesicZamcen_(x.dobrovolnik, x.orgId, x.datum)
   })).sort((a, b) => (b.datum + b.od).localeCompare(a.datum + a.od));
   return {
     dobrovolnik: {
@@ -267,6 +267,7 @@ function dZapisHodiny(token, z) {
   const n = nastaveni_();
   z = Object.assign({}, z || {}, { dobrovolnik: d.id });
   overZpetnyZapis_(n, z.datum);
+  overMinulyRok_(z.datum);
   return sZamkem_(() => {
     const p = pripravZapis_(z, prirazeni_(), organizace_(), n, d, true);
     const ted = new Date();
@@ -275,17 +276,21 @@ function dZapisHodiny(token, z) {
       const puv = data.radky.find(x => x.id === String(z.id) && x.dobrovolnik === d.id);
       if (!puv) throw new Error('Zápis nebyl nalezen.');
       if (puv.stav === 'Schváleno') throw new Error('Schválený zápis už nelze měnit. Obraťte se prosím na koordinátora.');
+      overMinulyRok_(puv.datum);
+      overZamek_(puv.dobrovolnik, puv.orgId, puv.datum);
       zapisDoRadku_(data.sh, puv.radek, data.hlav, {
         'Datum': p.datum, 'Počet hodin': Math.round(p.minut / 60 * 100) / 100, 'Organizace': p.org.nazev,
         'ID organizace': p.org.id, 'Činnost': p.cinnost, 'Čas od': p.od, 'Čas do': p.do, 'Minut': p.minut,
         'Poznámka': p.poznamka, 'Stav': 'Ke schválení', 'Potvrdila organizace': '', 'Upraveno': ted, 'Upravil/a': d.email
       });
       log_('Portál – úprava hodin', d.id, z.id + ': ' + p.minut + ' min');
+      historie_(d, 'Úprava', z.id, d.id, popisZaznamu_(puv) + ' → ' + popisZaznamu_({ datum: p.datum, od: p.od, do: p.do, minut: p.minut, orgId: p.org.id, cinnost: p.cinnost }));
     } else {
       const zaznam = novyZaznamHodin_(p, d, 'Dobrovolník', '');
       zaznam['Stav'] = 'Ke schválení';
       zaznam['Potvrdila organizace'] = '';
       zapisRadkyHodin_([zaznam]);
+      historie_(d, 'Zápis', zaznam['ID záznamu'], d.id, popisZaznamu_({ datum: p.datum, od: p.od, do: p.do, minut: p.minut, orgId: p.org.id, cinnost: p.cinnost }));
       log_('Portál – zápis hodin', d.id, ymd_(p.datum) + ', ' + p.minut + ' min, ' + p.org.nazev);
     }
     return dMojeData(token);
@@ -301,7 +306,10 @@ function dSmazHodiny(token, id) {
     if (!z) throw new Error('Zápis nebyl nalezen.');
     if (z.stav === 'Schváleno') throw new Error('Schválený zápis už nelze smazat. Obraťte se prosím na koordinátora.');
     overUzaverku_(d, n, z.datum);
+    overMinulyRok_(z.datum);
+    overZamek_(z.dobrovolnik, z.orgId, z.datum);
     data.sh.deleteRow(z.radek);
+    historie_(d, 'Smazání', z.id, d.id, popisZaznamu_(z));
     log_('Portál – smazání hodin', d.id, z.datum + ', ' + z.minut + ' min');
     return dMojeData(token);
   });

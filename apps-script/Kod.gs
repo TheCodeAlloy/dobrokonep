@@ -38,6 +38,8 @@ const LISTY = {
   HODINY: 'Hodiny',
   PRIRAZENI: 'Přiřazení',
   CINNOSTI: 'Činnosti',
+  MESICE: 'Měsíce',
+  HISTORIE: 'Historie hodin',
   LOG: 'Log změn'
 };
 

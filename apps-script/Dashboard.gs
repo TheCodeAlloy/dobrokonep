@@ -1216,8 +1216,9 @@ function smazCinnost(token, cinnost) {
 
 // Změna ID organizace: přepíše ho i v Hodinách a Přiřazeních, aby zůstaly navázané
 function prejmenujIdOrganizace_(stare, nove) {
-  [LISTY.HODINY, LISTY.PRIRAZENI].forEach(nazev => {
-    const sh = list_(nazev);
+  [LISTY.HODINY, LISTY.PRIRAZENI, LISTY.MESICE].forEach(nazev => {
+    const sh = ss_().getSheetByName(nazev);
+    if (!sh) return;
     if (sh.getLastRow() < 2) return;
     const i = hlavicky_(sh).indexOf('ID organizace');
     if (i < 0) return;

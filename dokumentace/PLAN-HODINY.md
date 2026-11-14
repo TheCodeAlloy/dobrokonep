@@ -1,6 +1,6 @@
 # Přestavba zápisu dobrovolnických hodin – schválený plán
 
-Stav: **fáze A hotová a nasazená**, **fáze B hotová (čeká na nasazení a vyzkoušení)**, C–D čekají. Každou fázi: otestovat, nasadit, nechat uživatele
+Stav: **fáze A hotová a nasazená**, **fáze B hotová a nasazená**, fáze C se dělá ve třech krocích: **C1 (měsíční schvalování, zámky, historie) hotové, čeká na nasazení**, C2 (fotky výkazů, Způsob vykazování) a C3 (převod stávajícího schvalování + odstranění schvalování po řádcích a globální uzávěrky) čekají; D čeká. Každou fázi: otestovat, nasadit, nechat uživatele
 vyzkoušet, teprve pak další. Na konci fáze aktualizovat AGENTS.md.
 
 ## Hierarchie a viditelnost

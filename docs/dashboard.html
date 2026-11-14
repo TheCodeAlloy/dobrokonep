@@ -293,7 +293,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-14b</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-14c</p>
   </div>
 </div>
 <script>
@@ -347,7 +347,7 @@
 </div>
 
 <script src="config.js"></script>
-<script src="rocni-hodiny.js?v=2026-11-14"></script>
+<script src="rocni-hodiny.js?v=2026-11-14b"></script>
 <script>
 const BOOT = { startId: new URLSearchParams(location.search).get('id') || '' };
 let D = null;              // data dobrovolníků a číselníky
@@ -505,8 +505,8 @@ async function jdi(view, extra) {
   if (zastarale || Date.now() - posledniNacteni > 60000) obnovNaPozadi();
 }
 function render() {
-  $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.view === stav.view || (stav.view === 'detail' && b.dataset.view === 'seznam') || (stav.view === 'rocni' && b.dataset.view === 'hodiny')));
-  ({ prehled: vPrehled, seznam: vSeznam, detail: vDetail, hodiny: vHodiny, rocni: vRocni, admin: vAdmin }[stav.view] || vPrehled)();
+  $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.view === stav.view || (stav.view === 'detail' && b.dataset.view === 'seznam') || ((stav.view === 'rocni' || stav.view === 'mesice') && b.dataset.view === 'hodiny')));
+  ({ prehled: vPrehled, seznam: vSeznam, detail: vDetail, hodiny: vHodiny, rocni: vRocni, mesice: vMesice, admin: vAdmin }[stav.view] || vPrehled)();
 }
 $('#nav').addEventListener('click', e => {
   const b = e.target.closest('button[data-view]');
@@ -1216,7 +1216,8 @@ async function vHodiny() {
   const lide = dobrovolniciSPrirazenim();
   obsah.innerHTML =
     '<div class="hhead"><div><h1>Dobrovolnické hodiny</h1><p class="sub" id="hSouhrn">Načítám…</p></div>' +
-    (edit ? '<div class="btns"><button class="btn" id="hNovy">+ Zapsat hodiny</button><button class="btn ghost" id="hAkce">+ Akce / směna</button><button class="btn ghost" id="hRocni">Roční výkaz</button></div>' : '') + '</div>' +
+    '<div class="btns">' + (edit ? '<button class="btn" id="hNovy">+ Zapsat hodiny</button><button class="btn ghost" id="hAkce">+ Akce / směna</button>' : '') +
+    '<button class="btn ghost" id="hMesice">Schvalování měsíců</button>' + (edit ? '<button class="btn ghost" id="hRocni">Roční výkaz</button>' : '') + '</div></div>' +
     '<div class="toolbar">' +
     '<input type="month" id="hMesic" value="' + esc(f.mesic) + '" title="Měsíc (prázdné = celé období)">' +
     '<select id="hOrg"><option value="">Všechny organizace</option>' + orgs.map(o => '<option value="' + esc(o.id) + '"' + (o.id === f.org ? ' selected' : '') + '>' + esc(o.nazev) + '</option>').join('') + '</select>' +
@@ -1229,6 +1230,7 @@ async function vHodiny() {
     nactiTabHodin();
   };
   ['#hMesic', '#hOrg', '#hDobr', '#hStav'].forEach(s => $(s).addEventListener('change', zmena));
+  $('#hMesice').onclick = () => jdi('mesice');
   if (edit) {
     $('#hNovy').onclick = () => formZapis({ dobrovolnik: f.dobrovolnik }, nactiTabHodin);
     $('#hAkce').onclick = () => formAkce(nactiTabHodin);
@@ -1279,9 +1281,9 @@ function kresliTabHodin() {
       '<td><strong>' + esc(fmtMin(x.minut)) + '</strong>' + (x.od ? '<div class="id">' + esc(x.od + '–' + x.do) + '</div>' : '') + '</td>' +
       '<td class="hm"><div class="clip" title="' + esc(x.cinnost + (x.poznamka ? ' – ' + x.poznamka : '')) + '">' + esc(x.cinnost) + '</div>' +
       (x.zdroj ? '<div class="id">' + esc(x.zdroj) + '</div>' : '') + '</td>' +
-      '<td>' + badgeH(x.stav) + '</td>' +
-      (edit ? '<td class="akce">' + (x.stav === 'Ke schválení' ? '<button class="ikon ok" data-a="schvalit" title="Schválit">✓</button><button class="ikon ne" data-a="zamitnout" title="Zamítnout">✕</button>' : '') +
-        '<button class="ikon" data-a="upravit" title="Upravit">✎</button></td>' : '') + '</tr>').join('') +
+      '<td>' + badgeH(x.stav) + (x.zamceno ? ' <span title="Měsíc je schválený a zamčený">🔒</span>' : '') + '</td>' +
+      (edit ? '<td class="akce">' + (x.zamceno ? '' : x.stav === 'Ke schválení' ? '<button class="ikon ok" data-a="schvalit" title="Schválit">✓</button><button class="ikon ne" data-a="zamitnout" title="Zamítnout">✕</button>' : '') +
+        (x.zamceno ? '' : '<button class="ikon" data-a="upravit" title="Upravit">✎</button>') + '</td>' : '') + '</tr>').join('') +
     '</tbody></table>';
   Array.from(H.vyber).forEach(id => { if (!z.some(x => x.id === id)) H.vyber.delete(id); });
   kresliHromadne();
@@ -1335,6 +1337,83 @@ async function zmenStav(ids, stavH) {
     H.data.zaznamy.forEach((x, i) => { x.stav = puvodni[i]; });
     kresliTabHodin(); toast('Neuloženo: ' + e.message, 'err');
   }
+}
+
+// ---------- Schvalování měsíců (dobrovolník × organizace × měsíc) ----------
+const MS = { stav: 'ke', org: '', rok: '', vyber: new Set(), data: null };
+function mesicCz(m) { const p = String(m).split('-'); return Number(p[1]) + '/' + p[0]; }
+async function vMesice() {
+  obsah.onclick = null; obsah.onkeydown = null;
+  const aktualni = new Date().getFullYear();
+  if (MS.rok === '') MS.rok = String(aktualni);
+  const orgs = D.organizaceVse || [];
+  const roky = [aktualni + 1, aktualni, aktualni - 1, aktualni - 2, aktualni - 3];
+  obsah.innerHTML =
+    '<div class="dhead"><button class="back" id="mZpet">← Hodiny</button><div><h1>Schvalování měsíců</h1>' +
+    '<p class="sub" style="margin:0">Měsíc se schvaluje vždy celý, za dvojici dobrovolník + organizace. Schválením se měsíc zamkne – dobrovolník ani koordinátor už v něm nic nezmění. Odemknout ho může jen hlavní admin.</p></div></div>' +
+    '<div class="toolbar"><select id="mStav"><option value="ke"' + (MS.stav === 'ke' ? ' selected' : '') + '>Ke schválení</option><option value="zamcene"' + (MS.stav === 'zamcene' ? ' selected' : '') + '>Schválené (zamčené)</option><option value=""' + (MS.stav === '' ? ' selected' : '') + '>Vše</option></select>' +
+    '<select id="mOrg"><option value="">Všechny organizace</option>' + orgs.map(o => '<option value="' + esc(o.id) + '"' + (o.id === MS.org ? ' selected' : '') + '>' + esc(o.nazev) + '</option>').join('') + '</select>' +
+    '<select id="mRok"><option value="">Všechny roky</option>' + roky.map(r => '<option' + (String(r) === MS.rok ? ' selected' : '') + '>' + r + '</option>').join('') + '</select></div>' +
+    '<div id="mHromadne"></div><div class="scroll" id="mTab"><div class="loading">Načítám…</div></div>';
+  $('#mZpet').onclick = () => jdi('hodiny');
+  ['#mStav', '#mOrg', '#mRok'].forEach(q => $(q).addEventListener('change', () => { MS.stav = $('#mStav').value; MS.org = $('#mOrg').value; MS.rok = $('#mRok').value; MS.vyber.clear(); nactiMesiceTab(); }));
+  nactiMesiceTab();
+}
+async function nactiMesiceTab() {
+  const tab = $('#mTab'); if (!tab) return;
+  tab.innerHTML = '<div class="loading">Načítám…</div>';
+  try {
+    MS.data = await api('nactiMesice', { stav: MS.stav, org: MS.org, rok: MS.rok });
+    if (!$('#mTab')) return;
+    kresliMesice();
+  } catch (e) { if ($('#mTab')) $('#mTab').innerHTML = '<div class="card">' + esc(e.message) + '</div>'; }
+}
+const klicM = g => g.dobrovolnik + '|' + g.orgId + '|' + g.mesic;
+function kresliMesice() {
+  const r = MS.data.radky, edit = muze('Koordinátor'), hlavni = muze('Hlavní admin');
+  if (!r.length) { $('#mTab').innerHTML = '<div class="card muted">' + (MS.stav === 'ke' ? 'Nic ke schválení.' : 'Žádné měsíce pro zvolený filtr.') + '</div>'; $('#mHromadne').innerHTML = ''; return; }
+  $('#mTab').innerHTML = '<table class="list hodiny"><thead><tr>' + (edit ? '<th><input type="checkbox" id="mVse" aria-label="Vybrat vše"></th>' : '') +
+    '<th>Dobrovolník</th><th class="hm">Organizace</th><th>Měsíc</th><th>Čas</th><th>Stav</th>' + (edit ? '<th></th>' : '') + '</tr></thead><tbody>' +
+    r.map(g => '<tr data-k="' + esc(klicM(g)) + '">' + (edit ? '<td>' + (g.zamceno ? '' : '<input type="checkbox" class="mSel" value="' + esc(klicM(g)) + '"' + (MS.vyber.has(klicM(g)) ? ' checked' : '') + '>') + '</td>' : '') +
+      '<td><a href="#" class="mDetail" data-id="' + esc(g.dobrovolnik) + '"><strong>' + esc(g.jmeno) + '</strong></a><div class="id">' + esc(g.dobrovolnik) + '</div></td>' +
+      '<td class="hm">' + esc(g.org) + '</td><td>' + esc(mesicCz(g.mesic)) + (g.probiha ? ' <span class="muted small">(probíhá)</span>' : '') + '</td>' +
+      '<td><strong>' + esc(fmtMin(g.minut)) + '</strong><div class="id">' + g.pocet + ' ' + sklon(g.pocet, 'záznam', 'záznamy', 'záznamů') + (g.zamitnuto ? ', zamítnuto: ' + g.zamitnuto : '') + '</div></td>' +
+      '<td>' + (g.zamceno ? '🔒 schváleno<div class="id">' + esc(g.schvalil) + '</div>' : (g.ke ? '<span class="warn">čeká na schválení: ' + g.ke + '</span>' : 'neuzamčeno')) +
+      (!g.zamceno && g.odemkl ? '<div class="id">odemčeno: ' + esc(g.duvod) + '</div>' : '') + '</td>' +
+      (edit ? '<td class="akce">' + (g.zamceno ? (hlavni ? '<button class="btn ghost" data-a="odemknout">Odemknout</button>' : '') : '<button class="btn" data-a="schvalit">Schválit měsíc</button>') + '</td>' : '') + '</tr>').join('') + '</tbody></table>';
+  kresliMesiceHromadne();
+  $('#mTab').onclick = async e => {
+    const d = e.target.closest('.mDetail');
+    if (d) { e.preventDefault(); jdi('detail', { id: d.dataset.id, zpet: 'mesice' }); return; }
+    const b = e.target.closest('button[data-a]'); if (!b) return;
+    const g = MS.data.radky.find(x => klicM(x) === b.closest('tr').dataset.k);
+    if (b.dataset.a === 'schvalit') return schvalMesice([g]);
+    const o = await dialog({ text: 'Odemknout měsíc ' + mesicCz(g.mesic) + ' – ' + g.jmeno + ', ' + g.org + '? Zapíše se, kdo ho odemkl a proč.', potvrdit: 'Odemknout', pole: [{ klic: 'duvod', popisek: 'Důvod odemčení (povinný)', typ: 'text' }] });
+    if (!o.ok) return;
+    try { await api('odemkniMesic', g.dobrovolnik, g.orgId, g.mesic, o.udaje.duvod); CACHE.clear(); poZmeneHodin(); toast('Měsíc odemčen'); nactiMesiceTab(); }
+    catch (err) { toast(err.message, 'err'); }
+  };
+  $('#mTab').onchange = e => {
+    if (e.target.id === 'mVse') { $$('.mSel').forEach(c => { c.checked = e.target.checked; if (c.checked) MS.vyber.add(c.value); else MS.vyber.delete(c.value); }); }
+    else if (e.target.classList.contains('mSel')) { if (e.target.checked) MS.vyber.add(e.target.value); else MS.vyber.delete(e.target.value); }
+    kresliMesiceHromadne();
+  };
+}
+function kresliMesiceHromadne() {
+  const el = $('#mHromadne');
+  if (!MS.vyber.size) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="bulk"><span>Vybráno ' + MS.vyber.size + '</span><button class="btn" id="mSchvalitVse">Schválit a zamknout vybrané</button></div>';
+  $('#mSchvalitVse').onclick = () => schvalMesice(MS.data.radky.filter(g => MS.vyber.has(klicM(g))));
+}
+async function schvalMesice(g) {
+  const o = await dialog({ text: 'Schválit a zamknout ' + g.length + ' ' + sklon(g.length, 'měsíc', 'měsíce', 'měsíců') + '? Po schválení už v nich nikdo nic nezmění, odemknout je může jen hlavní admin.', potvrdit: 'Schválit a zamknout' });
+  if (!o.ok) return;
+  try {
+    const r = await api('schvalMesice', g.map(x => ({ dobrovolnik: x.dobrovolnik, orgId: x.orgId, mesic: x.mesic })));
+    CACHE.clear(); poZmeneHodin(); MS.vyber.clear();
+    toast('Schváleno a zamčeno: ' + r.pocet + (r.chyby.length ? ' · nepodařilo se: ' + r.chyby.length + ' (' + r.chyby[0] + ')' : ''), r.chyby.length ? 'err' : '');
+    nactiMesiceTab();
+  } catch (e) { toast(e.message, 'err'); }
 }
 
 // ---------- Měsíční výkaz (tabulka dobrovolníci × dny) ----------
