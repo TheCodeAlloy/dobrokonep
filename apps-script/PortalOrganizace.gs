@@ -174,7 +174,7 @@ function oMojeData(token) {
   moje.forEach(p => {
     const d = mapa[p.dobrovolnik]; if (!d) return;
     const x = lide[p.dobrovolnik] = lide[p.dobrovolnik] || Object.assign({}, d, { prirazeni: [] });   // jen jméno a kontakt
-    x.prirazeni.push({ orgId: p.orgId, od: p.od, do: p.do, aktivni: p.aktivni });
+    x.prirazeni.push({ orgId: p.orgId, od: p.od, do: p.do, aktivni: p.aktivni, papir: p.papir });
   });
   const hodiny = radkyHodin_().radky.filter(x => k.orgIds.indexOf(x.orgId) >= 0).map(x => ({
     id: x.id, dobrovolnik: x.dobrovolnik, datum: x.datum, orgId: x.orgId, org: x.org, od: x.od, do: x.do, minut: x.minut,
@@ -191,6 +191,7 @@ function oMojeData(token) {
     hodiny: hodiny,
     fotky: oFotky_(k),
     zamykani: zamykaniZapnuto_(),
+    tabulky: (() => { const t = {}; k.orgIds.forEach(id => { const u = tabulkaOrgUrl_(tabulkaOrgId_(id)); if (u) t[id] = u; }); return t; })(),
     nazev: String(n.nazev_organizace || ''),
     dnes: ymd_(new Date())
   };

@@ -293,7 +293,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-14j</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-14k</p>
   </div>
 </div>
 <script>
@@ -710,11 +710,6 @@ function vDetail() {
     '<option value="__jine"' + (mpJine ? ' selected' : '') + '>Jiné…</option></select>' +
     '<input type="text" id="mpText" placeholder="Napište místo" value="' + esc(mpJine ? mp : '') + '"' + (mpJine ? '' : ' hidden') + dis + ' style="margin-top:6px"></div>';
 
-  const zpusob = z['Způsob vykazování'] || 'Sám';
-  const zpusobHtml = '<div class="fld"><label><span>Způsob vykazování hodin</span><em class="ind" data-ind="Způsob vykazování"></em></label>' +
-    '<select data-pole="Způsob vykazování"' + dis + '>' + ['Sám', 'Organizace podle papírového výkazu'].map(m => '<option' + (m === zpusob ? ' selected' : '') + '>' + esc(m) + '</option>').join('') + '</select>' +
-    '<p class="muted small" style="margin:4px 0 0">Při „papírovém výkazu“ se u měsíce hlídá fotka výkazu (jen upozorní, schválení nebrání).</p></div>';
-
   const vybraneOblasti = oblastiZ(z['Oblasti zájmu']);
   const oblastiHtml = '<div class="fld full"><label><span>Oblasti zájmu</span><em class="ind" data-ind="Oblasti zájmu"></em></label><div class="chips" id="chOblasti">' +
     D.oblasti.concat(['Jiné']).map(o => '<label class="chip"><input type="checkbox" value="' + esc(o) + '"' + (vybraneOblasti.indexOf(o) >= 0 ? ' checked' : '') + dis + '><span>' + esc(o) + '</span></label>').join('') + '</div></div>';
@@ -734,7 +729,6 @@ function vDetail() {
     pole(z, 'Dobrovolníkem od', 'date', { label: 'Služba od' }) +
     pole(z, 'Služba do', 'date') +
     mistoHtml +
-    zpusobHtml +
     pole(z, 'Poznámky', 'textarea', { full: true, rows: 4 }) +
     pole(z, 'Činnosti ve smlouvě', 'textarea', { full: true, rows: 4, label: 'Činnosti v článku III smlouvy (každá na nový řádek)' }) +
     '</div></section>' +
@@ -1606,6 +1600,7 @@ function kresliPrirazeni(z) {
   $('#orgSeznam').innerHTML =
     (pr.length ? '<ul class="doclist">' + pr.map(p => '<li><span><strong>' + esc(p.org) + '</strong><br><span class="muted small">' +
       (p.od ? 'od ' + esc(fmtD(p.od)) : 'od začátku') + (p.do ? ' do ' + esc(fmtD(p.do)) : '') + (aktivni(p) ? '' : ' · ukončeno') + '</span></span>' +
+      (edit && aktivni(p) ? '<select class="zpusobPr small-btn" data-pr="' + esc(p.id) + '" title="Způsob vykazování hodin u této organizace"><option value="Sám"' + (p.papir ? '' : ' selected') + '>Hodiny zapisuje sám</option><option value="Organizace podle papírového výkazu"' + (p.papir ? ' selected' : '') + '>Papírový výkaz (zapisuje organizace)</option></select>' : (p.papir ? '<span class="muted small">papírový výkaz</span>' : '')) +
       (edit ? '<span class="btns">' + '<button class="btn ghost small-btn" data-upravit="' + esc(p.id) + '">Data</button>' +
         (aktivni(p) ? '<button class="btn ghost small-btn" data-ukoncit="' + esc(p.id) + '">Ukončit</button>' : '<button class="btn ghost small-btn" data-obnovit="' + esc(p.id) + '">Obnovit</button>') + '</span>' : '') +
       '</li>').join('') + '</ul>' : '<p class="muted">Zatím není přiřazen k žádné organizaci.</p>') +
@@ -1621,6 +1616,16 @@ function kresliPrirazeni(z) {
     b.disabled = true;
     try { po(await api('pridejPrirazeni', z.ID, $('#noveOrg').value, $('#noveOd').value, '')); toast('Přiřazeno'); }
     catch (e) { toast(e.message, 'err'); b.disabled = false; }
+  };
+  $('#orgSeznam').onchange = async e => {
+    const sel = e.target.closest('.zpusobPr'); if (!sel) return;
+    sel.disabled = true;
+    try {
+      const r = await api('nastavZpusobPrirazeni', sel.dataset.pr, sel.value);
+      po(r);
+      if (r.tabulka && r.tabulka.chyba) toast('Uloženo, ale tabulku organizace se nepodařilo upravit: ' + r.tabulka.chyba, 'err');
+      else toast(sel.value === 'Sám' ? 'Uloženo' : 'Uloženo – v tabulce organizace je list dobrovolníka');
+    } catch (err) { toast(err.message, 'err'); kresliPrirazeni(z); }
   };
   $('#orgSeznam').onclick = async e => {
     const u = e.target.closest('[data-ukoncit]'), o = e.target.closest('[data-obnovit]'), up = e.target.closest('[data-upravit]');
@@ -1789,8 +1794,33 @@ function admZalozka() {
   else if (t === 'SABLONY') el.innerHTML = admSablony();
   else if (t === 'DOKUMENTY') el.innerHTML = admDokumenty();
   else if (t === 'CINNOSTI') { el.innerHTML = admCinnosti(); admCinnostiUdalosti(el); return; }
+  else if (t === 'KORDORG') { el.innerHTML = admTabulka(t) + '<div class="card" id="tabOrg"><div class="loading">Načítám tabulky organizací…</div></div>'; admUdalosti(el); admTabulkyOrg(); return; }
   else el.innerHTML = admTabulka(t);
   admUdalosti(el);
+}
+
+// ---------- Tabulky organizací (papírové výkazy) ----------
+async function admTabulkyOrg() {
+  const el = $('#tabOrg'); if (!el) return;
+  let odkazy = {};
+  try { odkazy = await api('tabulkyOrganizaci'); } catch (e) { el.innerHTML = '<p class="muted small">' + esc(e.message) + '</p>'; return; }
+  if (!$('#tabOrg')) return;
+  const orgs = (D.organizaceVse || []).filter(o => o.aktivni);
+  const edit = muze('Koordinátor');
+  el.innerHTML = '<h2 style="margin-top:0">Tabulky organizací (papírové výkazy)</h2>' +
+    '<p class="muted small">Pro organizaci s aspoň jedním „papírovým“ dobrovolníkem (nastavuje se v detailu dobrovolníka u přiřazení) vznikne jedna tabulka na sdíleném disku s listem pro každého takového dobrovolníka. Tabulku pak sdílejte koordinátorům organizace.</p>' +
+    '<table class="list"><thead><tr><th>Organizace</th><th>Tabulka</th>' + (edit ? '<th></th>' : '') + '</tr></thead><tbody>' +
+    orgs.map(o => '<tr data-o="' + esc(o.id) + '"><td>' + esc(o.nazev) + '</td><td>' + (odkazy[o.id] ? '<a href="' + esc(odkazy[o.id]) + '" target="_blank" rel="noopener">Otevřít tabulku</a>' : '<span class="muted">zatím neexistuje</span>') + '</td>' +
+      (edit ? '<td class="akce"><button class="btn ghost" data-t="vytvorit">' + (odkazy[o.id] ? 'Aktualizovat listy' : 'Vytvořit tabulku') + '</button>' + (odkazy[o.id] ? '<button class="btn ghost" data-t="sdilet">Sdílet s koordinátory</button>' : '') + '</td>' : '') + '</tr>').join('') + '</tbody></table>';
+  el.onclick = async e => {
+    const b = e.target.closest('button[data-t]'); if (!b) return;
+    const orgId = b.closest('tr').dataset.o;
+    b.disabled = true;
+    try {
+      if (b.dataset.t === 'vytvorit') { const r = await api('tabulkaOrganizace', orgId); toast(r.nova ? 'Tabulka vytvořena (listů: ' + r.pocetListu + ')' : 'Listy aktualizovány (' + r.pocetListu + ')'); admTabulkyOrg(); }
+      else { const o = await dialog({ text: 'Sdílet tabulku s aktivními koordinátory této organizace? Google jim pošle pozvánku k úpravám.', potvrdit: 'Sdílet' }); if (o.ok) { const r = await api('sdilejTabulkuOrganizace', orgId); toast('Tabulka sdílena: ' + r.pocet); } b.disabled = false; }
+    } catch (err) { toast(err.message, 'err'); b.disabled = false; }
+  };
 }
 
 // ---------- Mapa činností (činnost × organizace) ----------

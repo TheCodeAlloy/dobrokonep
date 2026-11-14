@@ -25,7 +25,7 @@ const MAX_FOTEK_MESIC = 10;
 const MAX_FOTKA_ZNAKU = 4500000;   // base64; klient fotku zmenší na cca 1600 px (JPEG, stovky kB)
 const SLOUPCE_PRIRAZENI = [
   'ID přiřazení', 'ID dobrovolníka', 'ID organizace', 'Organizace', 'Od', 'Do', 'Aktivní',
-  'Poznámka', 'Vytvořeno', 'Vytvořil/a'
+  'Poznámka', 'Vytvořeno', 'Vytvořil/a', 'Způsob vykazování'
 ];
 const SLOUPCE_CINNOSTI = ['Organizace', 'Činnost', 'Aktivní'];
 const VSECHNY_ORGANIZACE = 'Všechny organizace';
@@ -60,6 +60,8 @@ function nastavListyHodin_(ss) {
   shKo.getRange('D2:D').setDataValidation(seznamValidace_(['ANO', 'NE']));
   shKo.setColumnWidth(1, 240).setColumnWidth(2, 200).setColumnWidth(3, 160);
 
+  prevedZpusobNaPrirazeni_();
+
   const shFo = zajistiList_(ss, LISTY.FOTKY, SLOUPCE_FOTKY);
   shFo.getRange(2, 4, shFo.getMaxRows() - 1, 1).setNumberFormat('@');
   shFo.getRange(2, 8, shFo.getMaxRows() - 1, 1).setNumberFormat('d. M. yyyy H:mm');
@@ -76,6 +78,26 @@ function nastavListyHodin_(ss) {
 
   doplnIdOrganizaci_();
   prevedStareOrganizace_();
+}
+
+// Jednorázově: dřívější „Způsob vykazování“ u dobrovolníka se přenese na jeho přiřazení (nově je u dvojice dobrovolník + organizace)
+function prevedZpusobNaPrirazeni_() {
+  const props = PropertiesService.getScriptProperties();
+  if (props.getProperty('ZPUSOB_PREVEDEN')) return;
+  const shD = ss_().getSheetByName(LISTY.DOBROVOLNICI), shP = ss_().getSheetByName(LISTY.PRIRAZENI);
+  if (shD && shP && shD.getLastRow() > 1 && shP.getLastRow() > 1) {
+    const hd = hlavicky_(shD), iId = hd.indexOf('ID'), iZ = hd.indexOf('Způsob vykazování');
+    const hp = hlavicky_(shP), jZ = hp.indexOf('Způsob vykazování');
+    if (iZ >= 0 && jZ >= 0) {
+      const papir = {};
+      shD.getRange(2, 1, shD.getLastRow() - 1, hd.length).getValues().forEach(r => { if (String(r[iZ]).trim() === ZPUSOBY_VYKAZOVANI[1]) papir[String(r[iId]).trim()] = true; });
+      const rng = shP.getRange(2, 1, shP.getLastRow() - 1, hp.length), v = rng.getValues();
+      let zmena = false;
+      v.forEach(r => { if (papir[String(r[1]).trim()] && !String(r[jZ]).trim()) { r[jZ] = ZPUSOBY_VYKAZOVANI[1]; zmena = true; } });
+      if (zmena) rng.setValues(v);
+    }
+  }
+  props.setProperty('ZPUSOB_PREVEDEN', 'ANO');
 }
 
 function doplnChybejiciRadkyCinnosti_(sh) {
@@ -247,11 +269,13 @@ function zaokrouhli5_(m) { return Math.round(Number(m) / 5) * 5; }
 function prirazeni_() {
   const sh = ss_().getSheetByName(LISTY.PRIRAZENI);
   if (!sh || sh.getLastRow() < 2) return [];
-  const h = hlavicky_(sh);
+  const h = hlavicky_(sh), iZ = h.indexOf('Způsob vykazování');
   return sh.getRange(2, 1, sh.getLastRow() - 1, h.length).getValues()
     .map((r, i) => ({
       radek: i + 2, id: String(r[0]), dobrovolnik: String(r[1]).trim(), orgId: String(r[2]).trim(), org: String(r[3]),
-      od: ymd_(r[4]), do: ymd_(r[5]), aktivni: String(r[6]).trim().toUpperCase() !== 'NE', poznamka: String(r[7] || '')
+      od: ymd_(r[4]), do: ymd_(r[5]), aktivni: String(r[6]).trim().toUpperCase() !== 'NE', poznamka: String(r[7] || ''),
+      zpusob: iZ >= 0 && String(r[iZ] || '').trim() === ZPUSOBY_VYKAZOVANI[1] ? ZPUSOBY_VYKAZOVANI[1] : ZPUSOBY_VYKAZOVANI[0],
+      papir: iZ >= 0 && String(r[iZ] || '').trim() === ZPUSOBY_VYKAZOVANI[1]
     }))
     .filter(p => p.id && p.dobrovolnik);
 }
@@ -442,7 +466,8 @@ function nactiMesice(token, f) {
   f = f || {};
   const jmena = jmenaDobrovolniku_();
   const zamky = mesiceZamky_();
-  const zpusoby = zpusobyVykazovani_();
+  const papirPar = {};
+  prirazeni_().forEach(p => { if (p.aktivni && p.papir) papirPar[p.dobrovolnik + '|' + p.orgId] = true; });
   const fotky = fotkyRadky_().radky;
   const skup = {};
   radkyHodin_().radky.forEach(z => {
@@ -465,7 +490,7 @@ function nactiMesice(token, f) {
     g.schvalil = z ? z.schvalil : ''; g.odemkl = z ? z.odemkl : ''; g.duvod = z ? z.duvod : '';
     g.probiha = g.mesic === dnesM;
     g.fotek = fotky.filter(x => x.dobrovolnik === g.dobrovolnik && x.orgId === g.orgId && x.mesic === g.mesic).length;
-    g.papir = zpusoby[g.dobrovolnik] === ZPUSOBY_VYKAZOVANI[1];
+    g.papir = !!papirPar[g.dobrovolnik + '|' + g.orgId];
     return g;
   });
   if (f.stav === 'ke') radky = radky.filter(g => zam ? (!g.zamceno && g.pocet > g.zamitnuto) : g.ke > 0);
@@ -644,15 +669,6 @@ function smazFotkuVykazu(token, idFotky) {
     smazFotkuVnitrni_(a, f);
     return { fotky: fotkyVykazuDobrovolnika_(f.dobrovolnik) };
   });
-}
-
-function zpusobyVykazovani_() {
-  const sh = ss_().getSheetByName(LISTY.DOBROVOLNICI), o = {};
-  if (!sh || sh.getLastRow() < 2) return o;
-  const h = hlavicky_(sh), iI = h.indexOf('ID'), iZ = h.indexOf('Způsob vykazování');
-  if (iZ < 0) return o;
-  sh.getRange(2, 1, sh.getLastRow() - 1, h.length).getValues().forEach(r => { o[String(r[iI]).trim()] = String(r[iZ] || '').trim() || ZPUSOBY_VYKAZOVANI[0]; });
-  return o;
 }
 
 // ===== PŘEVOD STÁVAJÍCÍHO SCHVALOVÁNÍ NA MĚSÍČNÍ ZÁMKY ==========

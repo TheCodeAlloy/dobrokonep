@@ -4,7 +4,7 @@
   "description": "Dobrovolnický systém – Dobrovolnické centrum (Google Apps Script + GitHub Pages)",
   "scripts": {
     "kontrola": "node -e \"const fs=require('fs');const k=['Kod','Dashboard','Hodiny','Portal','Zalohy','Api'].map(f=>fs.readFileSync('apps-script/'+f+'.gs','utf8')).join('\\n');new Function(k);console.log('Apps Script: syntaxe OK')\"",
-    "test": "npm run kontrola && node testy/poradi-souboru.js && node testy/backend-vykaz.js && node testy/backend-hodiny.js && node testy/backend-portal.js && node testy/backend-zalohy.js && node testy/backend-schuzky.js && node testy/backend-organizace.js && node testy/backend-cinnosti.js && node testy/backend-cas.js && node testy/backend-mesice.js && node testy/backend-fotky.js && node testy/backend-prevod.js && node testy/backend-portal-organizace.js && node testy/backend-zamykani-vypnuto.js",
+    "test": "npm run kontrola && node testy/poradi-souboru.js && node testy/backend-vykaz.js && node testy/backend-hodiny.js && node testy/backend-portal.js && node testy/backend-zalohy.js && node testy/backend-schuzky.js && node testy/backend-organizace.js && node testy/backend-cinnosti.js && node testy/backend-cas.js && node testy/backend-mesice.js && node testy/backend-fotky.js && node testy/backend-prevod.js && node testy/backend-portal-organizace.js && node testy/backend-zamykani-vypnuto.js && node testy/backend-tabulky-organizaci.js",
     "test:prohlizec": "node testy/prohlizec-dashboard.js && node testy/prohlizec-organizace.js && node testy/prohlizec-portal.js && node testy/prohlizec-portal-organizace.js"
   },
   "devDependencies": {

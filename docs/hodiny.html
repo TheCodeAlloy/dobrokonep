@@ -290,7 +290,7 @@
   }
 
   function aktivniOrg(datum) {
-    return DATA.organizace.filter(o => (!o.od || o.od <= datum) && (!o.do || datum <= o.do) && (o.aktivni || (o.do && datum <= o.do)));
+    return DATA.organizace.filter(o => !o.papir && (!o.od || o.od <= datum) && (!o.do || datum <= o.do) && (o.aktivni || (o.do && datum <= o.do)));
   }
 
   function kresli() {
@@ -313,7 +313,7 @@
       const posl = h.find(x => x.zdroj === 'Dobrovolník') || h[0];
       $('#akce2').innerHTML = '<button class="btn big" id="bNovy">+ Zapsat hodiny</button>' +
         (posl && orgNyni.some(o => o.id === posl.orgId) ? '<button class="btn ghost block" id="bZnovu" style="margin-top:0">↺ Zopakovat poslední: ' + esc(posl.cinnost) + ', ' + esc(fmtMin(posl.minut)) + '</button>' : '') +
-        (d.zpusob !== 'Sám' || (d.fotky || []).length ? '<button class="btn ghost block" id="bFotka" style="margin-top:0">📷 Fotka papírového výkazu</button>' : '');
+        ((d.organizace || []).some(o => o.papir) || (d.fotky || []).length ? '<button class="btn ghost block" id="bFotka" style="margin-top:0">📷 Fotka papírového výkazu</button>' : '');
       const bf = $('#bFotka'); if (bf) bf.onclick = oknoFotky;
       $('#bNovy').onclick = () => formular({});
       const z = $('#bZnovu');

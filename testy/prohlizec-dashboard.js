@@ -7,6 +7,7 @@ console.log = (o => (...a) => { if (!String(a[0]).startsWith('Hotovo')) o(...a);
 nastavTabulku();
 nastavHodnotu_('zamykani_mesicu', 'ANO');   // testy zámků běží se zapnutým zamykáním
 const DISK = {}; let cisloS = 0;
+let TAB = 0; tabOrgVytvor_ = () => 'TAB' + (++TAB); tabOrgNastavListy_ = () => {}; tabOrgSdilej_ = () => {};
 ulozSouborFotky_ = (d, n, b) => { const id = 'S' + (++cisloS); DISK[id] = b; return id; };
 nactiSouborFotky_ = id => 'data:image/jpeg;base64,' + Buffer.from(DISK[id]).toString('base64');
 smazSouborFotky_ = id => { delete DISK[id]; };
@@ -100,6 +101,12 @@ const { chromium } = require('playwright');
   await p.selectOption('#zOrg', { index: 1 }).catch(() => {}); await W(500);
   console.log('formulář: tlačítko přidat fotku:', await p.isVisible('#zFotky [data-pridat=soubor]'));
   await p.click('#zZpet'); await W(300);
+  // papírový výkaz u přiřazení + tabulky organizací
+  await p.evaluate(() => jdi('detail',{id:'DC-2026-0001'})); await W(800);
+  await p.selectOption('#orgSeznam .zpusobPr >> nth=0', 'Organizace podle papírového výkazu'); await W(800);
+  console.log('papírový způsob uložen u přiřazení:', prirazeni_().filter(x => x.dobrovolnik === 'DC-2026-0001').some(x => x.papir), '| tabulek vytvořeno:', TAB);
+  await p.evaluate(() => jdi('admin', { tab: 'KORDORG' })); await W(900);
+  console.log('karta tabulek organizací:', (await p.textContent('#tabOrg')).replace(/\s+/g, ' ').slice(0, 120));
   // schvalování měsíců
   await p.evaluate(() => jdi('hodiny')); await W(300);
   await p.click('#hMesice'); await W(600);

@@ -233,7 +233,7 @@ function dMojeData(token) {
   const organizace = pr.map(p => {
     const o = orgs.find(x => x.id === p.orgId) || { nazev: p.org };
     const c = cin.filter(x => x.org === VSECHNY_ORGANIZACE || x.org === o.nazev).map(x => x.cinnost);
-    return { id: p.orgId, nazev: o.nazev, od: p.od, do: p.do, aktivni: p.aktivni, cinnosti: c.filter((x, i) => c.indexOf(x) === i) };
+    return { id: p.orgId, nazev: o.nazev, od: p.od, do: p.do, aktivni: p.aktivni, papir: p.papir, cinnosti: c.filter((x, i) => c.indexOf(x) === i) };
   });
   const hodiny = radkyHodin_().radky.filter(x => x.dobrovolnik === d.id).map(x => ({
     id: x.id, datum: x.datum, orgId: x.orgId, org: x.org, od: x.od, do: x.do, minut: x.minut,
@@ -247,7 +247,6 @@ function dMojeData(token) {
     organizace: organizace,
     hodiny: hodiny,
     zamykani: zamykaniZapnuto_(),
-    zpusob: z['Způsob vykazování'] || ZPUSOBY_VYKAZOVANI[0],
     fotky: fotkyVykazuDobrovolnika_(d.id).map(f => ({ id: f.id, orgId: f.orgId, mesic: f.mesic, nahrano: f.nahrano })),
     zpetneDni: Number(n.hodiny_zpetne_dni) || 60,
     uzavrenoDo: uzavrenoDo_(n),
@@ -271,6 +270,7 @@ function dZapisHodiny(token, z) {
   z = Object.assign({}, z || {}, { dobrovolnik: d.id });
   overZpetnyZapis_(n, z.datum);
   overMinulyRok_(z.datum);
+  if (papirPrirazeni_(d.id, String(z.orgId || ''))) throw new Error('U této organizace vám hodiny zapisuje organizace podle papírového výkazu.');
   return sZamkem_(() => {
     const p = pripravZapis_(z, prirazeni_(), organizace_(), n, d, true);
     const ted = new Date();

@@ -94,7 +94,8 @@ const { chromium } = require('playwright');
   await p.screenshot({path:__dirname+'/vystup/p3_po.png', fullPage:true});
   // fotka papírového výkazu (jen při způsobu „papírový výkaz“)
   console.log('tlačítko fotky bez papírového způsobu:', await p.isVisible('#bFotka'));
-  zapisDoRadku_(sh['Dobrovolníci'], 2, hlavicky_(sh['Dobrovolníci']), {'Způsob vykazování':'Organizace podle papírového výkazu'});
+  const prP = prirazeni_().find(x => x.dobrovolnik === 'DC-2026-0001' && x.orgId === 'ORG-002');
+  zapisDoRadku_(sh['Přiřazení'], prP.radek, hlavicky_(sh['Přiřazení']), {'Způsob vykazování':'Organizace podle papírového výkazu'});   // papírový způsob u Hospice
   await p.reload(); await W(600);
   await p.setViewportSize({width:360,height:800});
   await p.click('#bFotka'); await W(300);
@@ -107,6 +108,7 @@ const { chromium } = require('playwright');
   await p.click('#fvMisto .fv-x'); await W(300);
   console.log('po smazání fotek:', await p.$$eval('#fvMisto .fv-it', l => l.length), '| na „Disku“:', Object.keys(DISK).length);
   await p.click('#fx');
+  zapisDoRadku_(sh['Přiřazení'], prP.radek, hlavicky_(sh['Přiřazení']), {'Způsob vykazování':'Sám'}); await p.reload(); await W(700);
   await p.click('#bNovy'); await W(400);
   await p.click('#fOrg >> text=Charita Pardubice'); await W(300);
   console.log('formulář: fotka přímo ve formuláři:', await p.isVisible('#fFotky [data-pridat=kamera]'));

@@ -157,7 +157,7 @@
       <p class="muted small" id="mojeOrg" style="margin:0"></p>
       <div class="rok" id="orgTabs" style="margin-top:12px"></div>
       <div class="stats" id="stats"></div>
-      <div class="akce2"><button class="btn big" id="bFotka">📷 Vyfotit výkaz</button></div>
+      <div class="akce2"><button class="btn big" id="bFotka">📷 Vyfotit výkaz</button><a class="btn ghost" id="bTabulka" href="#" target="_blank" rel="noopener" hidden style="text-decoration:none">📄 Otevřít tabulku papírových výkazů</a></div>
       <h2>Dobrovolníci</h2>
       <input type="search" class="hledat" id="hledat" placeholder="Hledat jméno…" hidden>
       <div class="lide" id="lide"></div>
@@ -295,6 +295,8 @@
     $('#orgTabs').innerHTML = DATA.organizace.length > 1
       ? [{ id: '', nazev: 'Všechny' }].concat(DATA.organizace).map(o => '<label class="chip"><input type="radio" name="org" value="' + esc(o.id) + '"' + (o.id === ORG ? ' checked' : '') + '><span>' + esc(o.nazev) + '</span></label>').join('') : '';
     kresliStats();
+    const tab = Object.keys(DATA.tabulky || {}).filter(id => !ORG || id === ORG).map(id => DATA.tabulky[id])[0];
+    $('#bTabulka').hidden = !tab; if (tab) $('#bTabulka').href = tab;
     const lide = lidiOrg().filter(d => !HLEDAT || (jmeno(d) + ' ' + d.email).toLowerCase().indexOf(HLEDAT) >= 0);
     $('#hledat').hidden = lidiOrg().length < 8;
     const rok = DATA.dnes.slice(0, 4);
@@ -302,7 +304,7 @@
       const h = hodinyOrg().filter(x => x.dobrovolnik === d.id && x.stav !== 'Zamítnuto');
       const ceka = h.filter(x => x.stav === 'Ke schválení').length;
       return '<button type="button" class="clovek" data-id="' + esc(d.id) + '"><div class="rad"><span class="jm">' + esc(jmeno(d)) + '</span><strong>' + esc(fmtMin(suma(h.filter(x => x.datum.slice(0, 4) === rok)))) + '</strong></div>' +
-        '<div class="kon">letos' + (ceka ? ' · <span style="color:var(--wait)">čeká na schválení: ' + ceka + '</span>' : '') + (d.aktivni === false ? '' : '') + '</div></button>';
+        '<div class="kon">letos' + (ceka ? ' · <span style="color:var(--wait)">čeká na schválení: ' + ceka + '</span>' : '') + (d.prirazeni.some(p => p.papir && (!ORG || p.orgId === ORG)) ? ' · papírový výkaz' : '') + '</div></button>';
     }).join('') : '<p class="muted">Žádní dobrovolníci.</p>';
     if (VYBRANY) kresliDetail();
     else { $('#prehled').hidden = false; $('#detail').hidden = true; }

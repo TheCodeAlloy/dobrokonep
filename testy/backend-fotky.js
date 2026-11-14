@@ -21,9 +21,12 @@ const hd = hlavicky_(M.sheets['Organizace']);
 M.sheets['Organizace'].appendRow(hd.map(h => ({ ID: 'KAL', 'Název': 'Kalyna', 'Aktivní': 'ANO' })[h] ?? ''));
 M.sheets['Organizace'].appendRow(hd.map(h => ({ ID: 'HOS', 'Název': 'Hospic', 'Aktivní': 'ANO' })[h] ?? ''));
 const hdD = hlavicky_(M.sheets['Dobrovolníci']);
-['0001:Jan:Novák', '0002:Eva:Malá'].forEach(s => { const [i, j, p] = s.split(':'); M.sheets['Dobrovolníci'].appendRow(hdD.map(h => ({ ID: 'DC-2026-' + i, 'Jméno': j, 'Příjmení': p, 'E-mail': j.toLowerCase() + '@x.cz', 'Stav': 'Aktivní dobrovolník', 'Způsob vykazování': i === '0001' ? 'Organizace podle papírového výkazu' : '' })[h] ?? '')); });
+['0001:Jan:Novák', '0002:Eva:Malá'].forEach(s => { const [i, j, p] = s.split(':'); M.sheets['Dobrovolníci'].appendRow(hdD.map(h => ({ ID: 'DC-2026-' + i, 'Jméno': j, 'Příjmení': p, 'E-mail': j.toLowerCase() + '@x.cz', 'Stav': 'Aktivní dobrovolník' })[h] ?? '')); });
 pridejPrirazeni('T', 'DC-2026-0001', 'KAL', '', '');
 pridejPrirazeni('T', 'DC-2026-0002', 'KAL', '', '');
+// papírový způsob je u přiřazení Jana ke Kalyně (Disk a cizí tabulky jsou nahrazeny)
+tabOrgVytvor_ = () => 'TAB1'; tabOrgNastavListy_ = () => {};
+nastavZpusobPrirazeni('T', prirazeni_().find(p => p.dobrovolnik === 'DC-2026-0001').id, 'Organizace podle papírového výkazu');
 const rok = ymd_(new Date()).slice(0, 4), mesic = rok + '-02';
 const jpeg = 'data:image/jpeg;base64,' + Buffer.from('JPEGDATA').toString('base64');
 ulozHodiny('T', { dobrovolnik: 'DC-2026-0001', orgId: 'KAL', datum: mesic + '-10', od: '09:00', do: '11:00', cinnost: 'X' });
@@ -57,7 +60,7 @@ over('dobrovolník nesmaže cizí fotku', /nebyla nalezena/.test(chyba(() => dSm
 kdo = 'DC-2026-0001';
 over('dobrovolník vidí svou fotku', dNactiFotkuVykazu('T', idF).dataUrl === jpeg);
 const rd = dNahrajFotkuVykazu('T', 'KAL', rok + '-04', jpeg);
-over('dobrovolník nahraje fotku, portál ji vrací', rd.fotky.length === 11 && dMojeData('T').fotky.length === 11 && dMojeData('T').zpusob === 'Organizace podle papírového výkazu');
+over('dobrovolník nahraje fotku, portál ji vrací', rd.fotky.length === 11 && dMojeData('T').fotky.length === 11 && dMojeData('T').organizace.some(o => o.papir));
 over('minulý rok dobrovolník nenahraje', /minulého roku/.test(chyba(() => dNahrajFotkuVykazu('T', 'KAL', (rok - 1) + '-12', jpeg))));
 
 // zámek měsíce chrání i fotky

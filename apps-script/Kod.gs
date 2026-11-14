@@ -127,6 +127,7 @@ function vychoziNastaveni_(email) {
     ['text_po_odeslani', 'Děkujeme! Registrace byla odeslána a na váš e-mail jsme poslali potvrzení. Brzy se vám ozveme.', 'Text, který zájemce uvidí po odeslání formuláře'],
     ['web_adresa', '', 'Adresa webu na GitHub Pages, např. https://uzivatel.github.io/dobrovolnici/ (pro odkazy v notifikacích)'],
     ['zamykani_mesicu', 'NE', 'Zamykání schválených měsíců a minulých roků (ANO / NE). Zatím vypnuto; při zapnutí se v zamčeném měsíci nedá nic měnit a odemknout ho smí jen hlavní admin'],
+    ['slozka_tabulek_organizaci', '', 'Složka na sdíleném disku pro tabulky organizací (papírové výkazy); prázdné = vytvoří se složka „Tabulky organizací“ vedle složky Zálohy'],
     ['hodiny_uzavreno_do', '', 'Uzávěrka hodin: měsíce do tohoto včetně (RRRR-MM, např. 2026-09) může měnit jen hlavní admin'],
     ['slozka_zalohy', '', 'Složka pro zálohy tabulky (prázdné = vytvoří se složka „Zálohy“ vedle složky Registrace)'],
     ['zalohy_hodina', 2, 'V kolik hodin v noci se dělá denní záloha (0–23)'],
