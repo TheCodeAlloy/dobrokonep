@@ -293,7 +293,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-14c</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-14d</p>
   </div>
 </div>
 <script>
@@ -1270,18 +1270,19 @@ function kresliTabHodin() {
   const ke = z.filter(x => x.stav === 'Ke schválení');
   $('#hSouhrn').innerHTML = 'Schváleno <strong>' + fmtMin(sch) + '</strong> · ' + z.length + ' ' + sklon(z.length, 'zápis', 'zápisy', 'zápisů') +
     (ke.length ? ' · <span class="warn">' + ke.length + ' ke schválení (' + fmtMin(ke.reduce((s, x) => s + x.minut, 0)) + ')</span>' : '');
-  $('#hUzav').innerHTML = H.data.uzavrenoDo ? '<p class="info small">Měsíce do ' + esc(H.data.uzavrenoDo.split('-').reverse().join('/')) + ' včetně jsou uzavřené – měnit je může jen hlavní admin.</p>' : '';
+  const mamZamek = z.some(x => x.zamceno);
+  $('#hUzav').innerHTML = (mamZamek ? '<p class="info small">🔒 = měsíc je u této organizace schválený a zamčený (zamyká se vždy celý měsíc jednoho dobrovolníka u jedné organizace; jiné organizace zůstávají otevřené). ' + (muze('Hlavní admin') ? 'Odemknete ho klepnutím na zámek.' : 'Odemknout ho může jen hlavní admin.') + '</p>' : '') + (H.data.uzavrenoDo ? '<p class="info small">Měsíce do ' + esc(H.data.uzavrenoDo.split('-').reverse().join('/')) + ' včetně jsou uzavřené – měnit je může jen hlavní admin.</p>' : '');
   if (!z.length) { $('#hTab').innerHTML = '<div class="card muted">Žádné zápisy pro zvolený filtr.</div>'; $('#hHromadne').innerHTML = ''; return; }
   $('#hTab').innerHTML = '<table class="list hodiny"><thead><tr>' + (edit ? '<th><input type="checkbox" id="hVse" aria-label="Vybrat vše"></th>' : '') +
     '<th>Datum</th><th>Dobrovolník</th><th class="hm">Organizace</th><th>Čas</th><th class="hm">Činnost</th><th>Stav</th>' + (edit ? '<th></th>' : '') + '</tr></thead><tbody>' +
-    z.map(x => '<tr data-h="' + esc(x.id) + '">' + (edit ? '<td><input type="checkbox" class="hSel" value="' + esc(x.id) + '"' + (H.vyber.has(x.id) ? ' checked' : '') + '></td>' : '') +
+    z.map(x => '<tr data-h="' + esc(x.id) + '">' + (edit ? '<td>' + (x.zamceno ? '' : '<input type="checkbox" class="hSel" value="' + esc(x.id) + '"' + (H.vyber.has(x.id) ? ' checked' : '') + '>') + '</td>' : '') +
       '<td>' + esc(fmtD(x.datum)) + '</td>' +
       '<td><strong>' + esc(x.jmeno) + '</strong><div class="id">' + esc(x.dobrovolnik) + '</div></td>' +
       '<td class="hm">' + esc(x.org) + '</td>' +
       '<td><strong>' + esc(fmtMin(x.minut)) + '</strong>' + (x.od ? '<div class="id">' + esc(x.od + '–' + x.do) + '</div>' : '') + '</td>' +
       '<td class="hm"><div class="clip" title="' + esc(x.cinnost + (x.poznamka ? ' – ' + x.poznamka : '')) + '">' + esc(x.cinnost) + '</div>' +
       (x.zdroj ? '<div class="id">' + esc(x.zdroj) + '</div>' : '') + '</td>' +
-      '<td>' + badgeH(x.stav) + (x.zamceno ? ' <span title="Měsíc je schválený a zamčený">🔒</span>' : '') + '</td>' +
+      '<td>' + badgeH(x.stav) + (x.zamceno ? ' <button type="button" class="ikon mZamek" data-o="' + esc(x.orgId) + '" data-m="' + esc(x.datum.slice(0, 7)) + '" title="Měsíc ' + esc(mesicCz(x.datum.slice(0, 7))) + ' u organizace ' + esc(x.org) + ' je schválený a zamčený. Klepnutím otevřete Schvalování měsíců' + (muze('Hlavní admin') ? ', kde ho můžete odemknout.' : '.') + '">🔒</button>' : '') + '</td>' +
       (edit ? '<td class="akce">' + (x.zamceno ? '' : x.stav === 'Ke schválení' ? '<button class="ikon ok" data-a="schvalit" title="Schválit">✓</button><button class="ikon ne" data-a="zamitnout" title="Zamítnout">✕</button>' : '') +
         (x.zamceno ? '' : '<button class="ikon" data-a="upravit" title="Upravit">✎</button>') + '</td>' : '') + '</tr>').join('') +
     '</tbody></table>';
@@ -1289,6 +1290,8 @@ function kresliTabHodin() {
   kresliHromadne();
   if (!edit) return;
   $('#hTab').onclick = async e => {
+    const zm = e.target.closest('.mZamek');
+    if (zm) { const tr = zm.closest('tr'), g = H.data.zaznamy.find(q => q.id === tr.dataset.h); MS.stav = 'zamcene'; MS.org = zm.dataset.o; MS.rok = zm.dataset.m.slice(0, 4); MS.vyber.clear(); jdi('mesice'); return; }
     const b = e.target.closest('button[data-a]');
     if (!b) return;
     const id = b.closest('tr').dataset.h, x = H.data.zaznamy.find(q => q.id === id);
