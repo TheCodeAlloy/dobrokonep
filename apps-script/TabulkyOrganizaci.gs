@@ -57,7 +57,7 @@ function tabOrgNastavListy_(idTab, info) {
     ['Hodiny dobrovolníků – ' + info.orgNazev],
     [''],
     ['Každý dobrovolník, kterému vykazujete hodiny podle papírového výkazu, má v této tabulce svůj list.'],
-    ['Opište do něj řádek za řádkem: datum (dvojklikem se otevře kalendář), čas od a do (výběr z nabídky 0:00 až 24:00 po 5 minutách; nabídku jde i psát), činnost z nabídky, případně poznámku.'],
+    ['Opište do něj řádek za řádkem: datum (dvojklikem se otevře kalendář), čas od a do (napište např. 9:30; minuty musí být po 5, konec dne je 24:00 – jiný čas tabulka odmítne), činnost z nabídky, případně poznámku.'],
     ['Sloupec „Hodin“ se spočítá sám. Šedé sloupce „Stav“ a „ID záznamu“ vyplňuje systém – nepřepisujte je.'],
     ['Chybně zapsaný řádek nemažte: zaškrtněte „Zneplatnit řádek“. Řádek zešedne, přeškrtne se a systém ho přestane započítávat.'],
     ['Systém řádky načítá do centrální databáze jednou týdně a po klepnutí na „Načíst teď“ v portálu organizace.'],
@@ -76,9 +76,7 @@ function tabOrgNastavListy_(idTab, info) {
   sez.getRange(1, 1, cin.length, 1).setValues(cin.map(c => [c]));
   if (!sez.isSheetHidden()) sez.hideSheet();
   const rozsahCinnosti = sez.getRange(1, 1, cin.length, 1);
-  const casy = seznamCasu_();
-  sez.getRange(1, 2, casy.length, 1).setNumberFormat('@').setValues(casy.map(c => [c]));
-  const rozsahCasu = sez.getRange(1, 2, casy.length, 1);
+
 
   // Listy dobrovolníků: najdi podle ID v názvu, přejmenuj, nebo založ
   const existujici = {};
@@ -90,10 +88,10 @@ function tabOrgNastavListy_(idTab, info) {
     if (sh) {
       if (sh.getName() !== l.nazev) sh.setName(l.nazev);
       if (sh.isSheetHidden()) sh.showSheet();
-      nastavVzorceAValidace_(sh, rozsahCinnosti, rozsahCasu);   // i u už existujících listů (kalendář, nabídka časů)
+      nastavVzorceAValidace_(sh, rozsahCinnosti);   // i u už existujících listů (kalendář, kontrola času)
     } else {
       sh = ss.insertSheet(l.nazev);
-      formatujListDobrovolnika_(sh, l, rozsahCinnosti, rozsahCasu);
+      formatujListDobrovolnika_(sh, l, rozsahCinnosti);
     }
   });
   // dobrovolníci, kteří už papírově nevykazují: list se jen skryje (nic se nemaže)
@@ -106,16 +104,16 @@ function tabOrgNastavListy_(idTab, info) {
   ss.setActiveSheet(navod);
 }
 
-// Nabídka časů: 0:00, 0:05 … 24:00 (minuty po 5, konec dne 24:00)
-function seznamCasu_() {
-  const c = [];
-  for (let m = 0; m <= 24 * 60; m += 5) c.push(Math.floor(m / 60) + ':' + ('0' + (m % 60)).slice(-2));
-  return c;
+// Kontrola času při psaní (vzorec pro ověření dat; píše se s čárkami bez ohledu na české nastavení tabulky):
+// čas ve tvaru H:MM nebo HH:MM, hodiny 0–24, minuty po 5, 24:00 jen celá hodina. Cokoli jiného tabulka odmítne.
+function vzorecCasuPoPeti_(bunka) {
+  const h = 'VALUE(LEFT(' + bunka + ',FIND(":",' + bunka + ')-1))', m = 'VALUE(RIGHT(' + bunka + ',2))';
+  return '=AND(REGEXMATCH(' + bunka + ',"^\\d{1,2}:\\d{2}$"),' + h + '<=24,' + m + '<=55,MOD(' + m + ',5)=0,OR(' + h + '<24,' + m + '=0))';
 }
 
 // Vzorec pro sloupec „Hodin“ (zápis ve skriptu je vždy s čárkami, bez ohledu na české nastavení tabulky) a výběry hodnot.
 // Volá se při vzniku listu i při „Aktualizovat listy“, takže se opraví i už vytvořené listy.
-function nastavVzorceAValidace_(sh, rozsahCinnosti, rozsahCasu) {
+function nastavVzorceAValidace_(sh, rozsahCinnosti) {
   const prvni = PRVNI_RADEK_TAB, n = POCET_RADKU_TAB;
   const min = (sl, r) => '(INT(LEFT(' + sl + r + ',FIND(":",' + sl + r + ')-1))*60+INT(MID(' + sl + r + ',FIND(":",' + sl + r + ')+1,2)))';
   const vzorce = [];
@@ -127,14 +125,17 @@ function nastavVzorceAValidace_(sh, rozsahCinnosti, rozsahCasu) {
   // datum: dvojklikem se otevře kalendář
   sh.getRange(prvni, 1, n, 1).setDataValidation(
     SpreadsheetApp.newDataValidation().requireDate().setAllowInvalid(false).setHelpText('Vyberte datum (dvojklikem se otevře kalendář).').build());
-  // od a do: výběr z nabídky 0:00 až 24:00 po 5 minutách (jde i psát, nabídka se filtruje)
-  sh.getRange(prvni, 2, n, 2).setDataValidation(
-    SpreadsheetApp.newDataValidation().requireValueInRange(rozsahCasu, true).setAllowInvalid(false).setHelpText('Vyberte čas z nabídky (minuty po 5, konec dne je 24:00).').build());
+  // od a do: napsat čas (např. 9:30); tabulka odmítne čas, který není po 5 minutách nebo je mimo 0:00–24:00
+  ['B', 'C'].forEach((sl, i) => {
+    sh.getRange(prvni, 2 + i, n, 1).setDataValidation(
+      SpreadsheetApp.newDataValidation().requireFormulaSatisfied(vzorecCasuPoPeti_(sl + prvni)).setAllowInvalid(false)
+        .setHelpText('Napište čas ve tvaru 9:30. Minuty musí být po 5 (00, 05 … 55), konec dne je 24:00.').build());
+  });
   sh.getRange(prvni, 5, n, 1).setDataValidation(
     SpreadsheetApp.newDataValidation().requireValueInRange(rozsahCinnosti, true).setAllowInvalid(true).build());
 }
 
-function formatujListDobrovolnika_(sh, l, rozsahCinnosti, rozsahCasu) {
+function formatujListDobrovolnika_(sh, l, rozsahCinnosti) {
   const H = HLAVICKA_TAB_DOBROVOLNIK, r0 = RADEK_HLAVICKY_TAB, prvni = r0 + 1, n = POCET_RADKU_TAB;
   sh.getRange('A1').setValue('Dobrovolník: ' + l.jmeno).setFontWeight('bold').setFontSize(13);
   sh.getRange('A2').setValue(l.id).setFontColor('#999999');   // ID dobrovolníka – podle něj systém list pozná
@@ -143,7 +144,7 @@ function formatujListDobrovolnika_(sh, l, rozsahCinnosti, rozsahCasu) {
   sh.getRange(prvni, 1, n, 1).setNumberFormat('d. M. yyyy');
   sh.getRange(prvni, 2, n, 2).setNumberFormat('@');
   sh.getRange(prvni, 4, n, 1).setNumberFormat('0.00');
-  nastavVzorceAValidace_(sh, rozsahCinnosti, rozsahCasu);
+  nastavVzorceAValidace_(sh, rozsahCinnosti);
   sh.getRange(prvni, 7, n, 1).insertCheckboxes();
   sh.getRange(prvni, 8, n, 2).setBackground('#f1f1f1');                 // systémové sloupce Stav a ID záznamu
   sh.hideColumns(9);                                                    // ID záznamu je skryté

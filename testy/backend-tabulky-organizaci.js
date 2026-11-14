@@ -85,10 +85,13 @@ role = 'Jen čtení';
 over('jen čtení nesmí měnit způsob ani vytvářet tabulky', /role/.test(chyba(() => nastavZpusobPrirazeni('T', pr('DC-2026-0001', 'KAL').id, 'Sám'))) && /role/.test(chyba(() => tabulkaOrganizace('T', 'KAL'))));
 over('jen čtení smí vidět odkazy', !!tabulkyOrganizaci('T').KAL);
 
-// nabídka časů v tabulce: 0:00 až 24:00 po 5 minutách a všechny hodnoty projdou kontrolou serveru
-const casy = seznamCasu_();
-over('nabídka časů: 289 hodnot od 0:00 do 24:00 po 5 minutách', casy.length === 289 && casy[0] === '0:00' && casy[1] === '0:05' && casy[casy.length - 1] === '24:00' && casy.includes('9:05') && casy.includes('23:55'));
-over('každá hodnota z nabídky je platný čas pro server', casy.every(c => minutyDne_(c) !== null));
+// kontrola času v tabulce: vzorec se skládá pro Google Tabulky; význam ověřuji jeho přepisem do JS a proti pravidlům serveru
+const v = vzorecCasuPoPeti_('B5');
+over('kontrola času: vzorec je s čárkami a odkazuje na první buňku', /^=AND\(REGEXMATCH\(B5,/.test(v) && !v.includes(';') && v.includes('MOD(VALUE(RIGHT(B5,2)),5)=0'));
+const kontrola = x => /^\d{1,2}:\d{2}$/.test(x) && +x.split(':')[0] <= 24 && +x.split(':')[1] <= 55 && +x.split(':')[1] % 5 === 0 && (+x.split(':')[0] < 24 || +x.split(':')[1] === 0);
+const vzorky = ['0:00', '9:30', '09:05', '23:55', '24:00', '24:05', '9:07', '25:00', '9:60', '9', 'abc', '9:3', '12:00:00'];
+over('kontrola času: přijme jen platné časy po 5 minutách', vzorky.every(x => kontrola(x) === (minutyDne_(x) !== null)));
+over('kontrola času: 24:00 ano, 24:05 ne, 9:07 ne', kontrola('24:00') && !kontrola('24:05') && !kontrola('9:07'));
 
 console.log(chyby ? 'Tabulky organizací: CHYBY ' + chyby : 'Tabulky organizací: vše OK');
 if (chyby) process.exitCode = 1;
