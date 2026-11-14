@@ -85,5 +85,10 @@ role = 'Jen čtení';
 over('jen čtení nesmí měnit způsob ani vytvářet tabulky', /role/.test(chyba(() => nastavZpusobPrirazeni('T', pr('DC-2026-0001', 'KAL').id, 'Sám'))) && /role/.test(chyba(() => tabulkaOrganizace('T', 'KAL'))));
 over('jen čtení smí vidět odkazy', !!tabulkyOrganizaci('T').KAL);
 
+// nabídka časů v tabulce: 0:00 až 24:00 po 5 minutách a všechny hodnoty projdou kontrolou serveru
+const casy = seznamCasu_();
+over('nabídka časů: 289 hodnot od 0:00 do 24:00 po 5 minutách', casy.length === 289 && casy[0] === '0:00' && casy[1] === '0:05' && casy[casy.length - 1] === '24:00' && casy.includes('9:05') && casy.includes('23:55'));
+over('každá hodnota z nabídky je platný čas pro server', casy.every(c => minutyDne_(c) !== null));
+
 console.log(chyby ? 'Tabulky organizací: CHYBY ' + chyby : 'Tabulky organizací: vše OK');
 if (chyby) process.exitCode = 1;
