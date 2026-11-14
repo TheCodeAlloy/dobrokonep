@@ -18,6 +18,11 @@ const SLOUPCE_HODINY = [
 // Měsíc dobrovolníka u organizace: schválením se zamkne; odemknout smí jen Hlavní admin (řádek zůstane, stav „Odemčeno“)
 const SLOUPCE_MESICE = ['ID dobrovolníka', 'ID organizace', 'Měsíc', 'Stav', 'Schválil/a', 'Schváleno', 'Odemkl/a', 'Odemčeno', 'Důvod odemčení', 'Minut'];
 const SLOUPCE_HISTORIE = ['Čas', 'Kdo', 'Role', 'Akce', 'ID záznamu', 'ID dobrovolníka', 'Detail'];
+// Fotky papírových výkazů: soubor je v osobní složce dobrovolníka (podsložka „Výkazy hodin“), zobrazuje se jen přes API s ověřením
+const SLOUPCE_FOTKY = ['ID fotky', 'ID dobrovolníka', 'ID organizace', 'Měsíc', 'ID souboru', 'Nahrál/a', 'Role', 'Nahráno'];
+const ZPUSOBY_VYKAZOVANI = ['Sám', 'Organizace podle papírového výkazu'];
+const MAX_FOTEK_MESIC = 10;
+const MAX_FOTKA_ZNAKU = 4500000;   // base64; klient fotku zmenší na cca 1600 px (JPEG, stovky kB)
 const SLOUPCE_PRIRAZENI = [
   'ID přiřazení', 'ID dobrovolníka', 'ID organizace', 'Organizace', 'Od', 'Do', 'Aktivní',
   'Poznámka', 'Vytvořeno', 'Vytvořil/a'
@@ -50,6 +55,10 @@ function nastavListyHodin_(ss) {
   shM.getRange(2, 8, shM.getMaxRows() - 1, 1).setNumberFormat('d. M. yyyy H:mm');
   const shHi = zajistiList_(ss, LISTY.HISTORIE, SLOUPCE_HISTORIE);
   shHi.getRange(2, 1, shHi.getMaxRows() - 1, 1).setNumberFormat('d. M. yyyy H:mm:ss');
+
+  const shFo = zajistiList_(ss, LISTY.FOTKY, SLOUPCE_FOTKY);
+  shFo.getRange(2, 4, shFo.getMaxRows() - 1, 1).setNumberFormat('@');
+  shFo.getRange(2, 8, shFo.getMaxRows() - 1, 1).setNumberFormat('d. M. yyyy H:mm');
 
   const shP = zajistiList_(ss, LISTY.PRIRAZENI, SLOUPCE_PRIRAZENI);
   const hp = hlavicky_(shP);
@@ -424,6 +433,8 @@ function nactiMesice(token, f) {
   f = f || {};
   const jmena = jmenaDobrovolniku_();
   const zamky = mesiceZamky_();
+  const zpusoby = zpusobyVykazovani_();
+  const fotky = fotkyRadky_().radky;
   const skup = {};
   radkyHodin_().radky.forEach(z => {
     if (!z.orgId) return;
@@ -442,6 +453,8 @@ function nactiMesice(token, f) {
     g.zamceno = !!z && z.stav === 'Schváleno';
     g.schvalil = z ? z.schvalil : ''; g.odemkl = z ? z.odemkl : ''; g.duvod = z ? z.duvod : '';
     g.probiha = g.mesic === dnesM;
+    g.fotek = fotky.filter(x => x.dobrovolnik === g.dobrovolnik && x.orgId === g.orgId && x.mesic === g.mesic).length;
+    g.papir = zpusoby[g.dobrovolnik] === ZPUSOBY_VYKAZOVANI[1];
     return g;
   });
   if (f.stav === 'ke') radky = radky.filter(g => !g.zamceno && g.pocet > g.zamitnuto);
@@ -504,6 +517,123 @@ function odemkniMesic(token, dobrovolnik, orgId, mesic, duvod) {
     log_('Měsíc odemčen', dobrovolnik, mesic + ', ' + orgId + ', důvod: ' + duvod);
     return { ok: true };
   });
+}
+
+// ===== FOTKY PAPÍROVÝCH VÝKAZŮ ================================
+
+// Jen tyto tři funkce sahají na Disk (testy je nahrazují)
+function ulozSouborFotky_(idDobrovolnika, nazev, bajty) {
+  const sh = list_(LISTY.DOBROVOLNICI), hlav = hlavicky_(sh), radek = najdiRadek_(sh, hlav, idDobrovolnika);
+  const z = zaznamObjekt_(sh, hlav, radek);
+  let osobni = null;
+  const idS = extrahujId_(z['Složka']);
+  if (idS) { try { osobni = DriveApp.getFolderById(idS); } catch (e) { osobni = null; } }
+  if (!osobni) {
+    osobni = vytvorOsobniSlozku_(nastaveni_(), idDobrovolnika, z['Jméno'], z['Příjmení']);
+    zapisDoRadku_(sh, radek, hlav, { 'Složka': osobni.getUrl() });
+  }
+  const it = osobni.getFoldersByName('Výkazy hodin');
+  const slozka = it.hasNext() ? it.next() : osobni.createFolder('Výkazy hodin');
+  return slozka.createFile(Utilities.newBlob(bajty, 'image/jpeg', nazev)).getId();
+}
+function nactiSouborFotky_(idSouboru) {
+  return 'data:image/jpeg;base64,' + Utilities.base64Encode(DriveApp.getFileById(idSouboru).getBlob().getBytes());
+}
+function smazSouborFotky_(idSouboru) {
+  try { DriveApp.getFileById(idSouboru).setTrashed(true); } catch (e) { console.warn(e); }
+}
+
+function fotkyRadky_() {
+  const sh = ss_().getSheetByName(LISTY.FOTKY);
+  if (!sh || sh.getLastRow() < 2) return { sh: sh, radky: [] };
+  const h = hlavicky_(sh), i = n => h.indexOf(n);
+  const radky = sh.getRange(2, 1, sh.getLastRow() - 1, h.length).getValues().map((r, k) => ({
+    radek: k + 2, id: String(r[i('ID fotky')]), dobrovolnik: String(r[i('ID dobrovolníka')]).trim(), orgId: String(r[i('ID organizace')]).trim(),
+    mesic: String(r[i('Měsíc')]).trim().slice(0, 7), soubor: String(r[i('ID souboru')]), nahral: String(r[i('Nahrál/a')] || ''),
+    role: String(r[i('Role')] || ''), nahrano: r[i('Nahráno')] instanceof Date ? Utilities.formatDate(r[i('Nahráno')], TZ, 'yyyy-MM-dd HH:mm') : ''
+  })).filter(f => f.id && f.dobrovolnik);
+  return { sh: sh, radky: radky };
+}
+
+// Bez odkazů na soubory – ty zůstávají jen na serveru
+function fotkyVykazuDobrovolnika_(dobrovolnik) {
+  return fotkyRadky_().radky.filter(f => f.dobrovolnik === dobrovolnik)
+    .map(f => ({ id: f.id, orgId: f.orgId, mesic: f.mesic, nahrano: f.nahrano, nahral: f.nahral }))
+    .sort((a, b) => b.mesic.localeCompare(a.mesic) || a.nahrano.localeCompare(b.nahrano));
+}
+
+function fotkaBajty_(dataUrl) {
+  const m = String(dataUrl || '').match(/^data:image\/jpeg;base64,([A-Za-z0-9+\/=]+)$/);
+  if (!m) throw new Error('Fotka musí být obrázek JPEG.');
+  if (m[1].length > MAX_FOTKA_ZNAKU) throw new Error('Fotka je příliš velká.');
+  return Utilities.base64Decode(m[1]);
+}
+
+function pridejFotkuVnitrni_(a, dobrovolnik, orgId, mesic, dataUrl) {
+  if (!/^\d{4}-\d{2}$/.test(String(mesic))) throw new Error('Neplatný měsíc.');
+  if (!organizace_().some(o => o.id === orgId)) throw new Error('Vyberte organizaci.');
+  if (!prirazeni_().some(p => p.dobrovolnik === dobrovolnik && p.orgId === orgId)) throw new Error('Dobrovolník není přiřazený k této organizaci.');
+  overZamek_(dobrovolnik, orgId, mesic + '-01');
+  const f = fotkyRadky_();
+  if (f.radky.filter(x => x.dobrovolnik === dobrovolnik && x.orgId === orgId && x.mesic === mesic).length >= MAX_FOTEK_MESIC) {
+    throw new Error('Za jeden měsíc lze nahrát nejvýše ' + MAX_FOTEK_MESIC + ' fotek.');
+  }
+  const bajty = fotkaBajty_(dataUrl);
+  const idFotky = novyKlic_('F');
+  const soubor = ulozSouborFotky_(dobrovolnik, 'vykaz_' + orgId + '_' + mesic + '_' + idFotky + '.jpg', bajty);
+  const sh = f.sh || list_(LISTY.FOTKY);
+  const hl = hlavicky_(sh);
+  const radek = { 'ID fotky': idFotky, 'ID dobrovolníka': dobrovolnik, 'ID organizace': orgId, 'Měsíc': mesic, 'ID souboru': soubor, 'Nahrál/a': a.email, 'Role': a.role || 'Dobrovolník', 'Nahráno': new Date() };
+  sh.getRange(sh.getLastRow() + 1, 1, 1, hl.length).setValues([hl.map(h => radek.hasOwnProperty(h) ? radek[h] : '')]);
+  historie_(a, 'Fotka výkazu přidána', idFotky, dobrovolnik, mesic + ', ' + orgId);
+  return idFotky;
+}
+
+function smazFotkuVnitrni_(a, f) {
+  overZamek_(f.dobrovolnik, f.orgId, f.mesic + '-01');
+  smazSouborFotky_(f.soubor);
+  fotkyRadky_().sh.deleteRow(f.radek);
+  historie_(a, 'Fotka výkazu smazána', f.id, f.dobrovolnik, f.mesic + ', ' + f.orgId);
+}
+
+function fotkyVykazu(token, dobrovolnik) {
+  overAdmin_(token, 'Jen čtení');
+  return { fotky: fotkyVykazuDobrovolnika_(String(dobrovolnik || '')) };
+}
+
+function nactiFotkuVykazu(token, idFotky) {
+  overAdmin_(token, 'Jen čtení');
+  const f = fotkyRadky_().radky.find(x => x.id === String(idFotky));
+  if (!f) throw new Error('Fotka nebyla nalezena.');
+  return { dataUrl: nactiSouborFotky_(f.soubor) };
+}
+
+function nahrajFotkuVykazu(token, dobrovolnik, orgId, mesic, dataUrl) {
+  const a = overAdmin_(token, 'Koordinátor');
+  dobrovolnik = String(dobrovolnik || '').trim();
+  return sZamkem_(() => {
+    pridejFotkuVnitrni_(a, dobrovolnik, String(orgId || '').trim(), String(mesic || '').trim(), dataUrl);
+    return { fotky: fotkyVykazuDobrovolnika_(dobrovolnik) };
+  });
+}
+
+function smazFotkuVykazu(token, idFotky) {
+  const a = overAdmin_(token, 'Koordinátor');
+  return sZamkem_(() => {
+    const f = fotkyRadky_().radky.find(x => x.id === String(idFotky));
+    if (!f) throw new Error('Fotka nebyla nalezena.');
+    smazFotkuVnitrni_(a, f);
+    return { fotky: fotkyVykazuDobrovolnika_(f.dobrovolnik) };
+  });
+}
+
+function zpusobyVykazovani_() {
+  const sh = ss_().getSheetByName(LISTY.DOBROVOLNICI), o = {};
+  if (!sh || sh.getLastRow() < 2) return o;
+  const h = hlavicky_(sh), iI = h.indexOf('ID'), iZ = h.indexOf('Způsob vykazování');
+  if (iZ < 0) return o;
+  sh.getRange(2, 1, sh.getLastRow() - 1, h.length).getValues().forEach(r => { o[String(r[iI]).trim()] = String(r[iZ] || '').trim() || ZPUSOBY_VYKAZOVANI[0]; });
+  return o;
 }
 
 // ===== NAČÍTÁNÍ HODIN =========================================

@@ -17,7 +17,7 @@ const POLE_EDITOVATELNA = [
   'Zkušenosti a dovednosti', 'Zaměstnání / studium', 'Vzdělání', 'Jak se o nás dozvěděl/a', 'Stav', 'Místo působení',
   'Dobrovolníkem od', 'Poznámky', 'Upozornění',
   'Služba do', 'Zástupce – jméno', 'Zástupce – adresa', 'Zástupce – datum narození', 'Zástupce – e-mail', 'Zástupce – telefon',
-  'Činnosti ve smlouvě'
+  'Činnosti ve smlouvě', 'Způsob vykazování'
 ];
 
 // Funkce, ne konstanta: LISTY je definováno v Kod.gs, který se načítá později.
@@ -394,6 +394,7 @@ function ulozPole(token, id, pole, hodnota) {
     v = String(hodnota == null ? '' : hodnota).trim().slice(0, 5000);
   }
   if (pole === 'Stav' && STAVY.indexOf(v) < 0) throw new Error('Neznámý stav.');
+  if (pole === 'Způsob vykazování' && v && ZPUSOBY_VYKAZOVANI.indexOf(v) < 0) throw new Error('Neznámý způsob vykazování.');
   if (pole === 'E-mail') { v = v.toLowerCase(); if (!platnyEmail_(v)) throw new Error('Neplatný e-mail.'); }
   if ((pole === 'Jméno' || pole === 'Příjmení') && !v) throw new Error('Jméno a příjmení nesmí být prázdné.');
 
@@ -642,6 +643,13 @@ function smazZaznam(token, id, smazatSoubory) {
     // Přiřazení k organizacím
     const shP = ss_().getSheetByName(LISTY.PRIRAZENI);
     if (shP) prirazeni_().filter(p => p.dobrovolnik === id).sort((x, y) => y.radek - x.radek).forEach(p => shP.deleteRow(p.radek));
+
+    // Fotky výkazů (soubory jsou v osobní složce, která se maže výše)
+    const shF = ss_().getSheetByName(LISTY.FOTKY);
+    if (shF && shF.getLastRow() > 1) {
+      const idF = shF.getRange(2, 2, shF.getLastRow() - 1, 1).getValues().map(r => String(r[0]).trim());
+      for (let i = idF.length - 1; i >= 0; i--) if (idF[i] === id) shF.deleteRow(i + 2);
+    }
 
     // Osobní údaje v Log změn
     const shL = ss_().getSheetByName(LISTY.LOG);

@@ -293,7 +293,7 @@
       <button class="linkbtn" type="button" id="lZnovu">Zadat jiný e-mail nebo poslat kód znovu</button>
     </form>
     <p class="chyba" id="lChyba" hidden></p>
-    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-14d</p>
+    <p class="muted small" style="margin:18px 0 0;text-align:right;opacity:.6">verze 2026-11-14e</p>
   </div>
 </div>
 <script>
@@ -348,6 +348,7 @@
 
 <script src="config.js"></script>
 <script src="rocni-hodiny.js?v=2026-11-14b"></script>
+<script src="fotka-vykazu.js?v=2026-11-14"></script>
 <script>
 const BOOT = { startId: new URLSearchParams(location.search).get('id') || '' };
 let D = null;              // data dobrovolníků a číselníky
@@ -709,6 +710,11 @@ function vDetail() {
     '<option value="__jine"' + (mpJine ? ' selected' : '') + '>Jiné…</option></select>' +
     '<input type="text" id="mpText" placeholder="Napište místo" value="' + esc(mpJine ? mp : '') + '"' + (mpJine ? '' : ' hidden') + dis + ' style="margin-top:6px"></div>';
 
+  const zpusob = z['Způsob vykazování'] || 'Sám';
+  const zpusobHtml = '<div class="fld"><label><span>Způsob vykazování hodin</span><em class="ind" data-ind="Způsob vykazování"></em></label>' +
+    '<select data-pole="Způsob vykazování"' + dis + '>' + ['Sám', 'Organizace podle papírového výkazu'].map(m => '<option' + (m === zpusob ? ' selected' : '') + '>' + esc(m) + '</option>').join('') + '</select>' +
+    '<p class="muted small" style="margin:4px 0 0">Při „papírovém výkazu“ se u měsíce hlídá fotka výkazu (jen upozorní, schválení nebrání).</p></div>';
+
   const vybraneOblasti = oblastiZ(z['Oblasti zájmu']);
   const oblastiHtml = '<div class="fld full"><label><span>Oblasti zájmu</span><em class="ind" data-ind="Oblasti zájmu"></em></label><div class="chips" id="chOblasti">' +
     D.oblasti.concat(['Jiné']).map(o => '<label class="chip"><input type="checkbox" value="' + esc(o) + '"' + (vybraneOblasti.indexOf(o) >= 0 ? ' checked' : '') + dis + '><span>' + esc(o) + '</span></label>').join('') + '</div></div>';
@@ -728,6 +734,7 @@ function vDetail() {
     pole(z, 'Dobrovolníkem od', 'date', { label: 'Služba od' }) +
     pole(z, 'Služba do', 'date') +
     mistoHtml +
+    zpusobHtml +
     pole(z, 'Poznámky', 'textarea', { full: true, rows: 4 }) +
     pole(z, 'Činnosti ve smlouvě', 'textarea', { full: true, rows: 4, label: 'Činnosti v článku III smlouvy (každá na nový řádek)' }) +
     '</div></section>' +
@@ -1376,11 +1383,12 @@ function kresliMesice() {
   const r = MS.data.radky, edit = muze('Koordinátor'), hlavni = muze('Hlavní admin');
   if (!r.length) { $('#mTab').innerHTML = '<div class="card muted">' + (MS.stav === 'ke' ? 'Nic ke schválení.' : 'Žádné měsíce pro zvolený filtr.') + '</div>'; $('#mHromadne').innerHTML = ''; return; }
   $('#mTab').innerHTML = '<table class="list hodiny"><thead><tr>' + (edit ? '<th><input type="checkbox" id="mVse" aria-label="Vybrat vše"></th>' : '') +
-    '<th>Dobrovolník</th><th class="hm">Organizace</th><th>Měsíc</th><th>Čas</th><th>Stav</th>' + (edit ? '<th></th>' : '') + '</tr></thead><tbody>' +
+    '<th>Dobrovolník</th><th class="hm">Organizace</th><th>Měsíc</th><th>Čas</th><th>Fotka výkazu</th><th>Stav</th>' + (edit ? '<th></th>' : '') + '</tr></thead><tbody>' +
     r.map(g => '<tr data-k="' + esc(klicM(g)) + '">' + (edit ? '<td>' + (g.zamceno ? '' : '<input type="checkbox" class="mSel" value="' + esc(klicM(g)) + '"' + (MS.vyber.has(klicM(g)) ? ' checked' : '') + '>') + '</td>' : '') +
       '<td><a href="#" class="mDetail" data-id="' + esc(g.dobrovolnik) + '"><strong>' + esc(g.jmeno) + '</strong></a><div class="id">' + esc(g.dobrovolnik) + '</div></td>' +
       '<td class="hm">' + esc(g.org) + '</td><td>' + esc(mesicCz(g.mesic)) + (g.probiha ? ' <span class="muted small">(probíhá)</span>' : '') + '</td>' +
       '<td><strong>' + esc(fmtMin(g.minut)) + '</strong><div class="id">' + g.pocet + ' ' + sklon(g.pocet, 'záznam', 'záznamy', 'záznamů') + (g.zamitnuto ? ', zamítnuto: ' + g.zamitnuto : '') + '</div></td>' +
+      '<td><button type="button" class="ikon mFotka" title="Fotky papírového výkazu">📷 ' + g.fotek + '</button>' + (g.papir && !g.fotek ? '<div class="id warn">chybí fotka</div>' : '') + '</td>' +
       '<td>' + (g.zamceno ? '🔒 schváleno<div class="id">' + esc(g.schvalil) + '</div>' : (g.ke ? '<span class="warn">čeká na schválení: ' + g.ke + '</span>' : 'neuzamčeno')) +
       (!g.zamceno && g.odemkl ? '<div class="id">odemčeno: ' + esc(g.duvod) + '</div>' : '') + '</td>' +
       (edit ? '<td class="akce">' + (g.zamceno ? (hlavni ? '<button class="btn ghost" data-a="odemknout">Odemknout</button>' : '') : '<button class="btn" data-a="schvalit">Schválit měsíc</button>') + '</td>' : '') + '</tr>').join('') + '</tbody></table>';
@@ -1388,6 +1396,8 @@ function kresliMesice() {
   $('#mTab').onclick = async e => {
     const d = e.target.closest('.mDetail');
     if (d) { e.preventDefault(); jdi('detail', { id: d.dataset.id, zpet: 'mesice' }); return; }
+    const ft = e.target.closest('.mFotka');
+    if (ft) return oknoFotek(MS.data.radky.find(x => klicM(x) === ft.closest('tr').dataset.k));
     const b = e.target.closest('button[data-a]'); if (!b) return;
     const g = MS.data.radky.find(x => klicM(x) === b.closest('tr').dataset.k);
     if (b.dataset.a === 'schvalit') return schvalMesice([g]);
@@ -1408,8 +1418,28 @@ function kresliMesiceHromadne() {
   el.innerHTML = '<div class="bulk"><span>Vybráno ' + MS.vyber.size + '</span><button class="btn" id="mSchvalitVse">Schválit a zamknout vybrané</button></div>';
   $('#mSchvalitVse').onclick = () => schvalMesice(MS.data.radky.filter(g => MS.vyber.has(klicM(g))));
 }
+// Okno s fotkami papírového výkazu jednoho měsíce
+async function oknoFotek(g) {
+  const el = otevriModal('<h2 style="margin-top:0">Fotky výkazu – ' + esc(g.jmeno) + '</h2><p class="muted small">' + esc(g.org) + ', ' + esc(mesicCz(g.mesic)) + (g.zamceno ? ' · měsíc je zamčený, fotky nelze měnit' : '') + '</p><div id="fvMisto"><div class="loading">Načítám…</div></div><div class="dlg-btns"><button class="btn ghost" id="fvZavrit">Zavřít</button></div>');
+  $('#fvZavrit', el).onclick = () => { zavriModal(); if ($('#mTab')) nactiMesiceTab(); };
+  const filtr = fl => fl.filter(f => f.orgId === g.orgId && f.mesic === g.mesic);
+  const edit = muze('Koordinátor') && !g.zamceno;
+  try {
+    const r = await api('fotkyVykazu', g.dobrovolnik);
+    FotkaVykazu.mount($('#fvMisto', el), {
+      fotky: filtr(r.fotky), muzePridat: edit, muzeSmazat: edit,
+      nacti: async id => (await api('nactiFotkuVykazu', id)).dataUrl,
+      nahraj: async d => filtr((await api('nahrajFotkuVykazu', g.dobrovolnik, g.orgId, g.mesic, d)).fotky),
+      smaz: async id => filtr((await api('smazFotkuVykazu', id)).fotky),
+      potvrdit: async t => (await dialog({ text: t, potvrdit: 'Smazat' })).ok
+    });
+  } catch (e) { $('#fvMisto', el).innerHTML = '<p class="warn">' + esc(e.message) + '</p>'; }
+}
+
 async function schvalMesice(g) {
-  const o = await dialog({ text: 'Schválit a zamknout ' + g.length + ' ' + sklon(g.length, 'měsíc', 'měsíce', 'měsíců') + '? Po schválení už v nich nikdo nic nezmění, odemknout je může jen hlavní admin.', potvrdit: 'Schválit a zamknout' });
+  const bezFotky = g.filter(x => x.papir && !x.fotek);
+  const o = await dialog({ text: 'Schválit a zamknout ' + g.length + ' ' + sklon(g.length, 'měsíc', 'měsíce', 'měsíců') + '? Po schválení už v nich nikdo nic nezmění, odemknout je může jen hlavní admin.',
+    chyba: bezFotky.length ? 'Upozornění: u ' + bezFotky.length + ' ' + sklon(bezFotky.length, 'měsíce', 'měsíců', 'měsíců') + ' chybí fotka papírového výkazu (' + bezFotky.slice(0, 3).map(x => x.jmeno + ' ' + mesicCz(x.mesic)).join(', ') + (bezFotky.length > 3 ? ', …' : '') + '). Schválit to jde i tak.' : '', potvrdit: 'Schválit a zamknout' });
   if (!o.ok) return;
   try {
     const r = await api('schvalMesice', g.map(x => ({ dobrovolnik: x.dobrovolnik, orgId: x.orgId, mesic: x.mesic })));

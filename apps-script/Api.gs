@@ -32,6 +32,9 @@ const API_DOBROVOLNIK = {
   dMojeData: function () { return dMojeData.apply(null, arguments); },
   dZapisHodiny: function () { return dZapisHodiny.apply(null, arguments); },
   dSmazHodiny: function () { return dSmazHodiny.apply(null, arguments); },
+  dNahrajFotkuVykazu: function () { return dNahrajFotkuVykazu.apply(null, arguments); },
+  dSmazFotkuVykazu: function () { return dSmazFotkuVykazu.apply(null, arguments); },
+  dNactiFotkuVykazu: function () { return dNactiFotkuVykazu.apply(null, arguments); },
   dOdhlasitVsude: function () { return dOdhlasitVsude.apply(null, arguments); }
 };
 
@@ -47,6 +50,10 @@ const API_ADMIN = {
   smazDokument: function () { return smazDokument.apply(null, arguments); },
   rocniVykaz: function () { return rocniVykaz.apply(null, arguments); },
   nactiMesice: function () { return nactiMesice.apply(null, arguments); },
+  fotkyVykazu: function () { return fotkyVykazu.apply(null, arguments); },
+  nactiFotkuVykazu: function () { return nactiFotkuVykazu.apply(null, arguments); },
+  nahrajFotkuVykazu: function () { return nahrajFotkuVykazu.apply(null, arguments); },
+  smazFotkuVykazu: function () { return smazFotkuVykazu.apply(null, arguments); },
   schvalMesice: function () { return schvalMesice.apply(null, arguments); },
   odemkniMesic: function () { return odemkniMesic.apply(null, arguments); },
   exportujRocniVykaz: function () { return exportujRocniVykaz.apply(null, arguments); },

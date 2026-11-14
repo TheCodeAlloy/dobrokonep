@@ -5,6 +5,10 @@ overAdmin_ = (t, r) => { AKTUALNI_UZIVATEL='a@b.cz'; return {email:'koordinator@
 log_ = () => {};
 console.log = (o => (...a) => { if (!String(a[0]).startsWith('Hotovo')) o(...a); })(console.log);
 nastavTabulku();
+const DISK = {}; let cisloS = 0;
+ulozSouborFotky_ = (d, n, b) => { const id = 'S' + (++cisloS); DISK[id] = b; return id; };
+nactiSouborFotky_ = id => 'data:image/jpeg;base64,' + Buffer.from(DISK[id]).toString('base64');
+smazSouborFotky_ = id => { delete DISK[id]; };
 const sh=M.sheets;
 sh['Organizace'].appendRow(['ORG-001', 'Charita Pardubice', '', '', '', '', '', 'ANO', '']);
 sh['Organizace'].appendRow(['ORG-002', 'Hospic Chrudim', '', '', '', '', '', 'ANO', '']);
@@ -72,6 +76,18 @@ const { chromium } = require('playwright');
   console.log('řádků po přidání:', await p.$$eval('#rocniHod .rh-row', l => l.length), '| v tabulce Jan:', radkyHodin_().radky.filter(z=>z.dobrovolnik==='DC-2026-0001').length);
   console.log('Jan jen Hospic:', (await p.textContent('#hodSouhrn .stats')).replace(/\s+/g,' '));
   await p.screenshot({path:__dirname+'/vystup/u10_jan.png'});
+  // fotky papírového výkazu v okně u měsíce
+  const JPG = Buffer.from((await p.evaluate(() => { const c = document.createElement('canvas'); c.width = 40; c.height = 30; const x = c.getContext('2d'); x.fillStyle = '#c33'; x.fillRect(0, 0, 40, 30); return c.toDataURL('image/jpeg'); })).split(',')[1], 'base64');
+  await p.evaluate(() => jdi('hodiny')); await W(300);
+  await p.click('#hMesice'); await W(600); await p.selectOption('#mRok', ''); await W(600);
+  await p.click('#mTab tbody tr >> nth=0 >> .mFotka'); await W(400);
+  await p.setInputFiles('#fvMisto input[data-vstup=soubor]', { name: 'v.jpg', mimeType: 'image/jpeg', buffer: JPG }); await W(1200);
+  console.log('fotek v okně po nahrání:', await p.$$eval('#fvMisto .fv-it', l => l.length), '| souborů na „Disku“:', Object.keys(DISK).length);
+  await p.waitForSelector('#fvMisto .fv-it img', { timeout: 4000 });
+  console.log('náhled fotky se načetl:', await p.$$eval('#fvMisto .fv-it img', l => l.length));
+  await p.click('#fvMisto .fv-x'); await W(300); await p.click('#dlgAno'); await W(800);
+  console.log('po smazání fotek:', await p.$$eval('#fvMisto .fv-it', l => l.length), '| souborů:', Object.keys(DISK).length);
+  await p.click('#fvZavrit'); await W(600);
   // schvalování měsíců
   await p.evaluate(() => jdi('hodiny')); await W(300);
   await p.click('#hMesice'); await W(600);

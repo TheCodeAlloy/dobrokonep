@@ -246,6 +246,8 @@ function dMojeData(token) {
     },
     organizace: organizace,
     hodiny: hodiny,
+    zpusob: z['Způsob vykazování'] || ZPUSOBY_VYKAZOVANI[0],
+    fotky: fotkyVykazuDobrovolnika_(d.id).map(f => ({ id: f.id, orgId: f.orgId, mesic: f.mesic, nahrano: f.nahrano })),
     zpetneDni: Number(n.hodiny_zpetne_dni) || 60,
     uzavrenoDo: uzavrenoDo_(n),
     nazev: String(n.nazev_organizace || ''),
@@ -313,4 +315,36 @@ function dSmazHodiny(token, id) {
     log_('Portál – smazání hodin', d.id, z.datum + ', ' + z.minut + ' min');
     return dMojeData(token);
   });
+}
+
+// ===== FOTKY PAPÍROVÝCH VÝKAZŮ (dobrovolník) ====================
+
+function dFotky_(d) { return fotkyVykazuDobrovolnika_(d.id).map(f => ({ id: f.id, orgId: f.orgId, mesic: f.mesic, nahrano: f.nahrano })); }
+
+function dNahrajFotkuVykazu(token, orgId, mesic, dataUrl) {
+  const d = overDobrovolnik_(token);
+  mesic = String(mesic || '').trim();
+  overMinulyRok_(mesic + '-01');
+  return sZamkem_(() => {
+    pridejFotkuVnitrni_({ email: d.email, role: 'Dobrovolník' }, d.id, String(orgId || '').trim(), mesic, dataUrl);
+    return { fotky: dFotky_(d) };
+  });
+}
+
+function dSmazFotkuVykazu(token, idFotky) {
+  const d = overDobrovolnik_(token);
+  return sZamkem_(() => {
+    const f = fotkyRadky_().radky.find(x => x.id === String(idFotky) && x.dobrovolnik === d.id);
+    if (!f) throw new Error('Fotka nebyla nalezena.');
+    overMinulyRok_(f.mesic + '-01');
+    smazFotkuVnitrni_({ email: d.email, role: 'Dobrovolník' }, f);
+    return { fotky: dFotky_(d) };
+  });
+}
+
+function dNactiFotkuVykazu(token, idFotky) {
+  const d = overDobrovolnik_(token);
+  const f = fotkyRadky_().radky.find(x => x.id === String(idFotky) && x.dobrovolnik === d.id);
+  if (!f) throw new Error('Fotka nebyla nalezena.');
+  return { dataUrl: nactiSouborFotky_(f.soubor) };
 }

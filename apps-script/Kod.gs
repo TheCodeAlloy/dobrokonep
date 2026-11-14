@@ -40,6 +40,7 @@ const LISTY = {
   CINNOSTI: 'Činnosti',
   MESICE: 'Měsíce',
   HISTORIE: 'Historie hodin',
+  FOTKY: 'Fotky výkazů',
   LOG: 'Log změn'
 };
 
@@ -55,7 +56,8 @@ const SLOUPCE_DOBROVOLNICI = [
   'Služba do', 'Zástupce – jméno', 'Zástupce – adresa', 'Zástupce – datum narození', 'Zástupce – e-mail', 'Zástupce – telefon',
   'Činnosti ve smlouvě',
   'Záznam o přípravě',
-  'Online schůzka'
+  'Online schůzka',
+  'Způsob vykazování'
 ];
 
 const POLE_DATUM = ['Datum narození', 'Dobrovolníkem od', 'Datum smlouvy', 'Služba do', 'Zástupce – datum narození'];

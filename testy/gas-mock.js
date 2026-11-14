@@ -10,6 +10,9 @@ const Utilities = {
   },
   getUuid(){ return crypto.randomUUID(); },
   computeDigest(a, t){ return [...crypto.createHash('sha256').update(t).digest()]; },
+  base64Decode(t){ return [...Buffer.from(t,'base64')]; },
+  base64Encode(b){ return Buffer.from(b).toString('base64'); },
+  newBlob(b,t,n){ return { bytes:b, type:t, name:n, getBytes(){ return b; } }; },
   base64EncodeWebSafe(b){ return Buffer.from(b).toString('base64url'); },
   DigestAlgorithm: { SHA_256: 1 },
   parseDate(s){ const m=s.match(/(\d+)-(\d+)-(\d+)T(\d+):(\d+)/); return new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5]); }

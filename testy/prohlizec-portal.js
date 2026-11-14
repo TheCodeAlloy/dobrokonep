@@ -5,6 +5,10 @@ overAdmin_ = (t, r) => { if (t!=='ADMIN') throw new Error('PRIHLASENI: x'); AKTU
 log_ = () => {};
 const quiet = console.log; console.log = (...a) => { if (!String(a[0]).startsWith('Hotovo')) quiet(...a); }; console.error = () => {};
 nastavTabulku();
+const DISK = {}; let cisloS = 0;
+ulozSouborFotky_ = (d, n, b) => { const id = 'S' + (++cisloS); DISK[id] = b; return id; };
+nactiSouborFotky_ = id => 'data:image/jpeg;base64,' + Buffer.from(DISK[id]).toString('base64');
+smazSouborFotky_ = id => { delete DISK[id]; };
 nastavHodnotu_('web_adresa','http://web.test/dc/');
 const sh=M.sheets;
 sh['Organizace'].appendRow(['ORG-001', 'Charita Pardubice', '', '', '', '', '', 'ANO', '']);
@@ -88,6 +92,21 @@ const { chromium } = require('playwright');
   await p.reload(); await W(600);
   console.log('po schválení:', await p.textContent('#stats'), '|', await p.textContent('#cekani'));
   await p.screenshot({path:__dirname+'/vystup/p3_po.png', fullPage:true});
+  // fotka papírového výkazu (jen při způsobu „papírový výkaz“)
+  console.log('tlačítko fotky bez papírového způsobu:', await p.isVisible('#bFotka'));
+  zapisDoRadku_(sh['Dobrovolníci'], 2, hlavicky_(sh['Dobrovolníci']), {'Způsob vykazování':'Organizace podle papírového výkazu'});
+  await p.reload(); await W(600);
+  await p.setViewportSize({width:360,height:800});
+  await p.click('#bFotka'); await W(300);
+  const JPG = Buffer.from((await p.evaluate(() => { const c = document.createElement('canvas'); c.width = 40; c.height = 30; const x = c.getContext('2d'); x.fillStyle = '#36c'; x.fillRect(0, 0, 40, 30); return c.toDataURL('image/jpeg'); })).split(',')[1], 'base64');
+  await p.selectOption('#fvOrg', { index: 0 });
+  await p.setInputFiles('#fvMisto input[data-vstup=soubor]', { name: 'v.jpg', mimeType: 'image/jpeg', buffer: JPG }); await W(1200);
+  console.log('fotek po nahrání:', await p.$$eval('#fvMisto .fv-it', l => l.length), '| na „Disku“:', Object.keys(DISK).length);
+  await p.screenshot({path:__dirname+'/vystup/p6_fotka_360.png'});
+  console.log('fotka – vodorovný posun na 360 px:', await p.evaluate(() => document.documentElement.scrollWidth > window.innerWidth));
+  await p.click('#fvMisto .fv-x'); await W(300);
+  console.log('po smazání fotek:', await p.$$eval('#fvMisto .fv-it', l => l.length), '| na „Disku“:', Object.keys(DISK).length);
+  await p.click('#fx'); await p.setViewportSize({width:1280,height:900});
   // 7) odhlášení a přihlášení kódem
   await p.click('#odhlasit'); await W(400);
   await p.fill('#email','jan@x.cz'); await p.click('#bPoslat'); await W(400);

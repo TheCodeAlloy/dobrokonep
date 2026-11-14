@@ -165,6 +165,7 @@
 
 <script src="config.js"></script>
 <script src="rocni-hodiny.js?v=2026-11-14b"></script>
+<script src="fotka-vykazu.js?v=2026-11-14"></script>
 <script>
 (function () {
   const $ = (s, el) => (el || document).querySelector(s);
@@ -311,7 +312,9 @@
     } else {
       const posl = h.find(x => x.zdroj === 'Dobrovolník') || h[0];
       $('#akce2').innerHTML = '<button class="btn big" id="bNovy">+ Zapsat hodiny</button>' +
-        (posl && orgNyni.some(o => o.id === posl.orgId) ? '<button class="btn ghost block" id="bZnovu" style="margin-top:0">↺ Zopakovat poslední: ' + esc(posl.cinnost) + ', ' + esc(fmtMin(posl.minut)) + '</button>' : '');
+        (posl && orgNyni.some(o => o.id === posl.orgId) ? '<button class="btn ghost block" id="bZnovu" style="margin-top:0">↺ Zopakovat poslední: ' + esc(posl.cinnost) + ', ' + esc(fmtMin(posl.minut)) + '</button>' : '') +
+        (d.zpusob !== 'Sám' || (d.fotky || []).length ? '<button class="btn ghost block" id="bFotka" style="margin-top:0">📷 Fotka papírového výkazu</button>' : '');
+      const bf = $('#bFotka'); if (bf) bf.onclick = oknoFotky;
       $('#bNovy').onclick = () => formular({});
       const z = $('#bZnovu');
       if (z) z.onclick = () => formular({ orgId: posl.orgId, od: posl.od, do: posl.do, minut: posl.minut, cinnost: posl.cinnost });
@@ -329,6 +332,41 @@
       smazat: async id => { DATA = await api('dSmazHodiny', id); kresli(); return DATA.hodiny; }
     };
     if (RH) RH.nastav(h); else RH = RocniHodiny.mount($('#seznam'), volby);
+  }
+
+
+  // ---------- fotka papírového výkazu ----------
+  function oknoFotky() {
+    const d = DATA, rok = d.dnes.slice(0, 4);
+    const mesice = [];
+    for (let m = +d.dnes.slice(5, 7); m >= 1 && mesice.length < 4; m--) mesice.push(rok + '-' + String(m).padStart(2, '0'));
+    const orgs = d.organizace;
+    let mesic = mesice[0], orgId = (orgs.find(o => o.aktivni) || orgs[0] || {}).id || '';
+    const el = otevri(
+      '<div class="sheet-head"><h2 style="margin:0">Fotka výkazu</h2><button class="x" id="fx" aria-label="Zavřít">×</button></div>' +
+      '<p class="muted small" style="margin:0 0 8px">Vyfoťte papírový výkaz hodin, který vám potvrdila organizace. Stačí, aby byl text čitelný.</p>' +
+      '<label class="l">Za který měsíc</label><select id="fvMes">' + mesice.map(m => '<option value="' + m + '">' + MESICE[+m.slice(5) - 1] + ' ' + m.slice(0, 4) + '</option>').join('') + '</select>' +
+      (orgs.length > 1 ? '<label class="l">Pro koho</label><select id="fvOrg">' + orgs.map(o => '<option value="' + esc(o.id) + '">' + esc(o.nazev) + '</option>').join('') + '</select>' : '') +
+      '<div id="fvMisto" style="margin-top:10px"></div>');
+    $('#fx', el).onclick = zavri;
+    const mimo = () => (d.fotky || []).filter(f => f.orgId === orgId && f.mesic === mesic);
+    let FV = null;
+    const zamcen = () => (DATA.hodiny || []).some(h => h.orgId === orgId && h.datum.slice(0, 7) === mesic && h.zamceno);
+    function kresliFV() {
+      const edit = !zamcen();
+      const volby = {
+        fotky: mimo(), muzePridat: edit, muzeSmazat: edit, kamera: true,
+        nacti: async id => (await api('dNactiFotkuVykazu', id)).dataUrl,
+        nahraj: async dataUrl => { const r = await api('dNahrajFotkuVykazu', orgId, mesic, dataUrl); DATA.fotky = r.fotky; return mimo(); },
+        smaz: async id => { const r = await api('dSmazFotkuVykazu', id); DATA.fotky = r.fotky; return mimo(); }
+      };
+      $('#fvMisto', el).innerHTML = '';
+      FV = FotkaVykazu.mount($('#fvMisto', el), volby);
+    }
+    $('#fvMes', el).onchange = e => { mesic = e.target.value; kresliFV(); };
+    const fo = $('#fvOrg', el); if (fo) fo.value = orgId;
+    if (fo) fo.onchange = e => { orgId = e.target.value; kresliFV(); };
+    kresliFV();
   }
 
   // ---------- formulář zápisu ----------
