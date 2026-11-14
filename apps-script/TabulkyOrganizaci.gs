@@ -66,7 +66,7 @@ function tabOrgNastavListy_(idTab, info) {
     ['Hodiny dobrovolníků – ' + info.orgNazev],
     [''],
     ['Každý dobrovolník, kterému vykazujete hodiny podle papírového výkazu, má v této tabulce svůj list.'],
-    ['Opište do něj řádek za řádkem: datum (dvojklikem se otevře kalendář), čas od a do (vyberte hodinu 0 až 24 a minuty 00 až 55 po 5; konec dne je 24 hodin 00 minut), činnost z nabídky, případně poznámku.'],
+    ['Opište do něj řádek za řádkem: datum (dvojklikem se otevře kalendář), čas od a do (vyberte hodinu 0 až 24 a minuty 00 až 55 po 5; konec dne je 24 hodin 00 minut), činnost z nabídky (není povinná), případně poznámku.'],
     ['Sloupec „Hodin“ se spočítá sám. Šedé sloupce „Stav“ a „ID záznamu“ vyplňuje systém – nepřepisujte je.'],
     ['Chybně zapsaný řádek nemažte: zaškrtněte „Zneplatnit řádek“. Řádek zešedne, přeškrtne se a systém ho přestane započítávat.'],
     ['Systém řádky načítá do centrální databáze jednou týdně a po klepnutí na „Načíst teď“ v portálu organizace.'],
@@ -124,16 +124,35 @@ function tabOrgNastavListy_(idTab, info) {
   ss.setActiveSheet(navod);
 }
 
-// Vzorec pro sloupec „Hodin“ (zápis ve skriptu je vždy s čárkami, bez ohledu na české nastavení tabulky) a výběry hodnot.
-// Prázdné minuty se berou jako 00. Volá se při vzniku listu i při „Aktualizovat listy“, takže se opraví i už vytvořené listy.
+// Vzorec pro sloupec „Hodin“ pro řádek r; sep je oddělovač argumentů (středník, nebo čárka)
+function vzorecHodin_(r, sep) {
+  const min = (h, m) => '(VALUE(' + h + ')*60+VALUE(IF(' + m + '=""' + sep + '"0"' + sep + m + ')))';
+  return '=IFERROR(IF(OR(B' + r + '=""' + sep + 'D' + r + '="")' + sep + '""' + sep + '(' + min('D' + r, 'E' + r) + '-' + min('B' + r, 'C' + r) + ')/60)' + sep + '"")';
+}
+
+// Zjistí, jaký oddělovač argumentů tabulka při zápisu ze skriptu přijme: zkusí středník (české nastavení),
+// a nepřijme-li ho, použije čárku. Zkouší se na zkušební buňce ve skrytém listu Seznamy.
+function oddelovacVzorcu_(ss) {
+  const sez = ss.getSheetByName('Seznamy');
+  if (!sez) return ';';
+  const bunka = sez.getRange('E1');
+  let sep = ',';
+  try {
+    bunka.setFormula('=IF(1=1;"ok";"x")');
+    SpreadsheetApp.flush();
+    if (String(bunka.getDisplayValue()) === 'ok') sep = ';';
+  } catch (e) { sep = ','; }
+  bunka.clearContent();
+  return sep;
+}
+
+// Vzorec pro sloupec „Hodin“ a výběry hodnot. Prázdné minuty se berou jako 00.
+// Volá se při vzniku listu i při „Aktualizovat listy“, takže se opraví i už vytvořené listy.
 function nastavVzorceAValidace_(sh, rozsahCinnosti, rozsahHodin, rozsahMinut) {
   const prvni = PRVNI_RADEK_TAB, n = POCET_RADKU_TAB;
-  const min = (h, m) => '(VALUE(' + h + ')*60+VALUE(IF(' + m + '="","0",' + m + ')))';
+  const sep = oddelovacVzorcu_(sh.getParent());
   const vzorce = [];
-  for (let i = 0; i < n; i++) {
-    const r = prvni + i;
-    vzorce.push(['=IFERROR(IF(OR(B' + r + '="",D' + r + '=""),"",(' + min('D' + r, 'E' + r) + '-' + min('B' + r, 'C' + r) + ')/60),"")']);
-  }
+  for (let i = 0; i < n; i++) vzorce.push([vzorecHodin_(prvni + i, sep)]);
   sh.getRange(prvni, 2, n, 4).setNumberFormat('@');
   sh.getRange(prvni, 6, n, 1).setNumberFormat('0.00').setFormulas(vzorce);
   // datum: dvojklikem se otevře kalendář
@@ -362,7 +381,7 @@ function nactiTabulkuOrganizaceVnitrni_(orgId, a) {
           return stavZapis('Zneplatněno');
         }
         const z = { dobrovolnik: l.dobrovolnik, orgId: orgId, datum: x.datum, od: x.od, do: x.do, cinnost: x.cinnost, poznamka: x.poznamka };
-        const p = pripravZapis_(z, pr, orgs, n, a, false);
+        const p = pripravZapis_(z, pr, orgs, n, a, false, true);   // činnost z papírového výkazu není povinná
         const popis = { datum: p.datum, od: p.od, do: p.do, minut: p.minut, orgId: p.org.id, cinnost: p.cinnost };
         if (puv) {
           const stejne = ymd_(puv.datum) === ymd_(p.datum) && puv.od === p.od && puv.do === p.do && puv.cinnost === p.cinnost && puv.poznamka === p.poznamka && puv.stav !== 'Zamítnuto';

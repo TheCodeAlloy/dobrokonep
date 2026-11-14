@@ -42,21 +42,23 @@ const r1 = radek(JAN, { datum: rok + '-02-10', od: '9:00', do: '11:30', cinnost:
 const r2 = radek(JAN, { datum: rok + '-02-11', od: '13:00', do: '14:00', cinnost: 'Pomoc na akci', poznamka: 'výlet' });
 const rChyba = radek(JAN, { datum: rok + '-02-12', od: '10:00', do: '09:00', cinnost: 'X' });
 const rBezCinnosti = radek(JAN, { datum: rok + '-02-13', od: '10:00', do: '11:00', cinnost: '' });
+const rBezCasu = radek(JAN, { datum: rok + '-02-14', cinnost: 'Doučování' });
 const rBudoucnost = radek(JAN, { datum: '2099-01-01', od: '10:00', do: '11:00', cinnost: 'X' });
 radek(JAN, {});   // prázdný řádek se přeskočí
 const e1 = radek(EVA, { datum: rok + '-03-01', od: '8:00', do: '9:00', cinnost: 'Doučování' });
 let s = nactiTabulkuOrganizace('T', 'KAL').souhrn;
-over('načteny 3 nové řádky (Jan 2, Eva 1), 3 chyby', s.novych === 3 && s.chyb === 3 && s.listu === 2);
-over('v databázi 3 záznamy se zdrojem „Tabulka organizace“, čekají na schválení', db().length === 3 && db().every(z => z.stav === 'Ke schválení' && z.orgId === 'KAL'));
+over('načteny 4 nové řádky (Jan 3 včetně řádku bez činnosti, Eva 1), 3 chyby', s.novych === 4 && s.chyb === 3 && s.listu === 2);
+over('v databázi 4 záznamy se zdrojem „Tabulka organizace“, čekají na schválení', db().length === 4 && db().every(z => z.stav === 'Ke schválení' && z.orgId === 'KAL'));
 over('minuty a časy: 9:00–11:30 = 150 min', db().some(z => z.minut === 150 && z.od === '09:00' && z.do === '11:30'));
 over('do tabulky se vrátil stav a ID záznamu', /^Načteno/.test(r1.stav) && r1.id.startsWith('H-') && /^Načteno/.test(e1.stav));
-over('chybné řádky mají důvod ve sloupci Stav', /Chyba: .*později/.test(rChyba.stav) && /Chyba: .*činnost/i.test(rBezCinnosti.stav) && /budoucnosti/.test(rBudoucnost.stav));
+over('chybné řádky mají důvod ve sloupci Stav', /Chyba: .*později/.test(rChyba.stav) && /Chyba: .*čas/i.test(rBezCasu.stav) && /budoucnosti/.test(rBudoucnost.stav));
+over('řádek bez činnosti se načetl (činnost není povinná)', /^Načteno/.test(rBezCinnosti.stav) && db().some(z => z.cinnost === '' && z.datum === rok + '-02-13'));
 over('poznámka se přenesla', db().some(z => z.poznamka === 'výlet'));
 
 // 2) opakované načtení nic nezdvojí
 const pred = db().length;
 s = nactiTabulkuOrganizace('T', 'KAL').souhrn;
-over('druhé načtení: žádné nové, 3 beze změny, chyby zůstávají', s.novych === 0 && s.beze_zmeny === 3 && db().length === pred && s.chyb === 3);
+over('druhé načtení: žádné nové, 4 beze změny, chyby zůstávají', s.novych === 0 && s.beze_zmeny === 4 && db().length === pred && s.chyb === 3);
 
 // 3) změna řádku
 r1.do = '12:00';

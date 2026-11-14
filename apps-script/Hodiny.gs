@@ -814,7 +814,7 @@ function prehledHodin_() {
 // Ověří a připraví jeden zápis; vrací objekt pro uložení
 // prisne = true pro zápis dobrovolníkem (musí platit přiřazení k danému datu);
 // administrátor/koordinátor může zapisovat zpětně – stačí, že přiřazení existuje.
-function pripravZapis_(z, pr, orgs, n, a, prisne) {
+function pripravZapis_(z, pr, orgs, n, a, prisne, cinnostNepovinna) {
   const dobrovolnik = String(z.dobrovolnik || '').trim();
   const org = orgs.find(o => o.id === String(z.orgId || ''));
   if (!dobrovolnik) throw new Error('Vyberte dobrovolníka.');
@@ -837,7 +837,7 @@ function pripravZapis_(z, pr, orgs, n, a, prisne) {
   const minut = minutyZCasu_(od, doo);
   od = ('0' + od).slice(-5); doo = ('0' + doo).slice(-5);
   const cinnost = String(z.cinnost || '').trim().slice(0, 200);
-  if (!cinnost) throw new Error('Vyberte nebo napište činnost.');
+  if (!cinnost && !cinnostNepovinna) throw new Error('Vyberte nebo napište činnost.');
   return {
     dobrovolnik: dobrovolnik, org: org, datum: dD, od: od, do: doo, minut: minut,
     cinnost: cinnost, poznamka: String(z.poznamka || '').trim().slice(0, 1000)

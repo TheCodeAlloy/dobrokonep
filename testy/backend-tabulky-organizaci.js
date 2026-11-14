@@ -85,6 +85,13 @@ role = 'Jen čtení';
 over('jen čtení nesmí měnit způsob ani vytvářet tabulky', /role/.test(chyba(() => nastavZpusobPrirazeni('T', pr('DC-2026-0001', 'KAL').id, 'Sám'))) && /role/.test(chyba(() => tabulkaOrganizace('T', 'KAL'))));
 over('jen čtení smí vidět odkazy', !!tabulkyOrganizaci('T').KAL);
 
+// vzorec Hodin: středník i čárka, stejná struktura
+const vz = vzorecHodin_(5, ';'), vc = vzorecHodin_(5, ',');
+over('vzorec Hodin se středníky: bez čárek, odkazuje na B5, C5, D5, E5', vz.startsWith('=IFERROR(IF(OR(B5="";D5="");"";') && !vz.includes(',') && ['B5', 'C5', 'D5', 'E5'].every(x => vz.includes(x)));
+over('vzorec Hodin s čárkami je stejný až na oddělovač', vc === vz.replace(/;/g, ','));
+role = 'Koordinátor';
+over('ruční zápis bez činnosti se dál odmítá (nepovinná je jen z tabulky)', /činnost/.test(chyba(() => ulozHodiny('T', { dobrovolnik: 'DC-2026-0001', orgId: 'KAL', datum: ymd_(new Date()), od: '09:00', do: '10:00', cinnost: '' }))));
+
 // čas z výběrů hodiny a minut (Formát 2) a jeho kontrola serverem
 over('čas z výběrů: 9 + 30 → 9:30, 9 + (prázdné) → 9:00, 9 + 5 → 9:05, bez hodiny → nic', casZHodinyAMinut_('9', '30') === '9:30' && casZHodinyAMinut_('9', '') === '9:00' && casZHodinyAMinut_(9, 5) === '9:05' && casZHodinyAMinut_('', '30') === '');
 over('všechny kombinace z výběrů (hodina 0–24, minuty po 5) jsou platné, kromě 24:05 až 24:55', (() => { let ok = true; for (let h = 0; h <= 24; h++) for (let m = 0; m < 60; m += 5) { const t = casZHodinyAMinut_(String(h), ('0' + m).slice(-2)); const platne = minutyDne_(t) !== null; if (platne !== (h < 24 || m === 0)) ok = false; } return ok; })());
