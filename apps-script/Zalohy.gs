@@ -66,8 +66,50 @@ function zalohujTabulku() {
   uklid_(soubory_(slozka, zaklad + ' – denní '), kolikDenni);
   uklid_(soubory_(slozka, zaklad + ' – týdenní '), kolikTydenni);
 
-  log_('Záloha tabulky', '', soubor.getName());
+  // tabulky organizací (papírové výkazy): stejná pravidla; chyba u jedné nesmí zastavit zálohu hlavní tabulky
+  let org = { zalohovano: 0, chyby: [] };
+  try { org = zalohujTabulkyOrganizaci_(slozka, ted, n); } catch (e) { org.chyby.push(e.message); console.error(e); }
+
+  log_('Záloha tabulky', '', soubor.getName() + (org.zalohovano || org.chyby.length ? '; tabulky organizací: ' + org.zalohovano + (org.chyby.length ? ', chyby: ' + org.chyby.join('; ') : '') : ''));
   return soubor;
+}
+
+// Podsložka „Tabulky organizací“ ve složce záloh (založí se, když chybí)
+function podslozkaZaloh_(slozka, nazev) {
+  const it = slozka.getFoldersByName(nazev);
+  return it.hasNext() ? it.next() : slozka.createFolder(nazev);
+}
+
+// Denní a týdenní zálohy tabulek jednotlivých organizací se stejnými pravidly jako záloha hlavní tabulky:
+// denně se ponechá zalohy_denni_pocet (výchozí 5) a týdně v pondělí zalohy_tydenni_pocet (výchozí 30) souborů na každou organizaci,
+// starší se přesunou do koše. Názvy začínají ID organizace, takže přejmenování organizace zálohy nerozbije.
+function zalohujTabulkyOrganizaci_(slozka, ted, n) {
+  const vysl = { zalohovano: 0, chyby: [] };
+  const tabulky = organizace_().map(o => ({ o: o, id: tabulkaOrgId_(o.id) })).filter(x => x.id);
+  if (!tabulky.length) return vysl;
+  const sub = podslozkaZaloh_(slozka, 'Tabulky organizací');
+  const den = Utilities.formatDate(ted, TZ, 'yyyy-MM-dd');
+  const pondeli = Utilities.formatDate(ted, TZ, 'u') === '1';
+  const kolikDenni = Math.max(1, Number(n.zalohy_denni_pocet) || 5);
+  const kolikTydenni = Math.max(1, Number(n.zalohy_tydenni_pocet) || 30);
+  tabulky.forEach(t => {
+    try {
+      const zaklad = 'Záloha tabulky organizace ' + t.o.id + ' – ';
+      const popis = ' – ' + String(t.o.nazev).slice(0, 50);
+      const nazevDenni = zaklad + 'denní ' + den + popis;
+      smazPodleNazvu_(sub, nazevDenni);   // jen jedna záloha za den
+      DriveApp.getFileById(t.id).makeCopy(nazevDenni, sub);
+      if (pondeli || !soubory_(sub, zaklad + 'týdenní ').length) {
+        const nazevTyd = zaklad + 'týdenní ' + den + popis;
+        smazPodleNazvu_(sub, nazevTyd);
+        DriveApp.getFileById(t.id).makeCopy(nazevTyd, sub);
+      }
+      uklid_(soubory_(sub, zaklad + 'denní '), kolikDenni);
+      uklid_(soubory_(sub, zaklad + 'týdenní '), kolikTydenni);
+      vysl.zalohovano++;
+    } catch (e) { vysl.chyby.push(t.o.id + ': ' + e.message); console.error('Záloha tabulky organizace ' + t.o.id + ': ' + e.message); }
+  });
+  return vysl;
 }
 
 function slozkaZaloh_() {

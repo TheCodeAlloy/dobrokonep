@@ -53,7 +53,7 @@ docs/hodiny.html     ──┘  (JSON)        │     ├─ Tabulka Google (dat
 | `Portal.gs` | portál dobrovolníka: přihlášení (kód, odkaz, pozvánka, Google), relace, vlastní hodiny |
 | `TabulkyOrganizaci.gs` | tabulky organizací pro papírové výkazy (vytvoření tabulky, listy dobrovolníků, sdílení; Disk izolovaný v pár funkcích) |
 | `PortalOrganizace.gs` | portál organizace: koordinátoři organizací (list `Koordinátoři organizací`), přihlášení (kód, odkaz, Google; relace `SESO_`, ověření `overKoordinatorOrg_`), data jen vlastních organizací, zápis/úprava/mazání hodin, fotky výkazů |
-| `Zalohy.gs` | denní zálohy tabulky (5 denních + 30 týdenních), spouštěč |
+| `Zalohy.gs` | denní zálohy tabulky (5 denních + 30 týdenních), spouštěč; stejná pravidla platí i pro tabulku **každé organizace** zvlášť (podsložka „Tabulky organizací“ ve složce záloh, názvy `Záloha tabulky organizace <ID> – denní/týdenní <datum> – <název>`; chyba u jedné organizace nezastaví ostatní) |
 | `Api.gs` | `doPost`/`doGet`, mapy povolených akcí `API_VEREJNE`, `API_ADMIN`, `API_DOBROVOLNIK` |
 
 ### docs/ (GitHub Pages – web)
